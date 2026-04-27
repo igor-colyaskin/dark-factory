@@ -1,0 +1,28 @@
+# .gitignore — Dark Factory
+
+# Dependencies
+node_modules/
+
+# Environment (API keys!)
+.env
+
+# Generated target app (runtime output, not source)
+workspace/
+
+# Runtime state
+state/current.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Logs
+*.log
+
+# Archives (generated zips for download)
+*.zip
