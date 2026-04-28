@@ -36,7 +36,7 @@
            - Architect mode -> claude-opus-4
            - Code mode -> claude-sonnet-4
   [ ] 1.6  Создать структуру папок (server/, client/, workspace/, state/, docs/)
-  [ ] 1.7  npm init, установить express
+  [ ] 1.7  npm i, установить express
   [ ] 1.8  Проверить: OpenRouter API отвечает (простой тест fetch)
   [ ] 1.9  Сделать первый коммит: "Initial setup"
 
