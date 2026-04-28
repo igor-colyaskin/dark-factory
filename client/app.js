@@ -228,8 +228,30 @@ async function handleAnswersSubmit(e) {
 }
 
 // Handle Open App
-function handleOpenApp() {
-  window.open('/workspace', '_blank');
+async function handleOpenApp() {
+  showLoading('Getting application info...');
+  
+  try {
+    const response = await fetch('/api/start-app', {
+      method: 'POST'
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Show instructions in alert
+      const instructions = result.instructions.join('\n');
+      alert(`${result.message}\n\n${instructions}\n\nWorkspace: ${result.workspacePath}`);
+      showStatus('Instructions displayed', 'info');
+    } else {
+      showStatus(result.message || 'Failed to get app info', 'error');
+    }
+  } catch (error) {
+    console.error('Error getting app info:', error);
+    showStatus('Failed to get app info', 'error');
+  } finally {
+    hideLoading();
+  }
 }
 
 // Handle Download

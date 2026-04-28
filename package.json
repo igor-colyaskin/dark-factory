@@ -5,7 +5,10 @@
     "type": "module",
     "scripts": {
         "start": "node server/index.js",
-        "dev": "node --watch server/index.js"
+        "dev": "node --watch server/index.js",
+        "restart": "npx kill-port 3000 && npm start",
+        "clean": "node -e \"const fs=require('fs'); try{fs.unlinkSync('state/current.json')}catch(e){} try{fs.rmSync('workspace',{recursive:true,force:true})}catch(e){}\"",
+        "fresh": "npm run clean && npm run restart"
     },
     "dependencies": {
         "archiver": "^7.0.1",

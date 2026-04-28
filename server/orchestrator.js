@@ -93,6 +93,7 @@ class Orchestrator {
       currentUS: this.currentUS,
       questions: this.questions,
       retryCount: this.retryCount,
+      agentOutputs: this.agentOutputs,
       totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
       totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0)
     };
@@ -205,21 +206,24 @@ class Orchestrator {
       case STATES.ARCH_WORKING:
         await this.transition(STATES.ARCH_REVIEW, {
           usId: 1,
-          status: 'review'
+          status: 'review',
+          agentOutput: result
         });
         break;
 
       case STATES.DEV_WORKING:
         await this.transition(STATES.DEV_CHECK, {
           usId: 2,
-          status: 'checking'
+          status: 'checking',
+          agentOutput: result
         });
         break;
 
       case STATES.TEST_RUNNING:
         await this.transition(STATES.DELIVERING, {
           usId: 3,
-          status: 'done'
+          status: 'done',
+          agentOutput: result
         });
         break;
 
@@ -330,6 +334,7 @@ class Orchestrator {
 
   // Reset orchestrator to initial state
   async reset() {
+    console.log('[ORCHESTRATOR] Resetting from state:', this.state);
     this.state = STATES.IDLE;
     this.orderDescription = '';
     this.userStories = USER_STORIES.map(us => ({ ...us }));
@@ -341,6 +346,7 @@ class Orchestrator {
 
     await this.saveState();
     this.notifyListeners();
+    console.log('[ORCHESTRATOR] Reset complete, new state:', this.state);
   }
 }
 

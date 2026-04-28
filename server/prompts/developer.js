@@ -18,6 +18,7 @@ You MUST follow these rules:
 - Use CommonJS (require/module.exports) for Node.js files
 - Application must start with: node app.js (or index.js)
 - Keep dependencies minimal (express is usually enough)
+- **IMPORTANT: Use port 3001 (not 3000) to avoid conflicts**
 
 ## Required Output Format
 You MUST respond with valid JSON in this exact structure:
