@@ -57,7 +57,7 @@
   [ ] 2.8  Коммит: "Backend core"
 
 
-  ФАЗА 3: ПРОМПТЫ АГЕНТОВ
+  ФАЗА 3: ПРОМПТЫ АГЕНТОВ ✅: выполнено
   ========================
 
   [ ] 3.1  server/prompts/architect.js — system + user prompt
@@ -68,7 +68,7 @@
   [ ] 3.5  Коммит: "Agent prompts"
 
 
-  ФАЗА 4: FRONTEND
+  ФАЗА 4: FRONTEND ✅: выполнено
   =================
 
   [ ] 4.1  client/index.html — разметка трёх блоков

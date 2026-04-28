@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dark Factory v0.1 - Application Factory</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>🏭 Dark Factory</h1>
+      <p class="tagline">Your Application Factory - Order, Watch, Pickup</p>
+    </header>
+
+    <!-- BLOCK 1: ORDER -->
+    <section id="order-block" class="block order-block">
+      <div class="block-header">
+        <h2>📝 Order</h2>
+        <p>Describe the application you want to create</p>
+      </div>
+      
+      <div class="block-content">
+        <form id="order-form">
+          <textarea 
+            id="order-input" 
+            name="order" 
+            rows="6" 
+            placeholder="Example: Create a simple TODO application where users can add, complete, and delete tasks."
+            required
+          ></textarea>
+          
+          <button type="submit" class="btn btn-primary" id="submit-order-btn">
+            Submit Order
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- BLOCK 2: MANUFACTURING (hidden initially) -->
+    <section id="manufacturing-block" class="block manufacturing-block" style="display: none;">
+      <div class="block-header">
+        <h2>⚙️ Manufacturing</h2>
+        <p>Watch your application being built in real-time</p>
+      </div>
+      
+      <div class="block-content">
+        <!-- User Stories Table -->
+        <div class="table-container">
+          <table class="us-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>User Story</th>
+                <th>Agent</th>
+                <th>Status</th>
+                <th>Cost</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="us-table-body">
+              <!-- User stories will be populated here -->
+            </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="4"><strong>Total</strong></td>
+                <td id="total-cost">$0.00</td>
+                <td id="total-time">0s</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Action Buttons (shown when needed) -->
+        <div id="action-buttons" class="action-buttons" style="display: none;">
+          <button id="approve-btn" class="btn btn-success">
+            ✓ Approve
+          </button>
+          <button id="ask-question-btn" class="btn btn-secondary">
+            ❓ Ask Question
+          </button>
+        </div>
+
+        <!-- Questions Area (shown when agent has questions) -->
+        <div id="questions-area" class="questions-area" style="display: none;">
+          <h3>Agent Questions</h3>
+          <div id="questions-list"></div>
+          <form id="answers-form">
+            <textarea 
+              id="answers-input" 
+              rows="4" 
+              placeholder="Provide your answers here..."
+              required
+            ></textarea>
+            <button type="submit" class="btn btn-primary">
+              Submit Answers
+            </button>
+          </form>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="status-message" class="status-message"></div>
+      </div>
+    </section>
+
+    <!-- BLOCK 3: PICKUP (hidden initially) -->
+    <section id="pickup-block" class="block pickup-block" style="display: none;">
+      <div class="block-header">
+        <h2>🎉 Pickup</h2>
+        <p>Your application is ready!</p>
+      </div>
+      
+      <div class="block-content">
+        <div class="success-message">
+          <div class="success-icon">✓</div>
+          <h3>Application Successfully Created!</h3>
+          <p>Your application has been built and is ready to use.</p>
+        </div>
+
+        <div class="pickup-stats">
+          <div class="stat">
+            <span class="stat-label">Total Cost:</span>
+            <span class="stat-value" id="final-cost">$0.00</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Total Time:</span>
+            <span class="stat-value" id="final-time">0s</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Files Created:</span>
+            <span class="stat-value" id="final-files">0</span>
+          </div>
+        </div>
+
+        <div class="pickup-actions">
+          <button id="open-app-btn" class="btn btn-primary btn-large">
+            🚀 Open Application
+          </button>
+          <button id="download-btn" class="btn btn-secondary btn-large">
+            📦 Download ZIP
+          </button>
+        </div>
+
+        <div class="new-order-section">
+          <p>Want to create another application?</p>
+          <button id="new-order-btn" class="btn btn-outline">
+            Create New Order
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Dark Factory v0.1 - Powered by AI Agents</p>
+    </footer>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="spinner"></div>
+    <p id="loading-message">Processing...</p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
