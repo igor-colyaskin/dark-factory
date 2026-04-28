@@ -3,7 +3,6 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import orchestrator from './orchestrator.js';
-import agentManager from './agent-manager.js';
 import fileManager from './file-manager.js';
 import acChecker from './ac-checker.js';
 import costTracker from './cost-tracker.js';
@@ -13,6 +12,30 @@ import testerPrompts from './prompts/tester.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Determine run mode and select appropriate agent manager
+const RUN_MODE = process.env.RUN_MODE || 'production';
+console.log(`🏭 Dark Factory starting in ${RUN_MODE.toUpperCase()} mode`);
+
+let agentManager;
+let useMockWorkspace = false;
+
+if (RUN_MODE === 'mock-fast' || RUN_MODE === 'demo') {
+  const mockAgentManagerModule = await import('./mock-agent-manager.js');
+  agentManager = mockAgentManagerModule.default;
+  useMockWorkspace = true;
+  console.log('   Using pre-built mock-workspace/');
+} else if (RUN_MODE === 'mock-full') {
+  const mockAgentManagerModule = await import('./mock-agent-manager.js');
+  agentManager = mockAgentManagerModule.default;
+  useMockWorkspace = false;
+  console.log('   Using mock responses, writing to workspace/');
+} else {
+  const realAgentManagerModule = await import('./agent-manager.js');
+  agentManager = realAgentManagerModule.default;
+  useMockWorkspace = false;
+  console.log('   Using real OpenRouter API');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -178,6 +201,15 @@ app.post('/api/answers', async (req, res) => {
       message: error.message
     });
   }
+});
+
+// GET endpoint to get server info (including run mode)
+app.get('/api/info', (req, res) => {
+  res.json({
+    runMode: RUN_MODE,
+    version: '0.1.0',
+    port: PORT
+  });
 });
 
 // Serve workspace files (for viewing static files)
@@ -347,11 +379,18 @@ async function runDeveloper() {
   }
   
   // Write files to workspace
-  await fileManager.initWorkspace();
-  const writeResult = await fileManager.writeFiles(result.content.files);
-  
-  if (!writeResult.success) {
-    console.error('Some files failed to write:', writeResult.errors);
+  if (useMockWorkspace) {
+    // Copy pre-built mock-workspace
+    console.log('[MOCK-FAST] Copying pre-built mock-workspace/');
+    await fileManager.copyMockWorkspace();
+  } else {
+    // Write files from agent response
+    await fileManager.initWorkspace();
+    const writeResult = await fileManager.writeFiles(result.content.files);
+    
+    if (!writeResult.success) {
+      console.error('Some files failed to write:', writeResult.errors);
+    }
   }
   
   await orchestrator.handleAgentComplete(2, {

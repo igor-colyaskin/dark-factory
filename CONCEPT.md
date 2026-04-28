@@ -341,6 +341,53 @@ Directory structure:
   | DevFE + DevBE или один Dev? | Один Dev             | Простота для v0.1      |
   | Невалидный JSON от агента   | Retry (max 3)        | Простое решение        |
   | AC check failed             | Retry agent (max 3)  | Простое решение        |
+  | Режимы работы               | RUN_MODE (4 режима)  | Гибкость разработки    |
+
+## 8.1 Режимы работы (RUN_MODE)
+
+Dark Factory поддерживает 4 режима работы через переменную окружения `RUN_MODE`:
+
+### production (по умолчанию)
+- Реальные вызовы OpenRouter API
+- Файлы пишутся в workspace/
+- Полная функциональность
+- Время: 60-90 секунд
+- Стоимость: $0.25-1.00 за заказ
+- **Использование:** Реальная генерация приложений
+
+### mock-full
+- Mock ответы от агентов (хардкодные)
+- Файлы пишутся в workspace/
+- Тестируется File Manager и AC Checker
+- Время: ~6 секунд
+- Стоимость: $0
+- **Использование:** Отладка backend, тестирование File Manager
+
+### mock-fast
+- Mock ответы от агентов
+- Копирует готовые файлы из mock-workspace/
+- Не тестирует File Manager
+- Время: ~6 секунд
+- Стоимость: $0
+- **Использование:** Быстрая отладка UI/UX, тестирование SSE
+
+### demo
+- Mock ответы от агентов
+- Копирует готовые файлы из mock-workspace/
+- Медленные задержки (3 сек на агента) для эффекта
+- Время: ~9 секунд
+- Стоимость: $0
+- **Использование:** Презентации, демонстрации
+
+### Команды запуска
+
+```bash
+npm start              # production
+npm run mock:full      # mock-full + clean
+npm run mock:fast      # mock-fast (без clean)
+npm run demo           # demo (без clean)
+npm run fresh          # production + clean
+```
 
 ## 9. Roadmap
 

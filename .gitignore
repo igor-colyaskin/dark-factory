@@ -8,9 +8,11 @@ node_modules/
 
 # Generated target app (runtime output, not source)
 workspace/
+# Note: mock-workspace/ is committed (used for mock-fast and demo modes)
 
 # Runtime state
 state/current.json
+state/cost-tracking.json
 
 # OS
 .DS_Store

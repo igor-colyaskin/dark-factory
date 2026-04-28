@@ -38,7 +38,26 @@ const finalFiles = document.getElementById('final-files');
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   connectSSE();
+  loadRunMode();
 });
+
+// Load and display run mode
+async function loadRunMode() {
+  try {
+    const response = await fetch('/api/info');
+    const info = await response.json();
+    
+    const badge = document.getElementById('run-mode-badge');
+    const mode = info.runMode || 'production';
+    
+    badge.textContent = mode.toUpperCase();
+    badge.className = `run-mode-badge ${mode}`;
+    
+    console.log(`Running in ${mode} mode`);
+  } catch (error) {
+    console.error('Error loading run mode:', error);
+  }
+}
 
 // Setup Event Listeners
 function setupEventListeners() {

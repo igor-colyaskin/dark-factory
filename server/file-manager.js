@@ -6,10 +6,51 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const WORKSPACE_DIR = path.join(__dirname, '../workspace');
+const MOCK_WORKSPACE_DIR = path.join(__dirname, '../mock-workspace');
 
 class FileManager {
   constructor() {
     this.workspaceDir = WORKSPACE_DIR;
+    this.mockWorkspaceDir = MOCK_WORKSPACE_DIR;
+  }
+
+  /**
+   * Copy mock workspace to workspace
+   * Used in mock-fast and demo modes
+   */
+  async copyMockWorkspace() {
+    try {
+      // Ensure workspace directory exists
+      await fs.mkdir(this.workspaceDir, { recursive: true });
+      
+      // Copy all files from mock-workspace to workspace
+      await this.copyDirectory(this.mockWorkspaceDir, this.workspaceDir);
+      
+      console.log('Mock workspace copied to workspace/');
+    } catch (error) {
+      console.error('Error copying mock workspace:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Copy directory recursively
+   */
+  async copyDirectory(source, destination) {
+    const entries = await fs.readdir(source, { withFileTypes: true });
+    
+    await fs.mkdir(destination, { recursive: true });
+    
+    for (const entry of entries) {
+      const sourcePath = path.join(source, entry.name);
+      const destPath = path.join(destination, entry.name);
+      
+      if (entry.isDirectory()) {
+        await this.copyDirectory(sourcePath, destPath);
+      } else {
+        await fs.copyFile(sourcePath, destPath);
+      }
+    }
   }
 
   /**
