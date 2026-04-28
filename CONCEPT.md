@@ -169,22 +169,31 @@ Dark Factory (DF) — веб-приложение, реализующее кон
 
 Обязательный формат ответа агента (JSON):
 
+Architect response format (NO file contents):
   {
-    "thinking": "описание хода мыслей агента",
+    "thinking": "brief reasoning",
+    "files": [
+      {"path": "app.js", "description": "what this file does"}
+    ],
+    "questions": [],
+    "summary": "what was decided",
+    "next_steps": ["recommendations"]
+  }
+
+Developer response format (WITH file contents):
+  {
+    "thinking": "brief reasoning",
     "files": [
       {
-        "path": "relative/path/to/file.js",
-        "content": "... полное содержимое файла ...",
+        "path": "app.js",
+        "content": "full file content",
         "action": "create"
       }
     ],
-    "questions": [
-      "Уточняющий вопрос к owner, если есть"
-    ],
-    "summary": "Что было сделано",
-    "next_steps": ["Рекомендации для следующего шага"]
+    "questions": [],
+    "summary": "what was done"
   }
-
+  
 Поле "questions": если массив не пустой, оркестратор переходит
 в состояние CLARIFYING и показывает вопросы owner.
 
@@ -355,6 +364,9 @@ Directory structure:
   [ ] Запуск целевого приложения в изолированном контейнере (Dev Containers / Docker)
   [ ] Tester пишет автотесты ПОСЛЕ кода (test-after)
   [ ] Цикл Dev <-> Tester при падении тестов (max 3 итерации)
+  [ ] Поле загрузки изображения (mockup/wireframe) в блоке Order
+  [ ] Отправка изображения vision-модели для описания UI
+  [ ] Передача описания UI в контекст Architect
 
 ### v0.3+ — перспектива
   [ ] SM как AI-агент

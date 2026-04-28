@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 // Agent configurations
 const AGENTS = {
   architect: {
@@ -14,7 +12,7 @@ const AGENTS = {
   },
   tester: {
     name: 'Tester',
-    model: 'google/gemini-2.0-flash-exp:free',
+    model: 'google/gemini-2.5-flash',
     role: 'Code review and testing'
   }
 };
@@ -23,7 +21,7 @@ class AgentManager {
   constructor() {
     this.apiKey = process.env.OPENROUTER_API_KEY;
     this.apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-    
+
     if (!this.apiKey) {
       console.warn('WARNING: OPENROUTER_API_KEY not set in environment variables');
     }
@@ -72,7 +70,8 @@ class AgentManager {
             }
           ],
           temperature: options.temperature || 0.7,
-          max_tokens: options.max_tokens || 4000,
+          max_tokens: options.max_tokens || 8192,
+          stream: false,
           ...options
         })
       });
@@ -83,6 +82,16 @@ class AgentManager {
       }
 
       const data = await response.json();
+
+      // Diagnostic logging
+      const finishReason = data.choices?.[0]?.finish_reason;
+      const contentLength = data.choices?.[0]?.message?.content?.length;
+      console.log(`Finish reason: ${finishReason}, Content length: ${contentLength}`);
+
+      if (finishReason === 'length') {
+        throw new Error('Response truncated: max_tokens too low. Increase max_tokens.');
+      }
+
       const endTime = Date.now();
       const elapsedTime = Math.round((endTime - startTime) / 1000); // seconds
 
@@ -135,7 +144,7 @@ class AgentManager {
   parseAgentResponse(content) {
     // Try to extract JSON from markdown code blocks
     const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
-    const jsonContent = jsonMatch ? jsonMatch[1] : content;
+    let jsonContent = jsonMatch ? jsonMatch[1] : content;
 
     try {
       const parsed = JSON.parse(jsonContent.trim());
@@ -153,11 +162,33 @@ class AgentManager {
       }
 
       return parsed;
-    } catch (error) {
-      console.error('Failed to parse agent response as JSON:', error.message);
-      console.error('Content:', jsonContent.substring(0, 500));
-      
-      throw new Error(`Invalid JSON response from agent: ${error.message}`);
+    } catch (firstError) {
+      // Fix unescaped newlines inside JSON string values
+      try {
+        const fixed = jsonContent.replace(
+          /"([^"\\]|\\.)*(?:\n)([^"\\]|\\.)*"/g,
+          (match) => match.replace(/\n/g, '\\n')
+        );
+        const parsed = JSON.parse(fixed.trim());
+        
+        // Validate required fields
+        if (!parsed.thinking) {
+          console.warn('Warning: Agent response missing "thinking" field');
+        }
+        if (!parsed.files) {
+          console.warn('Warning: Agent response missing "files" field');
+          parsed.files = [];
+        }
+        if (!parsed.summary) {
+          console.warn('Warning: Agent response missing "summary" field');
+        }
+
+        return parsed;
+      } catch (secondError) {
+        console.error('Failed to parse even after fix:', secondError.message);
+        console.error('Content:', jsonContent.substring(0, 500));
+        throw new Error(`Invalid JSON response from agent: ${firstError.message}`);
+      }
     }
   }
 
