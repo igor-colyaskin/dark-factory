@@ -1,15 +1,15 @@
 {
-  "totalCost": 0,
+  "totalCost": 0.65,
   "totalTime": 3,
   "entries": [
     {
-      "id": "1777363955474",
-      "timestamp": "2026-04-28T08:12:35.474Z",
+      "id": "1777367695103",
+      "timestamp": "2026-04-28T09:14:55.103Z",
       "usId": 1,
       "usName": "Architecture",
       "agent": "architect",
       "model": "mock-architect",
-      "cost": 0,
+      "cost": 0.25,
       "time": 1,
       "tokens": {
         "prompt": 0,
@@ -20,13 +20,13 @@
       "error": null
     },
     {
-      "id": "1777363959578",
-      "timestamp": "2026-04-28T08:12:39.578Z",
+      "id": "1777367697839",
+      "timestamp": "2026-04-28T09:14:57.839Z",
       "usId": 2,
       "usName": "Development",
       "agent": "developer",
       "model": "mock-developer",
-      "cost": 0,
+      "cost": 0.35,
       "time": 1,
       "tokens": {
         "prompt": 0,
@@ -37,13 +37,13 @@
       "error": null
     },
     {
-      "id": "1777363962879",
-      "timestamp": "2026-04-28T08:12:42.879Z",
+      "id": "1777367700826",
+      "timestamp": "2026-04-28T09:15:00.826Z",
       "usId": 3,
       "usName": "Testing",
       "agent": "tester",
       "model": "mock-tester",
-      "cost": 0,
+      "cost": 0.05,
       "time": 1,
       "tokens": {
         "prompt": 0,
@@ -54,5 +54,5 @@
       "error": null
     }
   ],
-  "savedAt": "2026-04-28T08:12:42.879Z"
+  "savedAt": "2026-04-28T09:15:00.826Z"
 }

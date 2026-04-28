@@ -434,14 +434,14 @@ function showPickupBlock(state) {
   finalCost.textContent = `$${state.totalCost.toFixed(2)}`;
   finalTime.textContent = formatTime(state.totalTime);
   
-  // Count files from all user stories
+  // Count files from agent outputs
   let fileCount = 0;
-  if (state.userStories) {
-    state.userStories.forEach(us => {
-      if (us.files) {
-        fileCount += us.files.length;
-      }
-    });
+  if (state.agentOutputs) {
+    // Developer creates the files
+    const developerOutput = state.agentOutputs[2];
+    if (developerOutput && developerOutput.files) {
+      fileCount = developerOutput.files.length;
+    }
   }
   finalFiles.textContent = fileCount;
 }

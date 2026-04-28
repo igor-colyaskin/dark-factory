@@ -289,14 +289,23 @@ class MockAgentManager {
 
     const time = Math.floor(delay / 1000);
 
-    console.log(`[MOCK] ${agentType} completed in ${time}s`);
+    // Mock costs for display purposes
+    const mockCosts = {
+      architect: 0.25,
+      developer: 0.35,
+      tester: 0.05
+    };
+
+    const cost = mockCosts[agentType] || 0;
+
+    console.log(`[MOCK] ${agentType} completed in ${time}s, cost: $${cost.toFixed(2)}`);
 
     return {
       success: true,
       agent: agentType,
       content: mockResponse,
       rawContent: JSON.stringify(mockResponse, null, 2),
-      cost: 0,
+      cost: cost,
       time: time,
       usage: {
         prompt_tokens: 1000,
