@@ -286,37 +286,38 @@ DF v0.1 создаёт ТОЛЬКО простые приложения:
 
 ## 7. Структура проекта
 
-  dark-factory/
-  |-- CONCEPT.md                    <- ЭТОТ ФАЙЛ
-  |-- README.md
-  |-- package.json
-  |
-  |-- server/
-  |   |-- index.js                  Express server + SSE endpoint
-  |   |-- orchestrator.js           State machine
-  |   |-- agent-manager.js          API calls to OpenRouter
-  |   |-- ac-checker.js             Acceptance criteria scripts
-  |   |-- file-manager.js           Write generated files to disk
-  |   |-- cost-tracker.js           Track API costs and time
-  |   |-- prompts/
-  |       |-- architect.js          Arc system + user prompt templates
-  |       |-- developer.js          Dev system + user prompt templates
-  |       |-- tester.js             Tst system + user prompt templates
-  |
-  |-- client/
-  |   |-- index.html                Single page
-  |   |-- styles.css                Fast-food themed UI
-  |   |-- app.js                    Frontend logic + SSE listener
-  |
-  |-- workspace/                    Target app generated here
-  |   |-- (created dynamically)
-  |
-  |-- state/
-  |   |-- current.json              Current pipeline state
-  |
-  |-- docs/
-      |-- presentation/
-          |-- screenshots/
+Directory structure:
+└── dark-factory/
+    ├── BOOTSTRAP.md
+    ├── client/
+    │   ├── app.js
+    │   ├── index.html
+    │   └── styles.css
+    ├── CONCEPT.md
+    ├── docs/
+    │   ├── architecture.md
+    │   └── presentation/
+    │       └── screenshots/
+    ├── package-lock.json
+    ├── package.json
+    ├── README.md
+    ├── server/
+    │   ├── ac-checker.js
+    │   ├── agent-manager.js
+    │   ├── cost-tracker.js
+    │   ├── file-manager.js
+    │   ├── index.js
+    │   ├── orchestrator.js
+    │   └── prompts/
+    │       ├── architect.js
+    │       ├── developer.js
+    │       └── tester.js
+    ├── state/
+    ├── test/
+    │   └── orchestrator.test.js
+    ├── test-api.js
+    ├── TRACKER.md
+    └── workspace/
 
 ## 8. Технологические решения
 

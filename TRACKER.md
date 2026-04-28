@@ -41,7 +41,7 @@
   [ ] 1.9  Сделать первый коммит: "Initial setup"
 
 
-  ФАЗА 2: BACKEND — ЯДРО
+  ФАЗА 2: BACKEND — ЯДРО ✅: выполнено
   =======================
 
   [ ] 2.1  server/index.js — Express сервер, базовый каркас, SSE endpoint
