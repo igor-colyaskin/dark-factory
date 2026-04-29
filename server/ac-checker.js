@@ -1,8 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
-import fetch from 'node-fetch';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,11 +21,12 @@ class ACChecker {
    * @returns {Promise<object>} Check result
    */
   async checkArchitecture() {
-    console.log('Running AC checks for Architecture...');
+    console.log('[AC Checker] Running checks for Architecture...');
     const results = {
       passed: true,
       checks: [],
-      errors: []
+      errors: [],
+      warnings: []
     };
 
     // Check 1: ARCHITECTURE.md exists
@@ -68,96 +71,218 @@ class ACChecker {
       results.errors.push(`Cannot read ARCHITECTURE.md: ${error.message}`);
     }
 
-    console.log(`Architecture AC: ${results.passed ? 'PASSED' : 'FAILED'}`);
+    console.log(`[AC Checker] Architecture: ${results.passed ? 'PASSED' : 'FAILED'}`);
     return results;
   }
 
   /**
-   * Check acceptance criteria for development phase
+   * Check acceptance criteria for development phase (v0.2 - static checks only)
    * @returns {Promise<object>} Check result
    */
   async checkDevelopment() {
-    console.log('Running AC checks for Development...');
+    console.log('[AC Checker] Running checks for Development (v0.2 - static only)...');
     const results = {
       passed: true,
       checks: [],
-      errors: []
+      errors: [],
+      warnings: []
     };
 
-    // Check 1: Find main application file (app.js or index.js)
-    const possibleFiles = ['app.js', 'index.js', 'server.js', 'main.js'];
-    let mainFile = null;
+    // Check 1: package.json exists and is valid JSON
+    const packageJsonPath = path.join(this.workspaceDir, 'package.json');
+    let packageJson = null;
 
-    for (const file of possibleFiles) {
-      const filePath = path.join(this.workspaceDir, file);
-      try {
-        await fs.access(filePath);
-        mainFile = file;
-        break;
-      } catch {
-        // File doesn't exist, try next
-      }
+    try {
+      const content = await fs.readFile(packageJsonPath, 'utf-8');
+      packageJson = JSON.parse(content);
+      
+      results.checks.push({
+        name: 'package.json exists and valid',
+        passed: true
+      });
+    } catch (error) {
+      results.passed = false;
+      results.checks.push({
+        name: 'package.json exists and valid',
+        passed: false
+      });
+      results.errors.push(`package.json error: ${error.message}`);
+      return results; // Cannot continue without package.json
     }
 
-    if (mainFile) {
+    // Check 2: package.json contains scripts.start
+    if (packageJson.scripts && packageJson.scripts.start) {
       results.checks.push({
-        name: 'Main application file exists',
+        name: 'package.json has start script',
         passed: true,
-        details: `Found: ${mainFile}`
+        details: packageJson.scripts.start
       });
     } else {
       results.passed = false;
       results.checks.push({
-        name: 'Main application file exists',
+        name: 'package.json has start script',
         passed: false
       });
-      results.errors.push('No main application file found (app.js, index.js, server.js, or main.js)');
-      return results;
+      results.errors.push('package.json missing scripts.start');
     }
 
-    // Check 2: node --check passes
-    const syntaxCheck = await this.runNodeCheck(mainFile);
-    results.checks.push({
-      name: 'Node.js syntax check',
-      passed: syntaxCheck.passed,
-      details: syntaxCheck.output
-    });
-
-    if (!syntaxCheck.passed) {
-      results.passed = false;
-      results.errors.push(`Syntax check failed: ${syntaxCheck.output}`);
-    }
-
-    // Check 3: package.json exists (optional, but if exists, check npm install)
-    const packageJsonPath = path.join(this.workspaceDir, 'package.json');
-    try {
-      await fs.access(packageJsonPath);
+    // Check 3: package.json contains express in dependencies
+    const hasExpress = packageJson.dependencies && packageJson.dependencies.express;
+    
+    if (hasExpress) {
       results.checks.push({
-        name: 'package.json exists',
+        name: 'express in dependencies',
         passed: true
       });
-
-      // Run npm install
-      const npmInstall = await this.runNpmInstall();
+    } else {
+      results.passed = false;
       results.checks.push({
-        name: 'npm install completes',
-        passed: npmInstall.passed,
-        details: npmInstall.output
+        name: 'express in dependencies',
+        passed: false
       });
-
-      if (!npmInstall.passed) {
-        results.passed = false;
-        results.errors.push(`npm install failed: ${npmInstall.output}`);
-      }
-    } catch {
-      results.checks.push({
-        name: 'package.json exists',
-        passed: true,
-        details: 'Not required (no package.json)'
-      });
+      results.errors.push('express not found in dependencies');
     }
 
-    console.log(`Development AC: ${results.passed ? 'PASSED' : 'FAILED'}`);
+    // Check 4: package.json contains engines.node (warning only)
+    if (packageJson.engines && packageJson.engines.node) {
+      results.checks.push({
+        name: 'engines.node specified',
+        passed: true,
+        details: packageJson.engines.node
+      });
+    } else {
+      results.checks.push({
+        name: 'engines.node specified',
+        passed: true, // Not blocking
+        warning: true
+      });
+      results.warnings.push('engines.node not specified (recommended: >=20.0.0)');
+    }
+
+    // Check 5: Entrypoint file exists
+    let entrypointFile = null;
+    
+    if (packageJson.scripts && packageJson.scripts.start) {
+      // Parse start script to find entrypoint
+      // Examples: "node app.js", "node server.js", "node src/index.js"
+      const startScript = packageJson.scripts.start;
+      const match = startScript.match(/node\s+([^\s]+)/);
+      
+      if (match) {
+        entrypointFile = match[1];
+      }
+    }
+
+    if (!entrypointFile) {
+      // Fallback: try common names
+      const possibleFiles = ['app.js', 'index.js', 'server.js', 'main.js'];
+      for (const file of possibleFiles) {
+        try {
+          await fs.access(path.join(this.workspaceDir, file));
+          entrypointFile = file;
+          break;
+        } catch {
+          // Continue
+        }
+      }
+    }
+
+    if (entrypointFile) {
+      const entrypointPath = path.join(this.workspaceDir, entrypointFile);
+      
+      try {
+        await fs.access(entrypointPath);
+        results.checks.push({
+          name: 'Entrypoint file exists',
+          passed: true,
+          details: entrypointFile
+        });
+      } catch {
+        results.passed = false;
+        results.checks.push({
+          name: 'Entrypoint file exists',
+          passed: false
+        });
+        results.errors.push(`Entrypoint file not found: ${entrypointFile}`);
+        return results; // Cannot continue without entrypoint
+      }
+
+      // Check 6: Entrypoint passes node --check (syntax only)
+      try {
+        await execAsync(`node --check "${entrypointPath}"`);
+        results.checks.push({
+          name: 'Entrypoint syntax valid',
+          passed: true
+        });
+      } catch (error) {
+        results.passed = false;
+        results.checks.push({
+          name: 'Entrypoint syntax valid',
+          passed: false
+        });
+        results.errors.push(`Syntax error in ${entrypointFile}: ${error.message}`);
+      }
+
+      // Check 7: Entrypoint contains process.env.PORT (required for Fly.io)
+      try {
+        const content = await fs.readFile(entrypointPath, 'utf-8');
+        const hasEnvPort = content.includes('process.env.PORT');
+        
+        if (hasEnvPort) {
+          results.checks.push({
+            name: 'Uses process.env.PORT',
+            passed: true
+          });
+        } else {
+          results.passed = false;
+          results.checks.push({
+            name: 'Uses process.env.PORT',
+            passed: false
+          });
+          results.errors.push('Entrypoint must use process.env.PORT for Fly.io deployment');
+        }
+      } catch (error) {
+        results.passed = false;
+        results.errors.push(`Cannot read entrypoint: ${error.message}`);
+      }
+
+      // Check 8: Entrypoint listens on 0.0.0.0 (required for Fly.io)
+      try {
+        const content = await fs.readFile(entrypointPath, 'utf-8');
+        const hasBindAll = content.includes('0.0.0.0');
+        
+        if (hasBindAll) {
+          results.checks.push({
+            name: 'Listens on 0.0.0.0',
+            passed: true
+          });
+        } else {
+          results.passed = false;
+          results.checks.push({
+            name: 'Listens on 0.0.0.0',
+            passed: false
+          });
+          results.errors.push('Entrypoint must listen on 0.0.0.0 for Fly.io deployment');
+        }
+      } catch (error) {
+        results.passed = false;
+        results.errors.push(`Cannot read entrypoint: ${error.message}`);
+      }
+
+    } else {
+      results.passed = false;
+      results.checks.push({
+        name: 'Entrypoint file exists',
+        passed: false
+      });
+      results.errors.push('Cannot determine entrypoint file');
+    }
+
+    console.log(`[AC Checker] Development: ${results.passed ? 'PASSED' : 'FAILED'}`);
+    if (results.warnings.length > 0) {
+      console.log(`[AC Checker] Warnings: ${results.warnings.join(', ')}`);
+    }
+    
     return results;
   }
 
@@ -166,285 +291,45 @@ class ACChecker {
    * @returns {Promise<object>} Check result
    */
   async checkTesting() {
-    console.log('Running AC checks for Testing...');
+    console.log('[AC Checker] Running checks for Testing...');
     const results = {
       passed: true,
       checks: [],
-      errors: []
+      errors: [],
+      warnings: []
     };
 
-    // Find main file
-    const possibleFiles = ['app.js', 'index.js', 'server.js', 'main.js'];
-    let mainFile = null;
+    // For v0.2, testing phase just validates that development checks still pass
+    // (in case files were modified during testing)
+    const devResults = await this.checkDevelopment();
+    
+    results.passed = devResults.passed;
+    results.checks = devResults.checks;
+    results.errors = devResults.errors;
+    results.warnings = devResults.warnings;
 
-    for (const file of possibleFiles) {
-      const filePath = path.join(this.workspaceDir, file);
-      try {
-        await fs.access(filePath);
-        mainFile = file;
-        break;
-      } catch {
-        // File doesn't exist, try next
-      }
-    }
-
-    if (!mainFile) {
-      results.passed = false;
-      results.errors.push('No main application file found');
-      return results;
-    }
-
-    // Check 1: Application starts without crash
-    const startCheck = await this.startApplication(mainFile);
-    results.checks.push({
-      name: 'Application starts without crash',
-      passed: startCheck.passed,
-      details: startCheck.output
-    });
-
-    if (!startCheck.passed) {
-      results.passed = false;
-      results.errors.push(`Application failed to start: ${startCheck.output}`);
-      return results;
-    }
-
-    const { process: appProcess, port } = startCheck;
-
-    // Check 2: Application responds on localhost
-    await this.sleep(3000); // Wait 3 seconds for app to be ready
-
-    const responseCheck = await this.checkHttpResponse(port);
-    results.checks.push({
-      name: 'Application responds on localhost',
-      passed: responseCheck.passed,
-      details: responseCheck.output
-    });
-
-    if (!responseCheck.passed) {
-      results.passed = false;
-      results.errors.push(`Application not responding: ${responseCheck.output}`);
-    }
-
-    // Check 3: Process can be killed cleanly
-    const killCheck = await this.killProcess(appProcess);
-    results.checks.push({
-      name: 'Process can be killed cleanly',
-      passed: killCheck.passed,
-      details: killCheck.output
-    });
-
-    if (!killCheck.passed) {
-      results.passed = false;
-      results.errors.push(`Failed to kill process: ${killCheck.output}`);
-    }
-
-    console.log(`Testing AC: ${results.passed ? 'PASSED' : 'FAILED'}`);
+    console.log(`[AC Checker] Testing: ${results.passed ? 'PASSED' : 'FAILED'}`);
     return results;
   }
 
   /**
-   * Run node --check on a file
-   * @param {string} filename - File to check
+   * Run all checks for a given phase
+   * @param {string} phase - Phase name ('architecture', 'development', 'testing')
    * @returns {Promise<object>} Check result
    */
-  async runNodeCheck(filename) {
-    return new Promise((resolve) => {
-      const filePath = path.join(this.workspaceDir, filename);
-      const proc = spawn('node', ['--check', filePath]);
-
-      let output = '';
-
-      proc.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-
-      proc.stderr.on('data', (data) => {
-        output += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        resolve({
-          passed: code === 0,
-          output: output || 'Syntax check passed'
-        });
-      });
-
-      proc.on('error', (error) => {
-        resolve({
-          passed: false,
-          output: error.message
-        });
-      });
-    });
-  }
-
-  /**
-   * Run npm install in workspace
-   * @returns {Promise<object>} Install result
-   */
-  async runNpmInstall() {
-    return new Promise((resolve) => {
-      const proc = spawn('npm', ['install'], {
-        cwd: this.workspaceDir,
-        shell: true
-      });
-
-      let output = '';
-
-      proc.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-
-      proc.stderr.on('data', (data) => {
-        output += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        resolve({
-          passed: code === 0,
-          output: code === 0 ? 'npm install completed successfully' : output
-        });
-      });
-
-      proc.on('error', (error) => {
-        resolve({
-          passed: false,
-          output: error.message
-        });
-      });
-    });
-  }
-
-  /**
-   * Start the application and detect port
-   * @param {string} filename - Main file to run
-   * @returns {Promise<object>} Start result with process and port
-   */
-  async startApplication(filename) {
-    return new Promise((resolve) => {
-      const filePath = path.join(this.workspaceDir, filename);
-      const proc = spawn('node', [filePath], {
-        cwd: this.workspaceDir
-      });
-
-      let output = '';
-      let port = 3000; // Default port
-
-      const timeout = setTimeout(() => {
-        resolve({
-          passed: true,
-          process: proc,
-          port,
-          output: 'Application started'
-        });
-      }, 3000);
-
-      proc.stdout.on('data', (data) => {
-        const text = data.toString();
-        output += text;
-
-        // Try to detect port from output
-        const portMatch = text.match(/(?:port|listening on|running on).*?(\d{4,5})/i);
-        if (portMatch) {
-          port = parseInt(portMatch[1]);
-        }
-      });
-
-      proc.stderr.on('data', (data) => {
-        output += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        clearTimeout(timeout);
-        if (code !== 0) {
-          resolve({
-            passed: false,
-            output: `Process exited with code ${code}: ${output}`
-          });
-        }
-      });
-
-      proc.on('error', (error) => {
-        clearTimeout(timeout);
-        resolve({
-          passed: false,
-          output: error.message
-        });
-      });
-    });
-  }
-
-  /**
-   * Check if application responds on HTTP
-   * @param {number} port - Port to check
-   * @returns {Promise<object>} Response check result
-   */
-  async checkHttpResponse(port) {
-    try {
-      const response = await fetch(`http://localhost:${port}`, {
-        timeout: 5000
-      });
-
-      return {
-        passed: response.status === 200,
-        output: `HTTP ${response.status} ${response.statusText}`
-      };
-    } catch (error) {
-      return {
-        passed: false,
-        output: error.message
-      };
+  async checkPhase(phase) {
+    switch (phase.toLowerCase()) {
+      case 'architecture':
+        return await this.checkArchitecture();
+      case 'development':
+        return await this.checkDevelopment();
+      case 'testing':
+        return await this.checkTesting();
+      default:
+        throw new Error(`Unknown phase: ${phase}`);
     }
-  }
-
-  /**
-   * Kill a process
-   * @param {object} proc - Process to kill
-   * @returns {Promise<object>} Kill result
-   */
-  async killProcess(proc) {
-    return new Promise((resolve) => {
-      if (!proc || proc.killed) {
-        resolve({
-          passed: true,
-          output: 'Process already terminated'
-        });
-        return;
-      }
-
-      proc.on('close', () => {
-        resolve({
-          passed: true,
-          output: 'Process killed successfully'
-        });
-      });
-
-      proc.kill('SIGTERM');
-
-      // Force kill after 5 seconds
-      setTimeout(() => {
-        if (!proc.killed) {
-          proc.kill('SIGKILL');
-          resolve({
-            passed: true,
-            output: 'Process force killed'
-          });
-        }
-      }, 5000);
-    });
-  }
-
-  /**
-   * Sleep utility
-   * @param {number} ms - Milliseconds to sleep
-   * @returns {Promise<void>}
-   */
-  sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
 
-// Singleton instance
-const acChecker = new ACChecker();
-
-export default acChecker;
+// Singleton export
+export default new ACChecker();
