@@ -94,6 +94,17 @@ class Orchestrator {
     });
   }
 
+  // Broadcast custom event to listeners
+  broadcastEvent(eventData) {
+    this.listeners.forEach(listener => {
+      try {
+        listener(eventData);
+      } catch (error) {
+        console.error('Error broadcasting event:', error);
+      }
+    });
+  }
+
   // Get current state snapshot
   getState() {
     return {
@@ -401,6 +412,8 @@ class Orchestrator {
       const deployPromise = (async () => {
         // Step 1: Create app
         console.log('[ORCHESTRATOR] Step 1: Creating Fly app');
+        this.broadcastEvent({ type: 'deploy_progress', step: 'creating_app', message: 'Creating Fly.io app...' });
+        
         const createResult = await flyManager.createApp(appName);
         
         if (!createResult.success) {
@@ -412,6 +425,8 @@ class Orchestrator {
         
         // Step 2: Prepare workspace
         console.log('[ORCHESTRATOR] Step 2: Preparing workspace');
+        this.broadcastEvent({ type: 'deploy_progress', step: 'preparing_workspace', message: 'Preparing deployment files...' });
+        
         const prepareResult = await flyManager.prepareWorkspace(WORKSPACE_PATH, appName);
         
         if (!prepareResult.success) {
@@ -420,6 +435,8 @@ class Orchestrator {
         
         // Step 3: Deploy
         console.log('[ORCHESTRATOR] Step 3: Deploying to Fly.io');
+        this.broadcastEvent({ type: 'deploy_progress', step: 'building_image', message: 'Building and deploying image...' });
+        
         const deployResult = await flyManager.deploy(WORKSPACE_PATH, appName);
         
         if (!deployResult.success) {
@@ -428,6 +445,8 @@ class Orchestrator {
         
         // Step 4: Wait for healthy
         console.log('[ORCHESTRATOR] Step 4: Waiting for app to become healthy');
+        this.broadcastEvent({ type: 'deploy_progress', step: 'waiting_healthy', message: 'Waiting for app to start...' });
+        
         const healthResult = await flyManager.waitForHealthy(appName, 60000);
         
         if (!healthResult.success) {

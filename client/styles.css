@@ -400,6 +400,54 @@ body {
   color: var(--primary-color);
 }
 
+/* Public URL Section (v0.2) */
+.public-url-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 25px;
+  border-radius: 12px;
+  margin: 25px 0;
+  text-align: center;
+}
+
+.public-url-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 1.3rem;
+}
+
+.public-url-section p {
+  margin: 5px 0;
+  opacity: 0.9;
+}
+
+.url-box {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+  backdrop-filter: blur(10px);
+}
+
+.url-box a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  word-break: break-all;
+  transition: opacity 0.3s ease;
+}
+
+.url-box a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.url-note {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 10px;
+}
+
 .pickup-actions {
   display: flex;
   gap: 15px;

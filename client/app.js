@@ -120,6 +120,10 @@ function handleSSEMessage(data) {
       updateUI(data.state);
       break;
       
+    case 'deploy_progress':
+      handleDeployProgress(data);
+      break;
+      
     case 'error':
       showStatus(data.message, 'error');
       hideLoading();
@@ -127,6 +131,22 @@ function handleSSEMessage(data) {
       
     default:
       console.log('Unknown message type:', data.type);
+  }
+}
+
+// Handle deployment progress updates
+function handleDeployProgress(data) {
+  console.log('Deploy progress:', data.step, data.message);
+  
+  // Update loading message
+  if (data.message) {
+    showLoading(data.message);
+  }
+  
+  // Update deploy status in UI if needed
+  const deployStatus = document.getElementById('deploy-status');
+  if (deployStatus) {
+    deployStatus.textContent = data.message || 'Deploying...';
   }
 }
 
@@ -360,6 +380,10 @@ function updateUI(state) {
       showLoading('Preparing your application...');
       break;
       
+    case 'DEPLOYING':
+      showLoading('Deploying to cloud...');
+      break;
+      
     case 'DONE':
       hideLoading();
       showPickupBlock(state);
@@ -444,6 +468,20 @@ function showPickupBlock(state) {
     }
   }
   finalFiles.textContent = fileCount;
+  
+  // Show public URL if available (v0.2)
+  if (state.publicUrl) {
+    const publicUrlElement = document.getElementById('public-url');
+    const publicUrlLink = document.getElementById('public-url-link');
+    
+    if (publicUrlElement && publicUrlLink) {
+      publicUrlElement.style.display = 'block';
+      publicUrlLink.href = state.publicUrl;
+      publicUrlLink.textContent = state.publicUrl;
+      
+      showStatus(`🎉 Your app is live at ${state.publicUrl}`, 'success');
+    }
+  }
 }
 
 // Show Status Message
