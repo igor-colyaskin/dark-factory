@@ -1,5 +1,5 @@
 # Dockerfile for Dark Factory generated apps
-FROM node:{{NODE_VERSION}}-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 

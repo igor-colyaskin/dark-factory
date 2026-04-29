@@ -4,6 +4,7 @@ import { readFile, copyFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 
 const execAsync = promisify(exec);
+const FLY_CMD = process.env.FLY_CMD || 'fly';
 
 class FlyManager {
   constructor() {
@@ -80,7 +81,7 @@ class FlyManager {
     try {
       console.log(`[FlyManager] Creating app: ${appName}`);
       
-      const cmd = `flyctl apps create ${appName} --org ${this.orgSlug}`;
+      const cmd = `${FLY_CMD} apps create ${appName} --org ${this.orgSlug}`;
       const env = { ...process.env, FLY_API_TOKEN: this.apiToken };
 
       await execAsync(cmd, { env });
@@ -146,7 +147,7 @@ class FlyManager {
       const startTime = Date.now();
 
       await this.executeWithRetry(async () => {
-        const cmd = `flyctl deploy --app ${appName}`;
+        const cmd = `${FLY_CMD} deploy --app ${appName}`;
         const env = { ...process.env, FLY_API_TOKEN: this.apiToken };
 
         await execAsync(cmd, {
@@ -182,7 +183,7 @@ class FlyManager {
 
       while (Date.now() - startTime < timeoutMs) {
         try {
-          const cmd = `flyctl status --app ${appName} --json`;
+          const cmd = `${FLY_CMD} status --app ${appName} --json`;
           const { stdout } = await execAsync(cmd, { env });
           
           const status = JSON.parse(stdout);
@@ -232,7 +233,7 @@ class FlyManager {
     try {
       console.log(`[FlyManager] Destroying app: ${appName}`);
       
-      const cmd = `flyctl apps destroy ${appName} --yes`;
+      const cmd = `${FLY_CMD} apps destroy ${appName} --yes`;
       const env = { ...process.env, FLY_API_TOKEN: this.apiToken };
 
       await execAsync(cmd, { env });
