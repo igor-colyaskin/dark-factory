@@ -64,11 +64,13 @@ class Orchestrator {
     this.maxRetries = 3;
     this.deployRetryCount = 0;
     this.maxDeployRetries = 2;
+    this.deployTimeout = 300000; // 5 minutes
     this.questions = [];
     this.answers = [];
     this.agentOutputs = {};
     this.publicUrl = null;
     this.appName = null;
+    this.error = null;
     this.listeners = [];
   }
 
@@ -105,6 +107,7 @@ class Orchestrator {
       agentOutputs: this.agentOutputs,
       publicUrl: this.publicUrl,
       appName: this.appName,
+      error: this.error,
       totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
       totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0)
     };
@@ -347,7 +350,35 @@ class Orchestrator {
     return this.getState();
   }
 
-  // Execute deployment to Fly.io
+  // Check if error should trigger retry
+  shouldRetryDeploy(errorMessage) {
+    const lowerError = errorMessage.toLowerCase();
+    
+    // Non-retryable errors (configuration issues)
+    const nonRetryablePatterns = [
+      'organization not found',
+      'invalid api token',
+      'authentication failed',
+      'permission denied'
+    ];
+    
+    if (nonRetryablePatterns.some(pattern => lowerError.includes(pattern))) {
+      return false;
+    }
+    
+    // Retryable errors (transient issues)
+    const retryablePatterns = [
+      'unable to pull image',
+      'timeout',
+      'network error',
+      'connection refused',
+      'temporary failure'
+    ];
+    
+    return retryablePatterns.some(pattern => lowerError.includes(pattern));
+  }
+
+  // Execute deployment to Fly.io with timeout
   async executeDeploy() {
     console.log('[ORCHESTRATOR] Starting deployment to Fly.io');
     
@@ -356,51 +387,74 @@ class Orchestrator {
     console.log(`[ORCHESTRATOR] Generated app name: ${appName}`);
     
     let appCreated = false;
+    let timeoutId;
     
     try {
-      // Step 1: Create app
-      console.log('[ORCHESTRATOR] Step 1: Creating Fly app');
-      const createResult = await flyManager.createApp(appName);
+      // Create timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`Deployment timeout exceeded (${this.deployTimeout / 1000}s)`));
+        }, this.deployTimeout);
+      });
       
-      if (!createResult.success) {
-        throw new Error(`Failed to create app: ${createResult.error}`);
-      }
+      // Create deployment promise
+      const deployPromise = (async () => {
+        // Step 1: Create app
+        console.log('[ORCHESTRATOR] Step 1: Creating Fly app');
+        const createResult = await flyManager.createApp(appName);
+        
+        if (!createResult.success) {
+          throw new Error(`Failed to create app: ${createResult.error}`);
+        }
+        
+        appCreated = true;
+        this.appName = appName;
+        
+        // Step 2: Prepare workspace
+        console.log('[ORCHESTRATOR] Step 2: Preparing workspace');
+        const prepareResult = await flyManager.prepareWorkspace(WORKSPACE_PATH, appName);
+        
+        if (!prepareResult.success) {
+          throw new Error(`Failed to prepare workspace: ${prepareResult.error}`);
+        }
+        
+        // Step 3: Deploy
+        console.log('[ORCHESTRATOR] Step 3: Deploying to Fly.io');
+        const deployResult = await flyManager.deploy(WORKSPACE_PATH, appName);
+        
+        if (!deployResult.success) {
+          throw new Error(`Failed to deploy: ${deployResult.error}`);
+        }
+        
+        // Step 4: Wait for healthy
+        console.log('[ORCHESTRATOR] Step 4: Waiting for app to become healthy');
+        const healthResult = await flyManager.waitForHealthy(appName, 60000);
+        
+        if (!healthResult.success) {
+          throw new Error(`App did not become healthy: ${healthResult.error}`);
+        }
+        
+        return true;
+      })();
       
-      appCreated = true;
-      this.appName = appName;
+      // Race between deployment and timeout
+      await Promise.race([deployPromise, timeoutPromise]);
       
-      // Step 2: Prepare workspace
-      console.log('[ORCHESTRATOR] Step 2: Preparing workspace');
-      const prepareResult = await flyManager.prepareWorkspace(WORKSPACE_PATH, appName);
-      
-      if (!prepareResult.success) {
-        throw new Error(`Failed to prepare workspace: ${prepareResult.error}`);
-      }
-      
-      // Step 3: Deploy
-      console.log('[ORCHESTRATOR] Step 3: Deploying to Fly.io');
-      const deployResult = await flyManager.deploy(WORKSPACE_PATH, appName);
-      
-      if (!deployResult.success) {
-        throw new Error(`Failed to deploy: ${deployResult.error}`);
-      }
-      
-      // Step 4: Wait for healthy
-      console.log('[ORCHESTRATOR] Step 4: Waiting for app to become healthy');
-      const healthResult = await flyManager.waitForHealthy(appName, 60000);
-      
-      if (!healthResult.success) {
-        throw new Error(`App did not become healthy: ${healthResult.error}`);
-      }
+      // Clear timeout on success
+      clearTimeout(timeoutId);
       
       // Success!
       this.publicUrl = flyManager.getAppUrl(appName);
       this.deployRetryCount = 0;
+      this.error = null;
       
       console.log(`[ORCHESTRATOR] Deployment successful: ${this.publicUrl}`);
       await this.transition(STATES.DONE);
       
     } catch (error) {
+      // Clear timeout
+      if (timeoutId) clearTimeout(timeoutId);
+      
       console.error(`[ORCHESTRATOR] Deployment error: ${error.message}`);
       
       // Cleanup: try to destroy app if it was created
@@ -414,8 +468,11 @@ class Orchestrator {
         }
       }
       
-      // Handle retry logic
-      if (this.deployRetryCount < this.maxDeployRetries) {
+      // Determine if we should retry
+      const shouldRetry = this.shouldRetryDeploy(error.message);
+      
+      if (shouldRetry && this.deployRetryCount < this.maxDeployRetries) {
+        // Retry deployment
         this.deployRetryCount++;
         console.log(`[ORCHESTRATOR] Retrying deployment (${this.deployRetryCount}/${this.maxDeployRetries})`);
         this.notifyListeners();
@@ -423,7 +480,18 @@ class Orchestrator {
         // Retry after a short delay
         setTimeout(() => this.executeDeploy(), 2000);
       } else {
-        console.error(`[ORCHESTRATOR] Deployment failed after ${this.maxDeployRetries} retries`);
+        // Save error details and transition to ERROR
+        this.error = {
+          message: error.message,
+          phase: 'DEPLOYING',
+          appName: appCreated ? appName : null
+        };
+        
+        const reason = shouldRetry
+          ? `after ${this.maxDeployRetries} retries`
+          : '(non-retryable error)';
+        
+        console.error(`[ORCHESTRATOR] Deployment failed ${reason}: ${error.message}`);
         await this.transition(STATES.ERROR);
       }
     }
@@ -443,6 +511,7 @@ class Orchestrator {
     this.agentOutputs = {};
     this.publicUrl = null;
     this.appName = null;
+    this.error = null;
 
     await this.saveState();
     this.notifyListeners();
