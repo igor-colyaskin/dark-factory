@@ -1,0 +1,19 @@
+# Dockerfile for Dark Factory generated apps
+FROM node:{{NODE_VERSION}}-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy application files
+COPY . .
+
+# Expose port (Fly.io will map this internally)
+EXPOSE 8080
+
+# Start the application
+CMD ["npm", "start"]

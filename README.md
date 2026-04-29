@@ -28,10 +28,28 @@ npm install
 cp .env.example .env
 ```
 
-Добавьте ваш OpenRouter API ключ в `.env`:
+Добавьте необходимые ключи в `.env`:
 
 ```
 OPENROUTER_API_KEY=sk-or-ваш-ключ
+
+# For v0.2 deployment features:
+FLY_API_TOKEN=your-fly-api-token
+FLY_ORG_SLUG=your-org-slug
+```
+
+**Получение Fly.io credentials (для v0.2):**
+```bash
+# Install flyctl
+# Windows: https://fly.io/docs/hands-on/install-flyctl/
+# Mac/Linux: curl -L https://fly.io/install.sh | sh
+
+# Login and get token
+flyctl auth login
+flyctl auth token
+
+# Get your organization slug
+flyctl orgs list
 ```
 
 ### Запуск
