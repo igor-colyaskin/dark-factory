@@ -18,6 +18,7 @@ export const STATES = {
   DEV_CHECK: 'DEV_CHECK',
   TEST_RUNNING: 'TEST_RUNNING',
   DELIVERING: 'DELIVERING',
+  DEPLOYING: 'DEPLOYING',
   DONE: 'DONE',
   ERROR: 'ERROR'
 };
@@ -58,9 +59,12 @@ class Orchestrator {
     this.currentUS = null;
     this.retryCount = 0;
     this.maxRetries = 3;
+    this.deployRetryCount = 0;
+    this.maxDeployRetries = 2;
     this.questions = [];
     this.answers = [];
     this.agentOutputs = {};
+    this.publicUrl = null;
     this.listeners = [];
   }
 
@@ -93,7 +97,9 @@ class Orchestrator {
       currentUS: this.currentUS,
       questions: this.questions,
       retryCount: this.retryCount,
+      deployRetryCount: this.deployRetryCount,
       agentOutputs: this.agentOutputs,
+      publicUrl: this.publicUrl,
       totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
       totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0)
     };
@@ -328,7 +334,39 @@ class Orchestrator {
       throw new Error(`Cannot complete delivery in state: ${this.state}`);
     }
 
-    await this.transition(STATES.DONE);
+    await this.transition(STATES.DEPLOYING);
+    return this.getState();
+  }
+
+  // Handle deployment result
+  async handleDeploymentResult(success, publicUrl = null, error = null) {
+    if (this.state !== STATES.DEPLOYING) {
+      throw new Error(`Cannot handle deployment in state: ${this.state}`);
+    }
+
+    if (success) {
+      // Deployment successful
+      this.publicUrl = publicUrl;
+      this.deployRetryCount = 0;
+      await this.transition(STATES.DONE);
+      console.log(`[ORCHESTRATOR] Deployment successful: ${publicUrl}`);
+    } else {
+      // Deployment failed
+      console.error(`[ORCHESTRATOR] Deployment failed: ${error}`);
+      
+      if (this.deployRetryCount < this.maxDeployRetries) {
+        // Retry deployment
+        this.deployRetryCount++;
+        console.log(`[ORCHESTRATOR] Retrying deployment (${this.deployRetryCount}/${this.maxDeployRetries})`);
+        // Stay in DEPLOYING state for retry
+        this.notifyListeners();
+      } else {
+        // All retries exhausted
+        console.error(`[ORCHESTRATOR] Deployment failed after ${this.maxDeployRetries} retries`);
+        await this.transition(STATES.ERROR);
+      }
+    }
+
     return this.getState();
   }
 
@@ -340,9 +378,11 @@ class Orchestrator {
     this.userStories = USER_STORIES.map(us => ({ ...us }));
     this.currentUS = null;
     this.retryCount = 0;
+    this.deployRetryCount = 0;
     this.questions = [];
     this.answers = [];
     this.agentOutputs = {};
+    this.publicUrl = null;
 
     await this.saveState();
     this.notifyListeners();
