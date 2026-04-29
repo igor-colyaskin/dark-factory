@@ -1,11 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'node:crypto';
+import flyManager from './fly-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const STATE_FILE = path.join(__dirname, '../state/current.json');
+const WORKSPACE_PATH = path.join(__dirname, '../workspace');
 
 // State machine states
 export const STATES = {
@@ -65,6 +68,7 @@ class Orchestrator {
     this.answers = [];
     this.agentOutputs = {};
     this.publicUrl = null;
+    this.appName = null;
     this.listeners = [];
   }
 
@@ -100,6 +104,7 @@ class Orchestrator {
       deployRetryCount: this.deployRetryCount,
       agentOutputs: this.agentOutputs,
       publicUrl: this.publicUrl,
+      appName: this.appName,
       totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
       totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0)
     };
@@ -335,39 +340,93 @@ class Orchestrator {
     }
 
     await this.transition(STATES.DEPLOYING);
+    
+    // Start deployment process
+    await this.executeDeploy();
+    
     return this.getState();
   }
 
-  // Handle deployment result
-  async handleDeploymentResult(success, publicUrl = null, error = null) {
-    if (this.state !== STATES.DEPLOYING) {
-      throw new Error(`Cannot handle deployment in state: ${this.state}`);
-    }
-
-    if (success) {
-      // Deployment successful
-      this.publicUrl = publicUrl;
-      this.deployRetryCount = 0;
-      await this.transition(STATES.DONE);
-      console.log(`[ORCHESTRATOR] Deployment successful: ${publicUrl}`);
-    } else {
-      // Deployment failed
-      console.error(`[ORCHESTRATOR] Deployment failed: ${error}`);
+  // Execute deployment to Fly.io
+  async executeDeploy() {
+    console.log('[ORCHESTRATOR] Starting deployment to Fly.io');
+    
+    // Generate unique app name
+    const appName = 'df-' + crypto.randomUUID().slice(0, 8);
+    console.log(`[ORCHESTRATOR] Generated app name: ${appName}`);
+    
+    let appCreated = false;
+    
+    try {
+      // Step 1: Create app
+      console.log('[ORCHESTRATOR] Step 1: Creating Fly app');
+      const createResult = await flyManager.createApp(appName);
       
+      if (!createResult.success) {
+        throw new Error(`Failed to create app: ${createResult.error}`);
+      }
+      
+      appCreated = true;
+      this.appName = appName;
+      
+      // Step 2: Prepare workspace
+      console.log('[ORCHESTRATOR] Step 2: Preparing workspace');
+      const prepareResult = await flyManager.prepareWorkspace(WORKSPACE_PATH, appName);
+      
+      if (!prepareResult.success) {
+        throw new Error(`Failed to prepare workspace: ${prepareResult.error}`);
+      }
+      
+      // Step 3: Deploy
+      console.log('[ORCHESTRATOR] Step 3: Deploying to Fly.io');
+      const deployResult = await flyManager.deploy(WORKSPACE_PATH, appName);
+      
+      if (!deployResult.success) {
+        throw new Error(`Failed to deploy: ${deployResult.error}`);
+      }
+      
+      // Step 4: Wait for healthy
+      console.log('[ORCHESTRATOR] Step 4: Waiting for app to become healthy');
+      const healthResult = await flyManager.waitForHealthy(appName, 60000);
+      
+      if (!healthResult.success) {
+        throw new Error(`App did not become healthy: ${healthResult.error}`);
+      }
+      
+      // Success!
+      this.publicUrl = flyManager.getAppUrl(appName);
+      this.deployRetryCount = 0;
+      
+      console.log(`[ORCHESTRATOR] Deployment successful: ${this.publicUrl}`);
+      await this.transition(STATES.DONE);
+      
+    } catch (error) {
+      console.error(`[ORCHESTRATOR] Deployment error: ${error.message}`);
+      
+      // Cleanup: try to destroy app if it was created
+      if (appCreated) {
+        console.log(`[ORCHESTRATOR] Attempting cleanup: destroying ${appName}`);
+        try {
+          await flyManager.destroyApp(appName);
+          console.log('[ORCHESTRATOR] Cleanup successful');
+        } catch (cleanupError) {
+          console.error(`[ORCHESTRATOR] Cleanup failed: ${cleanupError.message}`);
+        }
+      }
+      
+      // Handle retry logic
       if (this.deployRetryCount < this.maxDeployRetries) {
-        // Retry deployment
         this.deployRetryCount++;
         console.log(`[ORCHESTRATOR] Retrying deployment (${this.deployRetryCount}/${this.maxDeployRetries})`);
-        // Stay in DEPLOYING state for retry
         this.notifyListeners();
+        
+        // Retry after a short delay
+        setTimeout(() => this.executeDeploy(), 2000);
       } else {
-        // All retries exhausted
         console.error(`[ORCHESTRATOR] Deployment failed after ${this.maxDeployRetries} retries`);
         await this.transition(STATES.ERROR);
       }
     }
-
-    return this.getState();
   }
 
   // Reset orchestrator to initial state
@@ -383,6 +442,7 @@ class Orchestrator {
     this.answers = [];
     this.agentOutputs = {};
     this.publicUrl = null;
+    this.appName = null;
 
     await this.saveState();
     this.notifyListeners();
