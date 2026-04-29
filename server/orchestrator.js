@@ -94,11 +94,16 @@ class Orchestrator {
     });
   }
 
-  // Broadcast custom event to listeners
+  // Broadcast custom event to listeners (includes full state)
   broadcastEvent(eventData) {
+    const fullData = {
+      ...this.getState(),
+      ...eventData
+    };
+    
     this.listeners.forEach(listener => {
       try {
-        listener(eventData);
+        listener(fullData);
       } catch (error) {
         console.error('Error broadcasting event:', error);
       }

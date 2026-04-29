@@ -400,6 +400,11 @@ function updateUI(state) {
 function updateUserStoriesTable(userStories) {
   usTableBody.innerHTML = '';
   
+  if (!userStories || !Array.isArray(userStories)) {
+    console.warn('userStories is undefined or not an array');
+    return;
+  }
+  
   userStories.forEach(us => {
     const row = document.createElement('tr');
     
@@ -422,8 +427,17 @@ function updateUserStoriesTable(userStories) {
 
 // Update Totals
 function updateTotals(cost, time) {
-  totalCost.textContent = `$${cost.toFixed(2)}`;
-  totalTime.textContent = formatTime(time);
+  if (typeof cost === 'number') {
+    totalCost.textContent = `$${cost.toFixed(2)}`;
+  } else {
+    totalCost.textContent = '$0.00';
+  }
+  
+  if (typeof time === 'number') {
+    totalTime.textContent = formatTime(time);
+  } else {
+    totalTime.textContent = '0s';
+  }
 }
 
 // Show Questions
