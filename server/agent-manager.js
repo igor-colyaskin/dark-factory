@@ -209,6 +209,7 @@ class AgentManager {
       const modelPricing = {
         'anthropic/claude-opus-4': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
         'anthropic/claude-sonnet-4': { input: 3 / 1_000_000, output: 15 / 1_000_000 },
+        'google/gemini-2.5-flash': { input: 0.15 / 1_000_000, output: 0.60 / 1_000_000 },
         'google/gemini-2.0-flash-exp:free': { input: 0, output: 0 }
       };
 
