@@ -534,6 +534,15 @@ function showPickupBlock(state) {
     publicUrlLink.textContent = state.publicUrl;
     deployErrorSection.style.display = 'none';
     
+    // v0.2: mark fake URLs (mock-fast, demo) with a visible badge
+    const fakeBadge = document.getElementById('fake-url-badge');
+    if (state.isFakeDeploy) {
+      fakeBadge.style.display = 'block';
+      console.warn(`[MOCK] Fake deploy URL: ${state.publicUrl} — nothing was actually deployed`);
+    } else {
+      fakeBadge.style.display = 'none';
+    }
+    
     // Generate QR code
     const qrCanvas = document.getElementById('qr-canvas');
     if (qrCanvas && typeof QRCode !== 'undefined') {

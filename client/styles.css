@@ -251,9 +251,12 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -376,6 +379,7 @@ body {
   from {
     transform: scale(0);
   }
+
   to {
     transform: scale(1);
   }
@@ -462,8 +466,21 @@ body {
   border: 2px solid rgba(255, 255, 255, 0.2);
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+}
+
+.fake-url-badge {
+  background: #fff3cd;
+  color: #856404;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #ffc107;
+  text-align: center;
 }
 
 .public-url-link {
@@ -744,4 +761,15 @@ body {
   .public-url-title {
     font-size: 1.2rem;
   }
+}
+
+.fake-url-badge {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffecb5;
+  border-radius: 4px;
+  font-size: 12px;
+  font-style: italic;
 }

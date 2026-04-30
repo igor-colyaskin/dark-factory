@@ -364,17 +364,25 @@ DF v0.2 создаёт ТОЛЬКО простые приложения:
 
 Directory structure:
 └── dark-factory/
-    ├── BOOTSTRAP.md
+    ├── CHEATSHEET.md
     ├── client/
     │   ├── app.js
     │   ├── index.html
     │   └── styles.css
     ├── CONCEPT.md
-    ├── .env.example                    # ← новое v0.2
     ├── docs/
-    │   ├── architecture.md
-    │   └── presentation/
-    │       └── screenshots/
+    │   ├── FLY_MANAGER.md
+    │   ├── presentation/
+    │   │   └── screenshots/
+
+    │   └── RUN_MODES.md
+    ├── mock-workspace/
+    │   ├── app.js
+    │   ├── package.json
+    │   └── public/
+    │       ├── app.js
+    │       ├── index.html
+    │       └── styles.css
     ├── package-lock.json
     ├── package.json
     ├── README.md
@@ -383,19 +391,26 @@ Directory structure:
     │   ├── agent-manager.js
     │   ├── cost-tracker.js
     │   ├── file-manager.js
-    │   ├── fly-manager.js              # ← новое v0.2
+    │   ├── fly-manager.js
     │   ├── index.js
+    │   ├── mock-agent-manager.js
     │   ├── orchestrator.js
-    │   ├── templates/                  # ← новое v0.2
-    │   │   ├── Dockerfile.template
-    │   │   └── fly.toml.template
-    │   └── prompts/
-    │       ├── architect.js
-    │       ├── developer.js
-    │       └── tester.js
+    │   ├── prompts/
+    │   │   ├── architect.js
+    │   │   ├── developer.js
+    │   │   └── tester.js
+    │   └── templates/
+    │       ├── Dockerfile.template
+    │       └── fly.toml.template
     ├── state/
+
     ├── test/
+    │   ├── agents.test.js
+    │   ├── fly-integration.test.js
+    │   ├── fly-manager.test.js
     │   └── orchestrator.test.js
+    ├── test-agent.js
+    ├── test-agent2.js
     ├── test-api.js
     ├── TRACKER.md
     └── workspace/

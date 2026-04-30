@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'node:crypto';
 import flyManager from './fly-manager.js';
+import { resolveRunMode } from './run-modes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +72,7 @@ class Orchestrator {
     this.publicUrl = null;
     this.appName = null;
     this.error = null;
+    this.runMode = resolveRunMode();
     this.listeners = [];
   }
 
@@ -100,7 +102,7 @@ class Orchestrator {
       ...this.getState(),
       ...eventData
     };
-    
+
     this.listeners.forEach(listener => {
       try {
         listener(fullData);
@@ -125,7 +127,9 @@ class Orchestrator {
       appName: this.appName,
       error: this.error,
       totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
-      totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0)
+      totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0),
+      isFakeDeploy: this.runMode.fakeDeploy,
+      runMode: this.runMode.name,
     };
   }
 
@@ -144,14 +148,14 @@ class Orchestrator {
     try {
       const data = await fs.readFile(STATE_FILE, 'utf-8');
       const stateData = JSON.parse(data);
-      
+
       this.state = stateData.state;
       this.orderDescription = stateData.orderDescription;
       this.userStories = stateData.userStories;
       this.currentUS = stateData.currentUS;
       this.questions = stateData.questions || [];
       this.retryCount = stateData.retryCount || 0;
-      
+
       console.log('State loaded from file');
     } catch (error) {
       console.log('No previous state found, starting fresh');
@@ -162,7 +166,7 @@ class Orchestrator {
   async transition(newState, data = {}) {
     console.log(`State transition: ${this.state} -> ${newState}`);
     this.state = newState;
-    
+
     // Update user story status if provided
     if (data.usId) {
       const us = this.userStories.find(u => u.id === data.usId);
@@ -195,7 +199,7 @@ class Orchestrator {
 
     this.orderDescription = orderDescription;
     await this.transition(STATES.ORDERING);
-    
+
     // Move to architecture phase
     await this.transition(STATES.ARCH_WORKING, {
       usId: 1,
@@ -339,7 +343,7 @@ class Orchestrator {
       } else {
         // Retry agent
         console.log(`AC check failed, retry ${this.retryCount}/${this.maxRetries}`);
-        
+
         if (usId === 2) {
           await this.transition(STATES.DEV_WORKING, {
             usId: 2,
@@ -359,17 +363,21 @@ class Orchestrator {
     }
 
     await this.transition(STATES.DEPLOYING);
-    
-    // Start deployment process
-    await this.executeDeploy();
-    
+
+    // Branch on run mode
+    if (this.runMode.fakeDeploy) {
+      await this.executeFakeDeploy();
+    } else {
+      await this.executeDeploy();
+    }
+
     return this.getState();
   }
 
   // Check if error should trigger retry
   shouldRetryDeploy(errorMessage) {
     const lowerError = errorMessage.toLowerCase();
-    
+
     // Non-retryable errors (configuration issues)
     const nonRetryablePatterns = [
       'organization not found',
@@ -377,11 +385,11 @@ class Orchestrator {
       'authentication failed',
       'permission denied'
     ];
-    
+
     if (nonRetryablePatterns.some(pattern => lowerError.includes(pattern))) {
       return false;
     }
-    
+
     // Retryable errors (transient issues)
     const retryablePatterns = [
       'unable to pull image',
@@ -390,21 +398,21 @@ class Orchestrator {
       'connection refused',
       'temporary failure'
     ];
-    
+
     return retryablePatterns.some(pattern => lowerError.includes(pattern));
   }
 
   // Execute deployment to Fly.io with timeout
   async executeDeploy() {
     console.log('[ORCHESTRATOR] Starting deployment to Fly.io');
-    
+
     // Generate unique app name
     const appName = 'df-' + crypto.randomUUID().slice(0, 8);
     console.log(`[ORCHESTRATOR] Generated app name: ${appName}`);
-    
+
     let appCreated = false;
     let timeoutId;
-    
+
     try {
       // Create timeout promise
       const timeoutPromise = new Promise((_, reject) => {
@@ -412,75 +420,75 @@ class Orchestrator {
           reject(new Error(`Deployment timeout exceeded (${this.deployTimeout / 1000}s)`));
         }, this.deployTimeout);
       });
-      
+
       // Create deployment promise
       const deployPromise = (async () => {
         // Step 1: Create app
         console.log('[ORCHESTRATOR] Step 1: Creating Fly app');
         this.broadcastEvent({ type: 'deploy_progress', step: 'creating_app', message: 'Creating Fly.io app...' });
-        
+
         const createResult = await flyManager.createApp(appName);
-        
+
         if (!createResult.success) {
           throw new Error(`Failed to create app: ${createResult.error}`);
         }
-        
+
         appCreated = true;
         this.appName = appName;
-        
+
         // Step 2: Prepare workspace
         console.log('[ORCHESTRATOR] Step 2: Preparing workspace');
         this.broadcastEvent({ type: 'deploy_progress', step: 'preparing_workspace', message: 'Preparing deployment files...' });
-        
+
         const prepareResult = await flyManager.prepareWorkspace(WORKSPACE_PATH, appName);
-        
+
         if (!prepareResult.success) {
           throw new Error(`Failed to prepare workspace: ${prepareResult.error}`);
         }
-        
+
         // Step 3: Deploy
         console.log('[ORCHESTRATOR] Step 3: Deploying to Fly.io');
         this.broadcastEvent({ type: 'deploy_progress', step: 'building_image', message: 'Building and deploying image...' });
-        
+
         const deployResult = await flyManager.deploy(WORKSPACE_PATH, appName);
-        
+
         if (!deployResult.success) {
           throw new Error(`Failed to deploy: ${deployResult.error}`);
         }
-        
+
         // Step 4: Wait for healthy
         console.log('[ORCHESTRATOR] Step 4: Waiting for app to become healthy');
         this.broadcastEvent({ type: 'deploy_progress', step: 'waiting_healthy', message: 'Waiting for app to start...' });
-        
+
         const healthResult = await flyManager.waitForHealthy(appName, 60000);
-        
+
         if (!healthResult.success) {
           throw new Error(`App did not become healthy: ${healthResult.error}`);
         }
-        
+
         return true;
       })();
-      
+
       // Race between deployment and timeout
       await Promise.race([deployPromise, timeoutPromise]);
-      
+
       // Clear timeout on success
       clearTimeout(timeoutId);
-      
+
       // Success!
       this.publicUrl = flyManager.getAppUrl(appName);
       this.deployRetryCount = 0;
       this.error = null;
-      
+
       console.log(`[ORCHESTRATOR] Deployment successful: ${this.publicUrl}`);
       await this.transition(STATES.DONE);
-      
+
     } catch (error) {
       // Clear timeout
       if (timeoutId) clearTimeout(timeoutId);
-      
+
       console.error(`[ORCHESTRATOR] Deployment error: ${error.message}`);
-      
+
       // Cleanup: try to destroy app if it was created
       if (appCreated) {
         console.log(`[ORCHESTRATOR] Attempting cleanup: destroying ${appName}`);
@@ -491,16 +499,16 @@ class Orchestrator {
           console.error(`[ORCHESTRATOR] Cleanup failed: ${cleanupError.message}`);
         }
       }
-      
+
       // Determine if we should retry
       const shouldRetry = this.shouldRetryDeploy(error.message);
-      
+
       if (shouldRetry && this.deployRetryCount < this.maxDeployRetries) {
         // Retry deployment
         this.deployRetryCount++;
         console.log(`[ORCHESTRATOR] Retrying deployment (${this.deployRetryCount}/${this.maxDeployRetries})`);
         this.notifyListeners();
-        
+
         // Retry after a short delay
         setTimeout(() => this.executeDeploy(), 2000);
       } else {
@@ -510,15 +518,54 @@ class Orchestrator {
           phase: 'DEPLOYING',
           appName: appCreated ? appName : null
         };
-        
+
         const reason = shouldRetry
           ? `after ${this.maxDeployRetries} retries`
           : '(non-retryable error)';
-        
+
         console.error(`[ORCHESTRATOR] Deployment failed ${reason}: ${error.message}`);
         await this.transition(STATES.ERROR);
       }
     }
+  }
+
+  /**
+ * Fake deploy for mock-fast and demo modes.
+ * Simulates deploy progress events and sets a plausible-looking fake URL.
+ */
+  async executeFakeDeploy() {
+    console.log('[ORCHESTRATOR] Starting FAKE deployment (mode:', this.runMode.name + ')');
+
+    const appName = 'df-mock-' + crypto.randomUUID().slice(0, 8);
+    this.appName = appName;
+
+    // Step delays — longer for demo mode
+    const stepDelay = this.runMode.demoDelays ? 1500 : 400;
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    const steps = [
+      { step: 'creating_app', message: '[MOCK] Creating Fly.io app...' },
+      { step: 'preparing_workspace', message: '[MOCK] Preparing deployment files...' },
+      { step: 'building_image', message: '[MOCK] Building and deploying image...' },
+      { step: 'waiting_healthy', message: '[MOCK] Waiting for app to start...' }
+    ];
+
+    for (const s of steps) {
+      this.broadcastEvent({ type: 'deploy_progress', ...s });
+      await sleep(stepDelay);
+    }
+
+    // Fake URL — matches Fly.io pattern so UI and QR code render realistically
+    this.publicUrl = `https://${appName}.fly.dev`;
+    this.error = null;
+
+    console.log(`[ORCHESTRATOR] FAKE deployment complete: ${this.publicUrl}`);
+    console.log('[ORCHESTRATOR] ⚠ This URL is not real. No actual deployment was performed.');
+
+    // Mark as fake so UI can display a badge
+    this.broadcastEvent({ type: 'deploy_fake_url', url: this.publicUrl });
+
+    await this.transition(STATES.DONE);
   }
 
   // Reset orchestrator to initial state
