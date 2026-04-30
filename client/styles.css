@@ -310,19 +310,55 @@ body {
   resize: vertical;
 }
 
-/* Deploy Info */
+/* Deploy info — active progress block during DEPLOYING state */
 .deploy-info {
-  margin-bottom: 20px;
+  margin: 16px 0;
   padding: 20px;
-  background: #d1ecf1;
+  background: linear-gradient(135deg, #e7f3ff 0%, #f0f7ff 100%);
+  border: 2px solid #4a90e2;
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
+  animation: deploy-pulse 2s ease-in-out infinite;
+}
+
+@keyframes deploy-pulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15); }
+  50%      { box-shadow: 0 2px 16px rgba(74, 144, 226, 0.35); }
+}
+
+.deploy-info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(74, 144, 226, 0.25);
+}
+
+.deploy-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(74, 144, 226, 0.25);
+  border-top-color: #4a90e2;
+  border-radius: 50%;
+  animation: deploy-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes deploy-spin {
+  to { transform: rotate(360deg); }
+}
+
+.deploy-status-text {
+  font-weight: 600;
+  color: #1e5a9e;
+  font-size: 15px;
+}
+
+.deploy-info-message {
+  color: #2c4a6b;
   font-size: 14px;
   line-height: 1.6;
-  color: #0c5460;
-  text-align: center;
-  border: 1px solid #bee5eb;
-  position: relative;
-  z-index: 10;
 }
 
 /* Status Message */

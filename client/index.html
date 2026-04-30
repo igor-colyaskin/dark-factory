@@ -52,9 +52,15 @@
       <div class="block-content">
         <!-- Deploy Info (shown during DEPLOYING state) -->
         <div id="deploy-info" class="deploy-info" style="display: none;">
-          ☁️ Your application is being published to the cloud.<br>
-          It will be available via a public link for 24 hours.<br>
-          You can share the link with anyone — no software installation required.
+          <div class="deploy-info-header">
+            <div class="deploy-spinner"></div>
+            <div class="deploy-status-text" id="deploy-status-text">Starting deployment...</div>
+          </div>
+          <div class="deploy-info-message">
+            ☁️ Your application is being published to the cloud.<br>
+            It will be available via a public link for 24 hours.<br>
+            You can share the link with anyone — no software installation required.
+          </div>
         </div>
 
         <!-- User Stories Table -->

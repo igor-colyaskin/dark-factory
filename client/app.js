@@ -39,6 +39,7 @@ const openPublicBtn = document.getElementById('open-public-btn');
 const copyUrlBtn = document.getElementById('copy-url-btn');
 const deployErrorSection = document.getElementById('deploy-error-section');
 const deployInfo = document.getElementById('deploy-info');
+const deployStatusText = document.getElementById('deploy-status-text');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -158,16 +159,10 @@ function handleSSEMessage(data) {
 // Handle deployment progress updates
 function handleDeployProgress(data) {
   console.log('Deploy progress:', data.step, data.message);
-  
-  // Update loading message
-  if (data.message) {
-    showLoading(data.message);
-  }
-  
-  // Update deploy status in UI if needed
-  const deployStatus = document.getElementById('deploy-status');
-  if (deployStatus) {
-    deployStatus.textContent = data.message || 'Deploying...';
+
+  // Update active deploy block (no full-screen overlay)
+  if (deployStatusText && data.message) {
+    deployStatusText.textContent = data.message;
   }
 }
 
@@ -423,8 +418,12 @@ function updateUI(state) {
       break;
       
     case 'DEPLOYING':
-      showLoading('Deploying to cloud...');
+      // No full-screen overlay during deploy — deploy-info block is the progress UI
+      hideLoading();
       deployInfo.style.display = 'block';
+      if (deployStatusText) {
+        deployStatusText.textContent = 'Starting deployment...';
+      }
       break;
       
     case 'DONE':
