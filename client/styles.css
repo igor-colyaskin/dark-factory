@@ -97,7 +97,7 @@ body {
   background: var(--card-bg);
   border-radius: 12px;
   box-shadow: var(--shadow);
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -110,21 +110,21 @@ body {
 .block-header {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: var(--text-white);
-  padding: 25px 30px;
+  padding: 20px 25px;
 }
 
 .block-header h2 {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   margin-bottom: 5px;
 }
 
 .block-header p {
   opacity: 0.9;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .block-content {
-  padding: 30px;
+  padding: 25px;
 }
 
 /* Order Block */
@@ -205,7 +205,8 @@ body {
 
 .total-row td {
   border-top: 2px solid var(--primary-color);
-  padding-top: 15px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 /* Status Badges */
@@ -373,14 +374,14 @@ body {
 
 .pickup-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
 }
 
 .stat {
   background: #f9f9f9;
-  padding: 20px;
+  padding: 15px;
   border-radius: 8px;
   text-align: center;
   border: 2px solid var(--border-color);
@@ -388,14 +389,14 @@ body {
 
 .stat-label {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-light);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .stat-value {
   display: block;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary-color);
 }
@@ -404,48 +405,147 @@ body {
 .public-url-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 25px;
+  padding: 30px;
   border-radius: 12px;
-  margin: 25px 0;
+  margin: 30px 0;
   text-align: center;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
 }
 
-.public-url-section h4 {
-  margin: 0 0 10px 0;
-  font-size: 1.3rem;
+.public-url-title {
+  margin: 0 0 25px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
-.public-url-section p {
-  margin: 5px 0;
-  opacity: 0.9;
+.public-url-content {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+  margin-bottom: 20px;
 }
 
-.url-box {
+.public-url-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.public-url-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.public-url-display {
   background: rgba(255, 255, 255, 0.15);
-  padding: 15px;
+  padding: 20px;
   border-radius: 8px;
-  margin: 15px 0;
   backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.url-box a {
+.public-url-link {
   color: white;
   text-decoration: none;
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   word-break: break-all;
   transition: opacity 0.3s ease;
 }
 
-.url-box a:hover {
+.public-url-link:hover {
   opacity: 0.8;
   text-decoration: underline;
 }
 
-.url-note {
-  font-size: 0.9rem;
-  opacity: 0.8;
-  margin-top: 10px;
+.public-url-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.public-url-actions .btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+.qr-code-container {
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#qr-canvas {
+  display: block;
+}
+
+.public-url-info {
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.public-url-info p {
+  margin: 0;
+  opacity: 0.95;
+}
+
+/* Deploy Error Section */
+.deploy-error-section {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 25px;
+  margin: 25px 0;
+  text-align: center;
+}
+
+.error-message {
+  color: #856404;
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.error-message h4 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: #856404;
+}
+
+.error-message p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Download Section */
+.download-section {
+  background: #f9f9f9;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 25px;
+  margin: 25px 0;
+  text-align: center;
+}
+
+.download-section h4 {
+  margin: 0 0 15px 0;
+  font-size: 1.2rem;
+  color: var(--text-dark);
 }
 
 .pickup-actions {
@@ -576,9 +676,10 @@ body {
 /* Footer */
 .footer {
   text-align: center;
-  padding: 30px 0;
+  padding: 20px 0;
   color: var(--text-white);
   opacity: 0.8;
+  font-size: 0.9rem;
 }
 
 /* Responsive */
@@ -609,7 +710,23 @@ body {
     flex-direction: column;
   }
 
+  .public-url-content {
+    flex-direction: column;
+  }
+
+  .public-url-actions {
+    flex-direction: column;
+  }
+
   .btn-large {
     width: 100%;
+  }
+
+  .public-url-link {
+    font-size: 1rem;
+  }
+
+  .public-url-title {
+    font-size: 1.2rem;
   }
 }

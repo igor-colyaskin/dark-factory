@@ -27,12 +27,16 @@ const answersInput = document.getElementById('answers-input');
 const statusMessage = document.getElementById('status-message');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingMessage = document.getElementById('loading-message');
-const openAppBtn = document.getElementById('open-app-btn');
 const downloadBtn = document.getElementById('download-btn');
 const newOrderBtn = document.getElementById('new-order-btn');
 const finalCost = document.getElementById('final-cost');
 const finalTime = document.getElementById('final-time');
 const finalFiles = document.getElementById('final-files');
+const publicUrlSection = document.getElementById('public-url-section');
+const publicUrlLink = document.getElementById('public-url-link');
+const openPublicBtn = document.getElementById('open-public-btn');
+const copyUrlBtn = document.getElementById('copy-url-btn');
+const deployErrorSection = document.getElementById('deploy-error-section');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -65,9 +69,10 @@ function setupEventListeners() {
   approveBtn.addEventListener('click', handleApprove);
   askQuestionBtn.addEventListener('click', handleAskQuestion);
   answersForm.addEventListener('submit', handleAnswersSubmit);
-  openAppBtn.addEventListener('click', handleOpenApp);
   downloadBtn.addEventListener('click', handleDownload);
   newOrderBtn.addEventListener('click', handleNewOrder);
+  openPublicBtn.addEventListener('click', handleOpenPublic);
+  copyUrlBtn.addEventListener('click', handleCopyUrl);
 }
 
 // Connect to SSE
@@ -266,30 +271,41 @@ async function handleAnswersSubmit(e) {
   }
 }
 
-// Handle Open App
-async function handleOpenApp() {
-  showLoading('Getting application info...');
+// Handle Open Public URL
+function handleOpenPublic() {
+  const url = publicUrlLink.href;
+  if (url && url !== '#') {
+    window.open(url, '_blank');
+  }
+}
+
+// Handle Copy URL
+async function handleCopyUrl() {
+  const url = publicUrlLink.href;
+  
+  if (!url || url === '#') {
+    showStatus('No URL to copy', 'error');
+    return;
+  }
   
   try {
-    const response = await fetch('/api/start-app', {
-      method: 'POST'
-    });
+    await navigator.clipboard.writeText(url);
     
-    const result = await response.json();
+    // Change button text temporarily
+    const originalText = copyUrlBtn.textContent;
+    copyUrlBtn.textContent = '✓ Скопировано';
+    copyUrlBtn.disabled = true;
     
-    if (result.success) {
-      // Show instructions in alert
-      const instructions = result.instructions.join('\n');
-      alert(`${result.message}\n\n${instructions}\n\nWorkspace: ${result.workspacePath}`);
-      showStatus('Instructions displayed', 'info');
-    } else {
-      showStatus(result.message || 'Failed to get app info', 'error');
-    }
+    // Restore after 2 seconds
+    setTimeout(() => {
+      copyUrlBtn.textContent = originalText;
+      copyUrlBtn.disabled = false;
+    }, 2000);
+    
+    showStatus('URL copied to clipboard', 'success');
   } catch (error) {
-    console.error('Error getting app info:', error);
-    showStatus('Failed to get app info', 'error');
-  } finally {
-    hideLoading();
+    console.error('Error copying URL:', error);
+    showStatus('Failed to copy URL', 'error');
   }
 }
 
@@ -483,18 +499,33 @@ function showPickupBlock(state) {
   }
   finalFiles.textContent = fileCount;
   
-  // Show public URL if available (v0.2)
+  // Show public URL section if available (v0.2)
   if (state.publicUrl) {
-    const publicUrlElement = document.getElementById('public-url');
-    const publicUrlLink = document.getElementById('public-url-link');
+    publicUrlSection.style.display = 'block';
+    publicUrlLink.href = state.publicUrl;
+    publicUrlLink.textContent = state.publicUrl;
+    deployErrorSection.style.display = 'none';
     
-    if (publicUrlElement && publicUrlLink) {
-      publicUrlElement.style.display = 'block';
-      publicUrlLink.href = state.publicUrl;
-      publicUrlLink.textContent = state.publicUrl;
-      
-      showStatus(`🎉 Your app is live at ${state.publicUrl}`, 'success');
+    // Generate QR code
+    const qrCanvas = document.getElementById('qr-canvas');
+    if (qrCanvas && typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(qrCanvas, state.publicUrl, {
+        width: 200,
+        margin: 2
+      }, (error) => {
+        if (error) {
+          console.error('QR code generation error:', error);
+        }
+      });
     }
+    
+    showStatus(`🎉 Your app is live at ${state.publicUrl}`, 'success');
+  } else {
+    // No public URL - show error section
+    publicUrlSection.style.display = 'none';
+    deployErrorSection.style.display = 'block';
+    
+    showStatus('Deploy failed, but you can download the source code', 'error');
   }
 }
 

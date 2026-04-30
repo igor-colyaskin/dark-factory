@@ -49,7 +49,7 @@ const MOCK_RESPONSES = {
           path: 'app.js',
           content: `const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -88,8 +88,8 @@ app.delete('/api/todos/:id', (req, res) => {
   res.status(204).send();
 });
 
-app.listen(PORT, () => {
-  console.log(\`Server running on http://localhost:\${PORT}\`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(\`Server running on http://0.0.0.0:\${PORT}\`);
 });`,
           action: 'create'
         },
@@ -202,6 +202,9 @@ loadTodos();`,
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "express": "^4.18.0"

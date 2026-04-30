@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dark Factory v0.1 - Application Factory</title>
+  <title>Dark Factory v0.2 - Application Factory</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
 </head>
 <body>
   <!-- Run Mode Badge (fixed position) -->
@@ -136,22 +137,55 @@
           </div>
         </div>
 
-        <!-- Public URL (v0.2) -->
-        <div id="public-url" class="public-url-section" style="display: none;">
-          <h4>🌐 Your App is Live!</h4>
-          <p>Access your application at:</p>
-          <div class="url-box">
-            <a id="public-url-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+        <!-- Public URL Section (v0.2) -->
+        <div id="public-url-section" class="public-url-section" style="display: none;">
+          <h3 class="public-url-title">🌐 Your App is Live!</h3>
+          
+          <div class="public-url-content">
+            <!-- Left Block: URL and Buttons -->
+            <div class="public-url-left">
+              <div class="public-url-display">
+                <a id="public-url-link" href="#" target="_blank" rel="noopener noreferrer" class="public-url-link"></a>
+              </div>
+
+              <div class="public-url-actions">
+                <button id="open-public-btn" class="btn btn-primary btn-large">
+                  🚀 Open
+                </button>
+                <button id="copy-url-btn" class="btn btn-secondary btn-large">
+                  📋 Copy Link
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Block: QR Code -->
+            <div class="public-url-right">
+              <div id="qr-code" class="qr-code-container">
+                <canvas id="qr-canvas"></canvas>
+              </div>
+            </div>
           </div>
-          <p class="url-note">⏰ Available for 24 hours</p>
+
+          <!-- Info Text -->
+          <div class="public-url-info">
+            <p>⏰ Приложение доступно 24 часа. Ссылкой можно поделиться.</p>
+          </div>
         </div>
 
-        <div class="pickup-actions">
-          <button id="open-app-btn" class="btn btn-primary btn-large">
-            🚀 Open Application
-          </button>
-          <button id="download-btn" class="btn btn-secondary btn-large">
-            📦 Download ZIP
+        <!-- Deploy Error Section (shown if publicUrl is missing) -->
+        <div id="deploy-error-section" class="deploy-error-section" style="display: none;">
+          <div class="error-message">
+            <div class="error-icon">⚠️</div>
+            <h4>Deploy Failed</h4>
+            <p>Unable to deploy your application to the cloud. You can still download the source code.</p>
+          </div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="download-section">
+          <h4>📦 Download Source Code</h4>
+          <button id="download-btn" class="btn btn-outline btn-large">
+            Download ZIP
           </button>
         </div>
 
@@ -166,7 +200,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <p>Dark Factory v0.1 - Powered by AI Agents</p>
+      <p>Dark Factory v0.2 - Powered by AI Agents</p>
     </footer>
   </div>
 
