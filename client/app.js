@@ -6,6 +6,7 @@
 // State
 let eventSource = null;
 let currentState = null;
+let sessionId = null;
 
 // DOM Elements
 const orderBlock = document.getElementById('order-block');
@@ -37,13 +38,28 @@ const publicUrlLink = document.getElementById('public-url-link');
 const openPublicBtn = document.getElementById('open-public-btn');
 const copyUrlBtn = document.getElementById('copy-url-btn');
 const deployErrorSection = document.getElementById('deploy-error-section');
+const deployInfo = document.getElementById('deploy-info');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  initSessionId();
   setupEventListeners();
   connectSSE();
   loadRunMode();
 });
+
+// Initialize or retrieve session ID
+function initSessionId() {
+  sessionId = localStorage.getItem('df-session-id');
+  
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem('df-session-id', sessionId);
+    console.log('Generated new session ID:', sessionId);
+  } else {
+    console.log('Using existing session ID:', sessionId);
+  }
+}
 
 // Load and display run mode
 async function loadRunMode() {
@@ -172,7 +188,8 @@ async function handleOrderSubmit(e) {
     const response = await fetch('/api/order', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Session-Id': sessionId
       },
       body: JSON.stringify({ description: orderDescription })
     });
@@ -358,50 +375,61 @@ function updateUI(state) {
   switch (state.state) {
     case 'IDLE':
       hideLoading();
+      deployInfo.style.display = 'none';
       break;
       
     case 'ORDERING':
       showLoading('Processing your order...');
+      deployInfo.style.display = 'none';
       break;
       
     case 'ARCH_WORKING':
       showLoading('Architect is designing your application...');
+      deployInfo.style.display = 'none';
       break;
       
     case 'CLARIFYING':
       hideLoading();
       showQuestions(state.questions);
+      deployInfo.style.display = 'none';
       break;
       
     case 'ARCH_REVIEW':
       hideLoading();
       showApprovalButtons();
       showStatus('Architecture is ready for review', 'info');
+      deployInfo.style.display = 'none';
       break;
       
     case 'DEV_WORKING':
       showLoading('Developer is writing code...');
       actionButtons.style.display = 'none';
+      deployInfo.style.display = 'none';
       break;
       
     case 'DEV_CHECK':
       showLoading('Checking code quality...');
+      deployInfo.style.display = 'none';
       break;
       
     case 'TEST_RUNNING':
       showLoading('Tester is reviewing code...');
+      deployInfo.style.display = 'none';
       break;
       
     case 'DELIVERING':
       showLoading('Preparing your application...');
+      deployInfo.style.display = 'none';
       break;
       
     case 'DEPLOYING':
       showLoading('Deploying to cloud...');
+      deployInfo.style.display = 'block';
       break;
       
     case 'DONE':
       hideLoading();
+      deployInfo.style.display = 'none';
       showPickupBlock(state);
       break;
       
@@ -518,14 +546,10 @@ function showPickupBlock(state) {
         }
       });
     }
-    
-    showStatus(`🎉 Your app is live at ${state.publicUrl}`, 'success');
   } else {
     // No public URL - show error section
     publicUrlSection.style.display = 'none';
     deployErrorSection.style.display = 'block';
-    
-    showStatus('Deploy failed, but you can download the source code', 'error');
   }
 }
 

@@ -307,6 +307,21 @@ body {
   resize: vertical;
 }
 
+/* Deploy Info */
+.deploy-info {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #d1ecf1;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #0c5460;
+  text-align: center;
+  border: 1px solid #bee5eb;
+  position: relative;
+  z-index: 10;
+}
+
 /* Status Message */
 .status-message {
   margin-top: 20px;
