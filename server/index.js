@@ -219,49 +219,6 @@ app.get('/api/info', (req, res) => {
 // Serve workspace files (for viewing static files)
 app.use('/workspace', express.static(path.join(__dirname, '../workspace')));
 
-// POST endpoint to start the created application
-app.post('/api/start-app', async (req, res) => {
-  try {
-    // TODO: Implement application startup
-    // For now, just return instructions
-    res.status(200).json({
-      success: true,
-      message: 'To run the created application:',
-      instructions: [
-        '1. Open a new terminal',
-        '2. cd workspace',
-        '3. npm install',
-        '4. npm start',
-        '5. Open http://localhost:3001 in your browser'
-      ],
-      workspacePath: path.join(__dirname, '../workspace')
-    });
-  } catch (error) {
-    console.error('Error starting app:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-// GET endpoint to download workspace as ZIP
-app.get('/api/download', async (req, res) => {
-  try {
-    // TODO: Implement ZIP creation
-    res.status(501).json({
-      success: false,
-      message: 'Download feature not yet implemented'
-    });
-  } catch (error) {
-    console.error('Error creating download:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
 // Pipeline workflow
 async function runPipeline() {
   const state = orchestrator.getState();

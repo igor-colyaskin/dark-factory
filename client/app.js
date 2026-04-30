@@ -28,7 +28,6 @@ const answersInput = document.getElementById('answers-input');
 const statusMessage = document.getElementById('status-message');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingMessage = document.getElementById('loading-message');
-const downloadBtn = document.getElementById('download-btn');
 const newOrderBtn = document.getElementById('new-order-btn');
 const finalCost = document.getElementById('final-cost');
 const finalTime = document.getElementById('final-time');
@@ -86,7 +85,6 @@ function setupEventListeners() {
   approveBtn.addEventListener('click', handleApprove);
   askQuestionBtn.addEventListener('click', handleAskQuestion);
   answersForm.addEventListener('submit', handleAnswersSubmit);
-  downloadBtn.addEventListener('click', handleDownload);
   newOrderBtn.addEventListener('click', handleNewOrder);
   openPublicBtn.addEventListener('click', handleOpenPublic);
   copyUrlBtn.addEventListener('click', handleCopyUrl);
@@ -318,36 +316,6 @@ async function handleCopyUrl() {
   } catch (error) {
     console.error('Error copying URL:', error);
     showStatus('Failed to copy URL', 'error');
-  }
-}
-
-// Handle Download
-async function handleDownload() {
-  showLoading('Preparing download...');
-  
-  try {
-    const response = await fetch('/api/download');
-    
-    if (response.ok) {
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'application.zip';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      
-      showStatus('Download started!', 'success');
-    } else {
-      showStatus('Failed to download', 'error');
-    }
-  } catch (error) {
-    console.error('Error downloading:', error);
-    showStatus('Failed to download. Please try again.', 'error');
-  } finally {
-    hideLoading();
   }
 }
 
