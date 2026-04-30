@@ -9,6 +9,7 @@ import costTracker from './cost-tracker.js';
 import architectPrompts from './prompts/architect.js';
 import developerPrompts from './prompts/developer.js';
 import testerPrompts from './prompts/tester.js';
+import { validateEnvOrExit } from './env-validator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,9 @@ const __dirname = path.dirname(__filename);
 // Determine run mode and select appropriate agent manager
 const RUN_MODE = process.env.RUN_MODE || 'production';
 console.log(`🏭 Dark Factory starting in ${RUN_MODE.toUpperCase()} mode`);
+
+// Validate environment variables before proceeding
+validateEnvOrExit(RUN_MODE);
 
 let agentManager;
 let useMockWorkspace = false;

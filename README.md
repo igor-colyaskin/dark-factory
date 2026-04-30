@@ -1,5 +1,4 @@
-> ⚠️ Документ отражает v0.1. Актуализация — в v0.2 Фаза 8.
-# 🏭 Dark Factory v0.1
+# 🏭 Dark Factory v0.2
 
 **Application Factory** — веб-приложение для автоматической генерации приложений через AI-агентов.
 
@@ -37,6 +36,10 @@ OPENROUTER_API_KEY=sk-or-ваш-ключ
 FLY_API_TOKEN=your-fly-api-token
 FLY_ORG_SLUG=your-org-slug
 ```
+
+> 💡 Если хочешь быстро попробовать интерфейс без оформления Fly.io и без
+> трат на OpenRouter — запусти `npm run mock:fast` или `npm run demo`.
+> Эти режимы не требуют никаких ключей.
 
 **Получение Fly.io credentials (для v0.2):**
 ```bash
@@ -78,13 +81,12 @@ npm run demo
 
 ## Режимы работы
 
-| Режим | Агенты | Файлы | Время | Стоимость | Использование |
-|-------|--------|-------|-------|-----------|---------------|
-| **production** | Real API | workspace/ | 60-90s | $$$ | Реальная генерация |
-| **mock-full** | Mock | workspace/ | ~6s | $0 | Отладка + тест File Manager |
-| **mock-fast** | Mock | mock-workspace/ → workspace/ | ~6s | $0 | Быстрая отладка UI |
-| **demo** | Mock | mock-workspace/ → workspace/ | ~9s | $0 | Презентации |
-
+| Режим | Агенты | Файлы | Deploy | Время | Стоимость | Использование |
+|-------|--------|-------|--------|-------|-----------|---------------|
+| **production** | Real API | workspace/ | Real Fly.io | 60-90s | $$$ | Реальная генерация |
+| **mock-full**  | Mock | workspace/ | Real Fly.io | ~90s | $0 LLM + ~$0.01 Fly | Отладка интеграции с Fly |
+| **mock-fast**  | Mock | mock-workspace/ → workspace/ | Fake URL | ~10s | $0 | Отладка UI/UX |
+| **demo**       | Mock | mock-workspace/ → workspace/ | Fake URL | ~15s | $0 | Презентации |
 ## Использование
 
 1. Откройте http://localhost:3000
@@ -93,15 +95,11 @@ npm run demo
 4. Наблюдайте процесс создания в реальном времени
 5. Когда готово, следуйте инструкциям для запуска созданного приложения
 
-### Запуск созданного приложения
-
-```bash
-cd workspace
-npm install
-npm start
-```
-
-Откройте http://localhost:3001 в браузере.
++ ### Получение результата
++
++ После этапа DEPLOYING в блоке Pickup появится публичный URL вида
++ `https://df-xxxxxxxx.fly.dev`. Ссылку можно открыть, скопировать или
++ считать с QR-кода. В mock-fast/demo режимах URL поддельный (помечен плашкой).
 
 ## Архитектура
 
@@ -140,6 +138,7 @@ npm run fresh          # Полная очистка + перезапуск
 npm run mock:full      # Mock режим с записью файлов
 npm run mock:fast      # Mock режим с готовыми файлами
 npm run demo           # Demo режим для презентаций
+npm run help           # Показать все команды с описаниями
 ```
 
 ## Структура проекта
@@ -191,19 +190,21 @@ node test/agents.test.js
 - Изменяете backend → `npm run mock:full`
 - Полный цикл за 6 секунд, $0
 
-## Ограничения v0.1
+## Ограничения v0.2
 
 Dark Factory создаёт только простые приложения:
 - Node.js + Express
 - Vanilla HTML/CSS/JavaScript (без фреймворков)
 - In-memory данные (без БД)
-- Порт 3001 (чтобы не конфликтовать с DF на 3000)
++ - Порт через process.env.PORT (дефолт 8080 для Fly.io)
++ - engines.node >= 20
 
 ## Документация
 
 - [`CONCEPT.md`](CONCEPT.md) — Полная концепция проекта
 - [`TRACKER.md`](TRACKER.md) — Прогресс разработки
 - [`BOOTSTRAP.md`](BOOTSTRAP.md) — Инструкции по настройке
+- [`docs/RUN_MODES.md`](docs/RUN_MODES.md) — Детали режимов работы (будет обновлён в v0.2 релизе)
 
 ## Лицензия
 

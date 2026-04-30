@@ -209,13 +209,13 @@
   [ ] 6.5  Коммит: "Frontend v0.2"
 
 
-  ФАЗА 7: КОНФИГУРАЦИЯ И ГИГИЕНА
+  ФАЗА 7: КОНФИГУРАЦИЯ И ГИГИЕНА  ✅: выполнено 2026-04-30
   ================================
 
-  [ ] 7.1  .env.example с переменными: OPENROUTER_API_KEY, FLY_API_TOKEN, FLY_ORG_SLUG  ✅: выполнено 2026-04-30
+  [ ] 7.1  .env.example с переменными: OPENROUTER_API_KEY, FLY_API_TOKEN, FLY_ORG_SLUG
   [ ] 7.2  Валидация переменных при старте DF (читаемые ошибки)
   [ ] 7.3  README.md: секция Installation, Prerequisites
-  [ ] 7.4  .gitignore: проверить .env, state/, workspace/ ✅: выполнено 2026-04-30
+  [ ] 7.4  .gitignore: проверить .env, state/, workspace/
   [ ] 7.5  Коммит: "Config hygiene"
 
 

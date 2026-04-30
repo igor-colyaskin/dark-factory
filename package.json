@@ -12,7 +12,8 @@
         "mock:fast": "set RUN_MODE=mock-fast&& npm run restart",
         "mock:full": "set RUN_MODE=mock-full&& npm run clean && npm run restart",
         "demo": "set RUN_MODE=demo&& npm run restart",
-        "test": "node --test test/"
+        "test": "node --test test/",
+        "help": "node scripts/help.js"
     },
     "dependencies": {
         "archiver": "^7.0.1",
