@@ -2,6 +2,17 @@
 
 **Application Factory** — веб-приложение для автоматической генерации приложений через AI-агентов.
 
+## Философия проекта
+
+Dark Factory развивается в направлении **agency**, а не capabilities:
+DF учится **договариваться** с заказчиком о задаче, а не просто
+расширяет список выполнимых заказов.
+
+Каждая новая версия — маленький осмысленный шаг с обязательным
+dogfooding'ом между релизами.
+
+Подробнее — в [CONCEPT.md](CONCEPT.md).
+
 ## Концепция
 
 Метафора фастфуда:
@@ -141,32 +152,12 @@ npm run demo           # Demo режим для презентаций
 npm run help           # Показать все команды с описаниями
 ```
 
-## Структура проекта
+## Структура проекта - tbd
 
 ```
 dark-factory/
 ├── server/              # Backend
-│   ├── index.js         # Express server + SSE
-│   ├── orchestrator.js  # State machine
-│   ├── agent-manager.js # OpenRouter API calls
-│   ├── mock-agent-manager.js # Mock responses
-│   ├── file-manager.js  # File operations
-│   ├── ac-checker.js    # Acceptance criteria checks
-│   ├── cost-tracker.js  # Cost/time tracking
-│   └── prompts/         # Agent prompts
-│       ├── architect.js
-│       ├── developer.js
-│       └── tester.js
-├── client/              # Frontend
-│   ├── index.html       # UI (3 blocks)
-│   ├── styles.css       # Fast-food theme
-│   └── app.js           # SSE listener + logic
-├── workspace/           # Generated applications
-├── mock-workspace/      # Pre-built app for mock modes
-├── state/               # Pipeline state
-└── test/                # Tests
-    ├── orchestrator.test.js
-    └── agents.test.js
+
 ```
 
 ## Разработка
