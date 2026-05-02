@@ -128,10 +128,91 @@ function switchTab(tabName) {
   }
 }
 
-// Load Products (placeholder for Phase 5)
+// Load Products
 async function loadProducts() {
-  // Placeholder — will be implemented in Phase 5
-  console.log('[TABS] loadProducts() called — Phase 5 will implement');
+  const productsList = document.getElementById('products-list');
+  const productsEmpty = document.getElementById('products-empty');
+  
+  try {
+    const response = await fetch('/api/my-apps');
+    const data = await response.json();
+    
+    if (!data.success || !data.apps || data.apps.length === 0) {
+      productsList.innerHTML = '';
+      productsEmpty.style.display = 'block';
+      return;
+    }
+    
+    productsEmpty.style.display = 'none';
+    productsList.innerHTML = data.apps.map(app => renderAppCard(app)).join('');
+    
+  } catch (error) {
+    console.error('Error loading products:', error);
+    productsList.innerHTML = '<p class="products-error">Failed to load applications.</p>';
+    productsEmpty.style.display = 'none';
+  }
+}
+
+// Render App Card
+function renderAppCard(app) {
+  const orderExcerpt = app.order && app.order.length > 80
+    ? app.order.substring(0, 80) + '...'
+    : (app.order || '');
+  
+  const dateFormatted = formatDate(app.createdAt);
+  const costFormatted = app.metrics && typeof app.metrics.totalCost === 'number'
+    ? `$${app.metrics.totalCost.toFixed(2)}`
+    : '--';
+  const timeFormatted = app.metrics && typeof app.metrics.totalTime === 'number'
+    ? formatTime(app.metrics.totalTime)
+    : '--';
+  
+  return `
+    <div class="app-card" data-app-id="${app.id}">
+      <div class="app-card-header">
+        <span class="app-card-number">#${app.number}</span>
+        <span class="app-card-id">${app.id}</span>
+        <span class="app-card-date">${dateFormatted}</span>
+      </div>
+      <div class="app-card-order">${escapeHtml(orderExcerpt)}</div>
+      <div class="app-card-metrics">
+        <span class="app-card-metric">💰 ${costFormatted}</span>
+        <span class="app-card-metric">⏱ ${timeFormatted}</span>
+      </div>
+      <div class="app-card-url">
+        <a href="${app.url}" target="_blank" rel="noopener noreferrer">🌐 ${app.url}</a>
+      </div>
+      <div class="app-card-actions">
+        <button class="btn btn-sm btn-secondary" onclick="handleDetails('${app.id}')" data-action="details">Детали</button>
+        <button class="btn btn-sm btn-danger-outline" onclick="handleDeleteClick('${app.id}')" data-action="delete">Стереть</button>
+      </div>
+      <div class="app-card-details" id="details-${app.id}" style="display: none;"></div>
+    </div>
+  `;
+}
+
+// Format Date
+function formatDate(isoString) {
+  if (!isoString) return '--';
+  const d = new Date(isoString);
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Placeholders for Phase 6 and 7
+function handleDetails(appId) {
+  console.log('[Phase 6] Details clicked for:', appId);
+}
+
+function handleDeleteClick(appId) {
+  console.log('[Phase 7] Delete clicked for:', appId);
 }
 
 // Connect to SSE
@@ -442,6 +523,8 @@ function updateUI(state) {
       hideLoading();
       deployInfo.style.display = 'none';
       showPickupBlock(state);
+      // Refresh products list if it was loaded
+      loadProducts();
       break;
       
     case 'ERROR':
@@ -464,7 +547,7 @@ function updateUserStoriesTable(userStories) {
     const row = document.createElement('tr');
     
     const statusClass = `status-${us.status.toLowerCase()}`;
-    const costDisplay = us.cost > 0 ? `$${us.cost.toFixed(2)}` : '--';
+    const costDisplay = typeof us.cost === 'number' ? `$${us.cost.toFixed(4)}` : '--';
     const timeDisplay = us.time > 0 ? formatTime(us.time) : '--';
     
     row.innerHTML = `

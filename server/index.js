@@ -372,8 +372,8 @@ async function runArchitect() {
   
   await orchestrator.handleAgentComplete(1, {
     ...result.content,
-    cost: result.cost,
-    time: result.time
+    cost: result.cost,  // Override any cost from content
+    time: result.time   // Override any time from content
   });
 }
 
@@ -439,8 +439,8 @@ async function runDeveloper() {
   
   await orchestrator.handleAgentComplete(2, {
     ...result.content,
-    cost: result.cost,
-    time: result.time
+    cost: result.cost,  // Override any cost from content
+    time: result.time   // Override any time from content
   });
   
   // Continue to AC check
@@ -512,8 +512,8 @@ async function runTester() {
   
   await orchestrator.handleAgentComplete(3, {
     ...result.content,
-    cost: result.cost,
-    time: result.time
+    cost: result.cost,  // Override any cost from content
+    time: result.time   // Override any time from content
   });
   
   // Continue to delivery
