@@ -220,6 +220,85 @@ app.get('/api/info', (req, res) => {
   });
 });
 
+// GET endpoint to get all archived apps
+app.get('/api/my-apps', async (req, res) => {
+  try {
+    const apps = await appsStore.getAllApps();
+    res.json({ success: true, apps });
+  } catch (error) {
+    console.error('Error fetching apps:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch apps' });
+  }
+});
+
+// GET endpoint to get a specific archived app
+app.get('/api/my-apps/:id', async (req, res) => {
+  try {
+    const app = await appsStore.getApp(req.params.id);
+    
+    if (!app) {
+      return res.status(404).json({ success: false, message: 'App not found' });
+    }
+    
+    res.json({ success: true, app });
+  } catch (error) {
+    console.error('Error fetching app:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch app' });
+  }
+});
+
+// DELETE endpoint to delete an archived app
+app.delete('/api/my-apps/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // 1. Check that record exists
+    const appRecord = await appsStore.getApp(id);
+    
+    if (!appRecord) {
+      return res.status(404).json({ success: false, message: 'App not found' });
+    }
+    
+    // 2. Delete from Fly.io (skip for fake deploys)
+    const isFake = appRecord.flyAppName && appRecord.flyAppName.startsWith('df-mock-');
+    
+    if (!isFake) {
+      const flyManager = await import('./fly-manager.js');
+      const flyResult = await flyManager.default.destroyApp(appRecord.flyAppName);
+      
+      if (!flyResult.success) {
+        // Parse: "not found" on Fly is ok, delete from archive anyway
+        // Other errors - don't touch archive
+        const isNotFound = flyResult.error &&
+          flyResult.error.toLowerCase().includes('could not find app');
+        
+        if (!isNotFound) {
+          console.error(`[DELETE] Fly destroy failed for ${id}: ${flyResult.error}`);
+          return res.status(502).json({
+            success: false,
+            message: `Failed to destroy app on Fly.io: ${flyResult.error}`
+          });
+        }
+        
+        // App not found on Fly - consider already deleted, continue
+        console.log(`[DELETE] App ${appRecord.flyAppName} not found on Fly, proceeding with archive cleanup`);
+      }
+    } else {
+      console.log(`[DELETE] Skipping Fly destroy for mock app: ${appRecord.flyAppName}`);
+    }
+    
+    // 3. Delete from archive
+    await appsStore.deleteApp(id);
+    
+    console.log(`[DELETE] App ${id} fully deleted`);
+    res.json({ success: true, message: 'App deleted' });
+    
+  } catch (error) {
+    console.error('Error deleting app:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete app' });
+  }
+});
+
 // Serve workspace files (for viewing static files)
 app.use('/workspace', express.static(path.join(__dirname, '../workspace')));
 
