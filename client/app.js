@@ -291,41 +291,30 @@ async function confirmDelete() {
   errorDiv.style.display = 'none';
   
   try {
-    console.log('[DELETE] Sending DELETE request for:', deleteTargetId);
     const response = await fetch(`/api/my-apps/${deleteTargetId}`, {
       method: 'DELETE'
     });
     
-    console.log('[DELETE] Response status:', response.status);
     const result = await response.json();
-    console.log('[DELETE] Response data:', result);
     
     if (result.success) {
       // Success — remove card from UI first, then close modal
-      console.log('[DELETE] Success, removing card');
-      
       // Store ID before closing modal (which resets deleteTargetId)
       const idToDelete = deleteTargetId;
       
       // Remove card from DOM
       const card = document.querySelector(`.app-card[data-app-id="${idToDelete}"]`);
-      console.log('[DELETE] Found card element:', card);
       if (card) {
         card.remove();
-        console.log('[DELETE] Card removed from DOM');
-      } else {
-        console.warn('[DELETE] Card not found in DOM!');
       }
       
       // Update cache
       productsCache = productsCache.filter(a => a.id !== idToDelete);
-      console.log('[DELETE] Cache updated, remaining apps:', productsCache.length);
       
       // Show empty state if no cards left
       if (productsCache.length === 0) {
         document.getElementById('products-list').innerHTML = '';
         document.getElementById('products-empty').style.display = 'block';
-        console.log('[DELETE] Showing empty state');
       }
       
       // Close modal after UI update

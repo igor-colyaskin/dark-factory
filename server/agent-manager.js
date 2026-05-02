@@ -108,6 +108,8 @@ class AgentManager {
       const cost = this.extractCost(data);
 
       console.log(`${agent.name} completed in ${elapsedTime}s, cost: $${cost.toFixed(4)}`);
+      console.log(`[COST-DEBUG] ${agent.name} returning cost: ${cost}, time: ${elapsedTime}`);
+      console.log(`[COST-DEBUG] parsedContent has cost field:`, parsedContent.cost);
 
       return {
         success: true,
@@ -198,13 +200,25 @@ class AgentManager {
    * @returns {number} Cost in dollars
    */
   extractCost(data) {
-    // OpenRouter may provide cost directly
+    console.log(`[COST-DEBUG] extractCost called`);
+    console.log(`[COST-DEBUG] data.usage:`, JSON.stringify(data.usage));
+    console.log(`[COST-DEBUG] data.model:`, data.model);
+    
+    // OpenRouter may provide cost directly (check both total_cost and cost)
     if (data.usage?.total_cost) {
+      console.log(`[COST-DEBUG] Found total_cost: ${data.usage.total_cost}`);
       return data.usage.total_cost;
+    }
+    
+    if (data.usage?.cost) {
+      console.log(`[COST-DEBUG] Found cost: ${data.usage.cost}`);
+      return data.usage.cost;
     }
 
     // Fallback: calculate from tokens if pricing info available
     if (data.usage?.prompt_tokens && data.usage?.completion_tokens) {
+      console.log(`[COST-DEBUG] Calculating from tokens: prompt=${data.usage.prompt_tokens}, completion=${data.usage.completion_tokens}`);
+      
       // These are approximate prices, actual prices may vary
       const modelPricing = {
         'anthropic/claude-opus-4': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
@@ -216,13 +230,18 @@ class AgentManager {
       const model = data.model || '';
       const pricing = Object.entries(modelPricing).find(([key]) => model.includes(key))?.[1];
 
+      console.log(`[COST-DEBUG] Model: ${model}, Pricing found:`, pricing);
+
       if (pricing) {
         const inputCost = data.usage.prompt_tokens * pricing.input;
         const outputCost = data.usage.completion_tokens * pricing.output;
-        return inputCost + outputCost;
+        const totalCost = inputCost + outputCost;
+        console.log(`[COST-DEBUG] Calculated cost: ${totalCost} (input: ${inputCost}, output: ${outputCost})`);
+        return totalCost;
       }
     }
 
+    console.log(`[COST-DEBUG] No cost data available, returning 0`);
     return 0;
   }
 

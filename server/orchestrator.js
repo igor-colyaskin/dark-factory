@@ -172,9 +172,14 @@ class Orchestrator {
     if (data.usId) {
       const us = this.userStories.find(u => u.id === data.usId);
       if (us) {
+        console.log(`[COST-DEBUG] Updating US${data.usId} - before: cost=${us.cost}, time=${us.time}`);
+        console.log(`[COST-DEBUG] Incoming data - cost=${data.cost}, time=${data.time}, status=${data.status}`);
+        
         if (data.status) us.status = data.status;
         if (data.cost !== undefined) us.cost += data.cost;
         if (data.time !== undefined) us.time += data.time;
+        
+        console.log(`[COST-DEBUG] Updating US${data.usId} - after: cost=${us.cost}, time=${us.time}`);
       }
     }
 

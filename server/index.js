@@ -370,11 +370,18 @@ async function runArchitect() {
     throw new Error(`Architect failed: ${result.error}`);
   }
   
-  await orchestrator.handleAgentComplete(1, {
+  console.log(`[COST-DEBUG] Architect result.cost: ${result.cost}, result.time: ${result.time}`);
+  console.log(`[COST-DEBUG] Architect result.content.cost: ${result.content.cost}`);
+  
+  const architectData = {
     ...result.content,
     cost: result.cost,  // Override any cost from content
     time: result.time   // Override any time from content
-  });
+  };
+  
+  console.log(`[COST-DEBUG] Passing to orchestrator - cost: ${architectData.cost}, time: ${architectData.time}`);
+  
+  await orchestrator.handleAgentComplete(1, architectData);
 }
 
 // Run Developer agent
@@ -437,11 +444,18 @@ async function runDeveloper() {
     }
   }
   
-  await orchestrator.handleAgentComplete(2, {
+  console.log(`[COST-DEBUG] Developer result.cost: ${result.cost}, result.time: ${result.time}`);
+  console.log(`[COST-DEBUG] Developer result.content.cost: ${result.content.cost}`);
+  
+  const developerData = {
     ...result.content,
     cost: result.cost,  // Override any cost from content
     time: result.time   // Override any time from content
-  });
+  };
+  
+  console.log(`[COST-DEBUG] Passing to orchestrator - cost: ${developerData.cost}, time: ${developerData.time}`);
+  
+  await orchestrator.handleAgentComplete(2, developerData);
   
   // Continue to AC check
   await runPipeline();
@@ -510,11 +524,18 @@ async function runTester() {
     throw new Error(`Tester failed: ${result.error}`);
   }
   
-  await orchestrator.handleAgentComplete(3, {
+  console.log(`[COST-DEBUG] Tester result.cost: ${result.cost}, result.time: ${result.time}`);
+  console.log(`[COST-DEBUG] Tester result.content.cost: ${result.content.cost}`);
+  
+  const testerData = {
     ...result.content,
     cost: result.cost,  // Override any cost from content
     time: result.time   // Override any time from content
-  });
+  };
+  
+  console.log(`[COST-DEBUG] Passing to orchestrator - cost: ${testerData.cost}, time: ${testerData.time}`);
+  
+  await orchestrator.handleAgentComplete(3, testerData);
   
   // Continue to delivery
   await runPipeline();
