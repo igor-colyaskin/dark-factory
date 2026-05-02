@@ -6,6 +6,7 @@ import orchestrator from './orchestrator.js';
 import fileManager from './file-manager.js';
 import acChecker from './ac-checker.js';
 import costTracker from './cost-tracker.js';
+import appsStore from './apps-store.js';
 import architectPrompts from './prompts/architect.js';
 import developerPrompts from './prompts/developer.js';
 import testerPrompts from './prompts/tester.js';
@@ -20,6 +21,9 @@ console.log(`🏭 Dark Factory starting in ${RUN_MODE.toUpperCase()} mode`);
 
 // Validate environment variables before proceeding
 validateEnvOrExit(RUN_MODE);
+
+// Initialize apps store
+await appsStore.init();
 
 let agentManager;
 let useMockWorkspace = false;

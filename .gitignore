@@ -28,3 +28,5 @@ Thumbs.db
 
 # Archives (generated zips for download)
 *.zip
+
+/state/
