@@ -92,6 +92,43 @@ body {
   opacity: 0.9;
 }
 
+/* Tabs Navigation */
+.tabs-nav {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px;
+  border-radius: 10px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tab-btn {
+  padding: 12px 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn.active {
+  background: white;
+  color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 /* Blocks */
 .block {
   background: var(--card-bg);
@@ -385,6 +422,32 @@ body {
   background: #f8d7da;
   color: #721c24;
   border-left: 4px solid #dc3545;
+}
+
+/* Products Block */
+.products-block .block-header {
+  background: linear-gradient(135deg, #5c6bc0 0%, #3949ab 100%);
+}
+
+.products-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-light);
+}
+
+.products-empty p {
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.products-empty a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.products-empty a:hover {
+  text-decoration: underline;
 }
 
 /* Pickup Block */

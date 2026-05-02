@@ -18,8 +18,16 @@
       <p class="tagline">Your Application Factory - Order, Watch, Pickup</p>
     </header>
 
-    <!-- BLOCK 1: ORDER -->
-    <section id="order-block" class="block order-block">
+    <!-- Tabs Navigation -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="order">📝 Order</button>
+      <button class="tab-btn" data-tab="products">📦 Products</button>
+    </nav>
+
+    <!-- Page: Order -->
+    <div id="page-order" class="page">
+      <!-- BLOCK 1: ORDER -->
+      <section id="order-block" class="block order-block">
       <div class="block-header">
         <h2>📝 Order</h2>
         <p>Describe the application you want to create</p>
@@ -205,6 +213,26 @@
         </div>
       </div>
     </section>
+    </div>
+    <!-- End Page: Order -->
+
+    <!-- Page: Products -->
+    <div id="page-products" class="page" style="display: none;">
+      <section class="block products-block">
+        <div class="block-header">
+          <h2>📦 Products</h2>
+          <p>Your created applications</p>
+        </div>
+        <div class="block-content">
+          <div id="products-list"></div>
+          <div id="products-empty" class="products-empty">
+            <p>Nothing here yet.</p>
+            <p>Go to <a href="#" id="go-to-order-link">Order</a> and create your first app.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+    <!-- End Page: Products -->
 
     <!-- Footer -->
     <footer class="footer">

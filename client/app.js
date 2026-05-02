@@ -43,6 +43,7 @@ const deployStatusText = document.getElementById('deploy-status-text');
 document.addEventListener('DOMContentLoaded', () => {
   initSessionId();
   setupEventListeners();
+  setupTabs();
   connectSSE();
   loadRunMode();
 });
@@ -87,6 +88,50 @@ function setupEventListeners() {
   newOrderBtn.addEventListener('click', handleNewOrder);
   openPublicBtn.addEventListener('click', handleOpenPublic);
   copyUrlBtn.addEventListener('click', handleCopyUrl);
+}
+
+// Setup Tabs
+function setupTabs() {
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.dataset.tab;
+      switchTab(targetTab);
+    });
+  });
+  
+  // "Go to Order" link inside products empty state
+  const goToOrderLink = document.getElementById('go-to-order-link');
+  if (goToOrderLink) {
+    goToOrderLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchTab('order');
+    });
+  }
+}
+
+// Switch Tab
+function switchTab(tabName) {
+  // Update buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabName);
+  });
+  
+  // Update pages
+  document.getElementById('page-order').style.display = tabName === 'order' ? 'block' : 'none';
+  document.getElementById('page-products').style.display = tabName === 'products' ? 'block' : 'none';
+  
+  // Load products when switching to that tab
+  if (tabName === 'products') {
+    loadProducts();
+  }
+}
+
+// Load Products (placeholder for Phase 5)
+async function loadProducts() {
+  // Placeholder — will be implemented in Phase 5
+  console.log('[TABS] loadProducts() called — Phase 5 will implement');
 }
 
 // Connect to SSE
