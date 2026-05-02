@@ -2,7 +2,6 @@
  * Dark Factory v0.1 - Client Application
  * Handles UI interactions and SSE communication with backend
  */
-
 // State
 let eventSource = null;
 let currentState = null;

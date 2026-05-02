@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import crypto from 'node:crypto';
 import flyManager from './fly-manager.js';
 import { resolveRunMode } from './run-modes.js';
+import appsStore from './apps-store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -402,6 +403,52 @@ class Orchestrator {
     return retryablePatterns.some(pattern => lowerError.includes(pattern));
   }
 
+  /**
+   * Archive completed app to apps-store.
+   * Called before transitioning to DONE state.
+   * Errors are logged but don't prevent order completion.
+   */
+  async archiveApp() {
+    try {
+      // Build metrics object from user stories
+      const metrics = {
+        totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
+        totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0),
+        agents: {}
+      };
+
+      // Add per-agent metrics
+      this.userStories.forEach(us => {
+        const agentKey = us.agent.toLowerCase(); // 'Arc' -> 'arc', 'Dev' -> 'dev', 'Tst' -> 'tst'
+        metrics.agents[agentKey] = {
+          cost: us.cost,
+          time: us.time
+        };
+      });
+
+      // Serialize architectOutput if it's an object
+      let architectOutput = this.agentOutputs[1] || 'N/A';
+      if (typeof architectOutput === 'object') {
+        architectOutput = JSON.stringify(architectOutput, null, 2);
+      }
+
+      const appRecord = await appsStore.addApp({
+        id: this.appName,
+        flyAppName: this.appName,
+        createdAt: new Date().toISOString(),
+        order: this.orderDescription,
+        architectOutput: architectOutput,
+        url: this.publicUrl,
+        metrics: metrics
+      });
+
+      console.log(`[orchestrator] App archived as #${appRecord.number} (${appRecord.id})`);
+    } catch (err) {
+      console.error(`[orchestrator] Failed to archive app: ${err.message}`);
+      // Do NOT throw - order completes successfully regardless
+    }
+  }
+
   // Execute deployment to Fly.io with timeout
   async executeDeploy() {
     console.log('[ORCHESTRATOR] Starting deployment to Fly.io');
@@ -481,6 +528,10 @@ class Orchestrator {
       this.error = null;
 
       console.log(`[ORCHESTRATOR] Deployment successful: ${this.publicUrl}`);
+      
+      // Archive app before marking as DONE
+      await this.archiveApp();
+      
       await this.transition(STATES.DONE);
 
     } catch (error) {
@@ -565,6 +616,9 @@ class Orchestrator {
     // Mark as fake so UI can display a badge
     this.broadcastEvent({ type: 'deploy_fake_url', url: this.publicUrl });
 
+    // Archive app before marking as DONE
+    await this.archiveApp();
+
     await this.transition(STATES.DONE);
   }
 
@@ -583,6 +637,7 @@ class Orchestrator {
     this.publicUrl = null;
     this.appName = null;
     this.error = null;
+    this.runMode = resolveRunMode(); // Re-read run mode from environment
 
     await this.saveState();
     this.notifyListeners();
