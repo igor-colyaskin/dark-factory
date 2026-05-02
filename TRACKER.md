@@ -356,6 +356,24 @@
   [ ] 7.6  Клик "Отмена" или вне модалки → закрытие без удаления
   [ ] 7.7  Коммит: "v0.2.1 phase 7: delete with confirmation"
 
+  
+  ФАЗА 7.5: APP SLUG ИЗ ЗАКАЗА ⬜ ✅: выполнено 2026-05-02
+  =================================
+
+  Цель: архитектор извлекает осмысленное имя приложения из текста заказа.
+  Вместо df-a1b2c3d4 получаем df-my-tasks. Первый микро-шаг agency.
+
+  [ ] 7.5.1  server/prompts/architect.js: добавить appSlug в system prompt и JSON schema
+  [ ] 7.5.2  server/mock-agent-manager.js: добавить appSlug в мок-ответ архитектора
+  [ ] 7.5.3  server/orchestrator.js → executeDeploy(): взять appSlug из agentOutputs[1],
+             sanitize (lowercase, [a-z0-9-], max 20 символов), prefix df-,
+             fallback на UUID если отсутствует или пустой
+  [ ] 7.5.4  server/orchestrator.js → executeFakeDeploy(): аналогично, prefix df-mock-
+  [ ] 7.5.5  Edge case: имя занято на Fly → retry с суффиксом -<4 chars uuid>
+  [ ] 7.5.6  Проверка: mock:fast — убедиться что appName содержит slug, а не UUID
+  [ ] 7.5.7  Проверка: production или mock:full — slug попадает в URL и в apps.json
+  [ ] 7.5.8  Коммит: "v0.2.1 phase 7.5: app slug from order"
+
 
   ФАЗА 8: ДОКУМЕНТАЦИЯ И РЕЛИЗ ⬜
   ================================

@@ -28,6 +28,35 @@ export const STATES = {
   ERROR: 'ERROR'
 };
 
+/**
+ * Sanitize and validate app slug.
+ * @param {string|undefined} raw - Raw slug from architect
+ * @returns {string|null} - Clean slug or null if invalid/empty
+ */
+function sanitizeSlug(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  
+  // Lowercase, keep only allowed chars
+  let slug = raw.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  
+  // Collapse multiple hyphens
+  slug = slug.replace(/-+/g, '-');
+  
+  // Trim hyphens from edges
+  slug = slug.replace(/^-+|-+$/g, '');
+  
+  // Must start with a letter
+  if (!/^[a-z]/.test(slug)) {
+    slug = 'app-' + slug;
+  }
+  
+  // Length: 3-20
+  if (slug.length < 3) return null;
+  if (slug.length > 20) slug = slug.substring(0, 20).replace(/-+$/, '');
+  
+  return slug;
+}
+
 // User stories configuration
 const USER_STORIES = [
   {
@@ -458,9 +487,10 @@ class Orchestrator {
   async executeDeploy() {
     console.log('[ORCHESTRATOR] Starting deployment to Fly.io');
 
-    // Generate unique app name
-    const appName = 'df-' + crypto.randomUUID().slice(0, 8);
-    console.log(`[ORCHESTRATOR] Generated app name: ${appName}`);
+    // Generate app name from slug or fallback to UUID
+    const slug = sanitizeSlug(this.agentOutputs[1]?.appSlug);
+    let appName = slug ? `df-${slug}` : 'df-' + crypto.randomUUID().slice(0, 8);
+    console.log(`[ORCHESTRATOR] Generated app name: ${appName}${slug ? ' (from slug)' : ' (random)'}`);
 
     let appCreated = false;
     let timeoutId;
@@ -482,7 +512,19 @@ class Orchestrator {
         const createResult = await flyManager.createApp(appName);
 
         if (!createResult.success) {
-          throw new Error(`Failed to create app: ${createResult.error}`);
+          // If name already taken — retry with UUID suffix
+          if (createResult.error && createResult.error.toLowerCase().includes('already exists')) {
+            const fallbackName = appName + '-' + crypto.randomUUID().slice(0, 4);
+            console.log(`[ORCHESTRATOR] App name ${appName} taken, trying ${fallbackName}`);
+            const retryResult = await flyManager.createApp(fallbackName);
+            if (!retryResult.success) {
+              throw new Error(`Failed to create app: ${retryResult.error}`);
+            }
+            // Update appName for the rest of the flow
+            appName = fallbackName;
+          } else {
+            throw new Error(`Failed to create app: ${createResult.error}`);
+          }
         }
 
         appCreated = true;
@@ -592,8 +634,10 @@ class Orchestrator {
   async executeFakeDeploy() {
     console.log('[ORCHESTRATOR] Starting FAKE deployment (mode:', this.runMode.name + ')');
 
-    const appName = 'df-mock-' + crypto.randomUUID().slice(0, 8);
+    const slug = sanitizeSlug(this.agentOutputs[1]?.appSlug);
+    const appName = slug ? `df-mock-${slug}` : 'df-mock-' + crypto.randomUUID().slice(0, 8);
     this.appName = appName;
+    console.log(`[ORCHESTRATOR] Generated app name: ${appName}${slug ? ' (from slug)' : ' (random)'}`);
 
     // Step delays — longer for demo mode
     const stepDelay = this.runMode.demoDelays ? 1500 : 400;

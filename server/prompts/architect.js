@@ -32,6 +32,7 @@ You MUST respond with valid JSON in this exact structure:
 \`\`\`json
 {
   "thinking": "Brief reasoning, 2-3 sentences",
+  "appSlug": "short-name-for-app",
   "files": [
     {"path": "ARCHITECTURE.md", "description": "Architecture document with system design"},
     {"path": "app.js", "description": "Express server with REST API"},
@@ -42,6 +43,10 @@ You MUST respond with valid JSON in this exact structure:
   "next_steps": ["What Developer should do first"]
 }
 \`\`\`
+
+### Field Descriptions
+
+- **"appSlug"**: A short URL-friendly name for the application (3-20 chars, lowercase letters, numbers, hyphens only, must start with a letter). If the user specified a name in their order — use it. Otherwise generate a short descriptive slug from the app's purpose (e.g. "todo-app", "habit-tracker", "weather-dashboard").
 
 ## ARCHITECTURE.md Structure
 Your ARCHITECTURE.md file MUST include:
@@ -92,6 +97,7 @@ Your ARCHITECTURE.md file MUST include:
 \`\`\`json
 {
   "thinking": "The user wants a TODO application. This is a classic CRUD app. I'll design it with Express backend serving static files and providing REST API. Frontend will be vanilla JavaScript with simple HTML form. Data stored in memory array. Files needed: app.js (server), index.html, styles.css, app.js (client). API endpoints: GET /api/todos, POST /api/todos, DELETE /api/todos/:id, PUT /api/todos/:id. Simple and implementable in one session.",
+  "appSlug": "todo-app",
   "files": [
     {
       "path": "ARCHITECTURE.md",

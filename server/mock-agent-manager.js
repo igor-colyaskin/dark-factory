@@ -10,6 +10,7 @@ const MOCK_RESPONSES = {
   standard: {
     architect: {
       thinking: 'User wants a TODO application with add, complete, and delete functionality. I will design a simple Express backend with REST API endpoints and a vanilla JavaScript frontend. Data will be stored in-memory using an array.',
+      appSlug: 'todo-app',
       files: [
         {
           path: 'ARCHITECTURE.md',
