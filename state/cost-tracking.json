@@ -1,10 +1,10 @@
 {
-  "totalCost": 2.6,
-  "totalTime": 12,
+  "totalCost": 3.9,
+  "totalTime": 18,
   "entries": [
     {
-      "id": "1777711792284",
-      "timestamp": "2026-05-02T08:49:52.284Z",
+      "id": "1777714917118",
+      "timestamp": "2026-05-02T09:41:57.118Z",
       "usId": 1,
       "usName": "Architecture",
       "agent": "architect",
@@ -20,8 +20,8 @@
       "error": null
     },
     {
-      "id": "1777711794787",
-      "timestamp": "2026-05-02T08:49:54.787Z",
+      "id": "1777714919171",
+      "timestamp": "2026-05-02T09:41:59.171Z",
       "usId": 2,
       "usName": "Development",
       "agent": "developer",
@@ -37,8 +37,8 @@
       "error": null
     },
     {
-      "id": "1777711795987",
-      "timestamp": "2026-05-02T08:49:55.987Z",
+      "id": "1777714920353",
+      "timestamp": "2026-05-02T09:42:00.353Z",
       "usId": 3,
       "usName": "Testing",
       "agent": "tester",
@@ -54,8 +54,8 @@
       "error": null
     },
     {
-      "id": "1777711823330",
-      "timestamp": "2026-05-02T08:50:23.330Z",
+      "id": "1777715063687",
+      "timestamp": "2026-05-02T09:44:23.687Z",
       "usId": 1,
       "usName": "Architecture",
       "agent": "architect",
@@ -71,8 +71,8 @@
       "error": null
     },
     {
-      "id": "1777711829735",
-      "timestamp": "2026-05-02T08:50:29.735Z",
+      "id": "1777715066507",
+      "timestamp": "2026-05-02T09:44:26.507Z",
       "usId": 2,
       "usName": "Development",
       "agent": "developer",
@@ -88,8 +88,8 @@
       "error": null
     },
     {
-      "id": "1777711830901",
-      "timestamp": "2026-05-02T08:50:30.901Z",
+      "id": "1777715067709",
+      "timestamp": "2026-05-02T09:44:27.709Z",
       "usId": 3,
       "usName": "Testing",
       "agent": "tester",
@@ -105,8 +105,8 @@
       "error": null
     },
     {
-      "id": "1777711970100",
-      "timestamp": "2026-05-02T08:52:50.100Z",
+      "id": "1777715099400",
+      "timestamp": "2026-05-02T09:44:59.400Z",
       "usId": 1,
       "usName": "Architecture",
       "agent": "architect",
@@ -122,8 +122,8 @@
       "error": null
     },
     {
-      "id": "1777711975772",
-      "timestamp": "2026-05-02T08:52:55.772Z",
+      "id": "1777715101836",
+      "timestamp": "2026-05-02T09:45:01.836Z",
       "usId": 2,
       "usName": "Development",
       "agent": "developer",
@@ -139,8 +139,8 @@
       "error": null
     },
     {
-      "id": "1777711977006",
-      "timestamp": "2026-05-02T08:52:57.006Z",
+      "id": "1777715103001",
+      "timestamp": "2026-05-02T09:45:03.001Z",
       "usId": 3,
       "usName": "Testing",
       "agent": "tester",
@@ -156,8 +156,8 @@
       "error": null
     },
     {
-      "id": "1777711995372",
-      "timestamp": "2026-05-02T08:53:15.372Z",
+      "id": "1777715111612",
+      "timestamp": "2026-05-02T09:45:11.612Z",
       "usId": 1,
       "usName": "Architecture",
       "agent": "architect",
@@ -173,8 +173,8 @@
       "error": null
     },
     {
-      "id": "1777711998643",
-      "timestamp": "2026-05-02T08:53:18.643Z",
+      "id": "1777715114494",
+      "timestamp": "2026-05-02T09:45:14.494Z",
       "usId": 2,
       "usName": "Development",
       "agent": "developer",
@@ -190,8 +190,110 @@
       "error": null
     },
     {
-      "id": "1777711999807",
-      "timestamp": "2026-05-02T08:53:19.807Z",
+      "id": "1777715115660",
+      "timestamp": "2026-05-02T09:45:15.660Z",
+      "usId": 3,
+      "usName": "Testing",
+      "agent": "tester",
+      "model": "mock-tester",
+      "cost": 0.05,
+      "time": 1,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 1500
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777715150674",
+      "timestamp": "2026-05-02T09:45:50.674Z",
+      "usId": 1,
+      "usName": "Architecture",
+      "agent": "architect",
+      "model": "mock-architect",
+      "cost": 0.25,
+      "time": 1,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 1500
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777715153042",
+      "timestamp": "2026-05-02T09:45:53.043Z",
+      "usId": 2,
+      "usName": "Development",
+      "agent": "developer",
+      "model": "mock-developer",
+      "cost": 0.35,
+      "time": 1,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 1500
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777715154208",
+      "timestamp": "2026-05-02T09:45:54.208Z",
+      "usId": 3,
+      "usName": "Testing",
+      "agent": "tester",
+      "model": "mock-tester",
+      "cost": 0.05,
+      "time": 1,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 1500
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777715162633",
+      "timestamp": "2026-05-02T09:46:02.633Z",
+      "usId": 1,
+      "usName": "Architecture",
+      "agent": "architect",
+      "model": "mock-architect",
+      "cost": 0.25,
+      "time": 1,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 1500
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777715164485",
+      "timestamp": "2026-05-02T09:46:04.485Z",
+      "usId": 2,
+      "usName": "Development",
+      "agent": "developer",
+      "model": "mock-developer",
+      "cost": 0.35,
+      "time": 1,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 1500
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777715165668",
+      "timestamp": "2026-05-02T09:46:05.668Z",
       "usId": 3,
       "usName": "Testing",
       "agent": "tester",
@@ -207,5 +309,5 @@
       "error": null
     }
   ],
-  "savedAt": "2026-05-02T08:53:19.807Z"
+  "savedAt": "2026-05-02T09:46:05.668Z"
 }

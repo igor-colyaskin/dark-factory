@@ -7,6 +7,7 @@ let eventSource = null;
 let currentState = null;
 let sessionId = null;
 let productsCache = [];
+let deleteTargetId = null;
 
 // DOM Elements
 const orderBlock = document.getElementById('order-block');
@@ -89,6 +90,13 @@ function setupEventListeners() {
   newOrderBtn.addEventListener('click', handleNewOrder);
   openPublicBtn.addEventListener('click', handleOpenPublic);
   copyUrlBtn.addEventListener('click', handleCopyUrl);
+  
+  // Close delete modal on outside click
+  document.getElementById('delete-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'delete-modal') {
+      closeDeleteModal();
+    }
+  });
 }
 
 // Setup Tabs
@@ -235,8 +243,111 @@ function handleDetails(appId) {
   }
 }
 
+// Handle Delete Click (Phase 7)
 function handleDeleteClick(appId) {
-  console.log('[Phase 7] Delete clicked for:', appId);
+  const app = productsCache.find(a => a.id === appId);
+  if (!app) return;
+  
+  deleteTargetId = appId;
+  
+  // Populate modal
+  const modalInfo = document.getElementById('delete-modal-info');
+  modalInfo.textContent = `#${app.number} (${app.id})`;
+  
+  // Reset state
+  const errorDiv = document.getElementById('delete-modal-error');
+  errorDiv.style.display = 'none';
+  errorDiv.textContent = '';
+  
+  const confirmBtn = document.getElementById('delete-confirm-btn');
+  confirmBtn.disabled = false;
+  confirmBtn.textContent = 'Да, удалить';
+  
+  const cancelBtn = document.getElementById('delete-cancel-btn');
+  cancelBtn.disabled = false;
+  
+  // Show modal
+  document.getElementById('delete-modal').style.display = 'flex';
+}
+
+// Close Delete Modal
+function closeDeleteModal() {
+  document.getElementById('delete-modal').style.display = 'none';
+  deleteTargetId = null;
+}
+
+// Confirm Delete
+async function confirmDelete() {
+  if (!deleteTargetId) return;
+  
+  const confirmBtn = document.getElementById('delete-confirm-btn');
+  const cancelBtn = document.getElementById('delete-cancel-btn');
+  const errorDiv = document.getElementById('delete-modal-error');
+  
+  // Loading state
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Удаление...';
+  cancelBtn.disabled = true;
+  errorDiv.style.display = 'none';
+  
+  try {
+    console.log('[DELETE] Sending DELETE request for:', deleteTargetId);
+    const response = await fetch(`/api/my-apps/${deleteTargetId}`, {
+      method: 'DELETE'
+    });
+    
+    console.log('[DELETE] Response status:', response.status);
+    const result = await response.json();
+    console.log('[DELETE] Response data:', result);
+    
+    if (result.success) {
+      // Success — remove card from UI first, then close modal
+      console.log('[DELETE] Success, removing card');
+      
+      // Store ID before closing modal (which resets deleteTargetId)
+      const idToDelete = deleteTargetId;
+      
+      // Remove card from DOM
+      const card = document.querySelector(`.app-card[data-app-id="${idToDelete}"]`);
+      console.log('[DELETE] Found card element:', card);
+      if (card) {
+        card.remove();
+        console.log('[DELETE] Card removed from DOM');
+      } else {
+        console.warn('[DELETE] Card not found in DOM!');
+      }
+      
+      // Update cache
+      productsCache = productsCache.filter(a => a.id !== idToDelete);
+      console.log('[DELETE] Cache updated, remaining apps:', productsCache.length);
+      
+      // Show empty state if no cards left
+      if (productsCache.length === 0) {
+        document.getElementById('products-list').innerHTML = '';
+        document.getElementById('products-empty').style.display = 'block';
+        console.log('[DELETE] Showing empty state');
+      }
+      
+      // Close modal after UI update
+      closeDeleteModal();
+      
+      showStatus('Application deleted', 'success');
+    } else {
+      // Error from server
+      errorDiv.textContent = result.message || 'Failed to delete application.';
+      errorDiv.style.display = 'block';
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Да, удалить';
+      cancelBtn.disabled = false;
+    }
+  } catch (error) {
+    console.error('Error deleting app:', error);
+    errorDiv.textContent = 'Network error. Please try again.';
+    errorDiv.style.display = 'block';
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Да, удалить';
+    cancelBtn.disabled = false;
+  }
 }
 
 // Connect to SSE

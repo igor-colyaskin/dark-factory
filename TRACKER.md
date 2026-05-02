@@ -336,7 +336,7 @@
   [ ] 5.6  Коммит: "v0.2.1 phase 5: Products page list"
 
 
-  ФАЗА 6: UI — DETAILS (INLINE-EXPAND) ⬜
+  ФАЗА 6: UI — DETAILS (INLINE-EXPAND) ⬜ ✅: выполнено 2026-05-02
   ========================================
 
   [ ] 6.1  Клик "Детали" → expand/collapse блока с architectOutput
