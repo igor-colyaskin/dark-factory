@@ -988,3 +988,19 @@ body {
   padding: 40px 20px;
   color: var(--danger-color);
 }
+
+/* App Card Details (expand) */
+.app-card-details-content {
+  background: #f8f9fa;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 16px;
+  font-size: 0.82rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 0;
+  line-height: 1.5;
+}

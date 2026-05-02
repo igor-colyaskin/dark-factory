@@ -6,6 +6,7 @@
 let eventSource = null;
 let currentState = null;
 let sessionId = null;
+let productsCache = [];
 
 // DOM Elements
 const orderBlock = document.getElementById('order-block');
@@ -138,16 +139,19 @@ async function loadProducts() {
     const data = await response.json();
     
     if (!data.success || !data.apps || data.apps.length === 0) {
+      productsCache = [];
       productsList.innerHTML = '';
       productsEmpty.style.display = 'block';
       return;
     }
     
+    productsCache = data.apps;
     productsEmpty.style.display = 'none';
     productsList.innerHTML = data.apps.map(app => renderAppCard(app)).join('');
     
   } catch (error) {
     console.error('Error loading products:', error);
+    productsCache = [];
     productsList.innerHTML = '<p class="products-error">Failed to load applications.</p>';
     productsEmpty.style.display = 'none';
   }
@@ -206,9 +210,29 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Placeholders for Phase 6 and 7
+// Handle Details (Phase 6)
 function handleDetails(appId) {
-  console.log('[Phase 6] Details clicked for:', appId);
+  const detailsDiv = document.getElementById(`details-${appId}`);
+  const btn = document.querySelector(`.app-card[data-app-id="${appId}"] [data-action="details"]`);
+  
+  if (!detailsDiv || !btn) return;
+  
+  const isVisible = detailsDiv.style.display !== 'none';
+  
+  if (isVisible) {
+    // Collapse
+    detailsDiv.style.display = 'none';
+    btn.textContent = 'Детали';
+  } else {
+    // Expand — populate if empty
+    if (!detailsDiv.innerHTML) {
+      const app = productsCache.find(a => a.id === appId);
+      const content = app && app.architectOutput ? app.architectOutput : 'No details available.';
+      detailsDiv.innerHTML = `<pre class="app-card-details-content">${escapeHtml(content)}</pre>`;
+    }
+    detailsDiv.style.display = 'block';
+    btn.textContent = 'Скрыть';
+  }
 }
 
 function handleDeleteClick(appId) {
