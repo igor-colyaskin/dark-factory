@@ -639,8 +639,8 @@ class Orchestrator {
     this.appName = appName;
     console.log(`[ORCHESTRATOR] Generated app name: ${appName}${slug ? ' (from slug)' : ' (random)'}`);
 
-    // Step delays — longer for demo mode
-    const stepDelay = this.runMode.demoDelays ? 1500 : 400;
+    // Step delays — longer for demo mode (16 seconds total for demo)
+    const stepDelay = this.runMode.demoDelays ? 4000 : 400;
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     const steps = [

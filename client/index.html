@@ -11,233 +11,247 @@
   <!-- Run Mode Badge (fixed position) -->
   <div id="run-mode-badge" class="run-mode-badge"></div>
 
-  <div class="container">
-    <!-- Header -->
-    <header class="header">
-      <h1>🏭 Dark Factory</h1>
-      <p class="tagline">Your Application Factory - Order, Watch, Pickup</p>
-    </header>
-
-    <!-- Tabs Navigation -->
-    <nav class="tabs-nav">
-      <button class="tab-btn active" data-tab="order">📝 Order</button>
-      <button class="tab-btn" data-tab="products">📦 Products</button>
-    </nav>
-
-    <!-- Page: Order -->
-    <div id="page-order" class="page">
-      <!-- BLOCK 1: ORDER -->
-      <section id="order-block" class="block order-block">
-      <div class="block-header">
-        <h2>📝 Order</h2>
-        <p>Describe the application you want to create</p>
+  <!-- Main Layout: Sidebar + Workspace -->
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <!-- Logo at top -->
+      <div class="sidebar-logo" data-tooltip="Dark Factory v0.2">
+        🏭
       </div>
       
-      <div class="block-content">
-        <form id="order-form">
-          <textarea 
-            id="order-input" 
-            name="order" 
-            rows="6" 
-            placeholder="Example: Create a simple TODO application where users can add, complete, and delete tasks."
-            required
-          ></textarea>
+      <!-- Navigation Icons -->
+      <nav class="sidebar-nav">
+        <button class="sidebar-btn active" data-tab="order" data-tooltip="Order">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </button>
+        
+        <button class="sidebar-btn" data-tab="products" data-tooltip="My Apps">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Workspace -->
+    <main class="workspace">
+      <!-- Page: Order -->
+      <div id="page-order" class="page">
+        <!-- BLOCK 1: ORDER -->
+        <section id="order-block" class="block order-block">
+          <div class="block-header">
+            <h2 id="order-title">📝 Order</h2>
+          </div>
           
-          <button type="submit" class="btn btn-primary" id="submit-order-btn">
-            Submit Order
-          </button>
-        </form>
-      </div>
-    </section>
-
-    <!-- BLOCK 2: MANUFACTURING (hidden initially) -->
-    <section id="manufacturing-block" class="block manufacturing-block" style="display: none;">
-      <div class="block-header">
-        <h2>⚙️ Manufacturing</h2>
-        <p>Watch your application being built in real-time</p>
-      </div>
-      
-      <div class="block-content">
-        <!-- Deploy Info (shown during DEPLOYING state) -->
-        <div id="deploy-info" class="deploy-info" style="display: none;">
-          <div class="deploy-info-header">
-            <div class="deploy-spinner"></div>
-            <div class="deploy-status-text" id="deploy-status-text">Starting deployment...</div>
+          <div class="block-content">
+            <form id="order-form">
+              <textarea
+                id="order-input"
+                name="order"
+                rows="6"
+                placeholder="Example: Create a simple TODO application where users can add, complete, and delete tasks."
+                required
+              ></textarea>
+              
+              <button type="submit" class="btn btn-primary" id="submit-order-btn">
+                Submit Order
+              </button>
+            </form>
+            
+            <!-- Order display (shown after submit) -->
+            <div id="order-display" class="order-display" style="display: none;">
+              <div id="order-text" class="order-text"></div>
+            </div>
           </div>
-          <div class="deploy-info-message">
-            ☁️ Your application is being published to the cloud.<br>
-            It will be available via a public link for 24 hours.<br>
-            You can share the link with anyone — no software installation required.
+        </section>
+
+        <!-- BLOCK 2: MANUFACTURING (hidden initially) -->
+        <section id="manufacturing-block" class="block manufacturing-block" style="display: none;">
+          <div class="block-header">
+            <h2>⚙️ Manufacturing</h2>
           </div>
-        </div>
-
-        <!-- User Stories Table -->
-        <div class="table-container">
-          <table class="us-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>User Story</th>
-                <th>Agent</th>
-                <th>Status</th>
-                <th>Cost</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody id="us-table-body">
-              <!-- User stories will be populated here -->
-            </tbody>
-            <tfoot>
-              <tr class="total-row">
-                <td colspan="4"><strong>Total</strong></td>
-                <td id="total-cost">$0.00</td>
-                <td id="total-time">0s</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <!-- Action Buttons (shown when needed) -->
-        <div id="action-buttons" class="action-buttons" style="display: none;">
-          <button id="approve-btn" class="btn btn-success">
-            ✓ Approve
-          </button>
-          <button id="ask-question-btn" class="btn btn-secondary">
-            ❓ Ask Question
-          </button>
-        </div>
-
-        <!-- Questions Area (shown when agent has questions) -->
-        <div id="questions-area" class="questions-area" style="display: none;">
-          <h3>Agent Questions</h3>
-          <div id="questions-list"></div>
-          <form id="answers-form">
-            <textarea 
-              id="answers-input" 
-              rows="4" 
-              placeholder="Provide your answers here..."
-              required
-            ></textarea>
-            <button type="submit" class="btn btn-primary">
-              Submit Answers
-            </button>
-          </form>
-        </div>
-
-        <!-- Status Messages -->
-        <div id="status-message" class="status-message"></div>
-      </div>
-    </section>
-
-    <!-- BLOCK 3: PICKUP (hidden initially) -->
-    <section id="pickup-block" class="block pickup-block" style="display: none;">
-      <div class="block-header">
-        <h2>🎉 Pickup</h2>
-        <p>Your application is ready!</p>
-      </div>
-      
-      <div class="block-content">
-        <div class="success-message">
-          <div class="success-icon">✓</div>
-          <h3>Application Successfully Created!</h3>
-          <p>Your application has been built and is ready to use.</p>
-        </div>
-
-        <div class="pickup-stats">
-          <div class="stat">
-            <span class="stat-label">Total Cost:</span>
-            <span class="stat-value" id="final-cost">$0.00</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Total Time:</span>
-            <span class="stat-value" id="final-time">0s</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Files Created:</span>
-            <span class="stat-value" id="final-files">0</span>
-          </div>
-        </div>
-
-        <!-- Public URL Section (v0.2) -->
-        <div id="public-url-section" class="public-url-section" style="display: none;">
-          <h3 class="public-url-title">🌐 Your App is Live!</h3>
           
-          <div class="public-url-content">
-            <!-- Left Block: URL and Buttons -->
-            <div class="public-url-left">
-              <div class="public-url-display">
-                <a id="public-url-link" href="#" target="_blank" rel="noopener noreferrer" class="public-url-link"></a>
-                <div id="fake-url-badge" class="fake-url-badge" style="display: none;">
-                  ⚠ Mock deploy — URL is fake, nothing was actually deployed
+          <div class="block-content">
+            <!-- Deploy Info (shown during DEPLOYING state) -->
+            <div id="deploy-info" class="deploy-info" style="display: none;">
+              <div class="deploy-info-header">
+                <div class="deploy-spinner"></div>
+                <div class="deploy-status-text" id="deploy-status-text">Starting deployment...</div>
+              </div>
+              <div class="deploy-info-message">
+                ☁️ Your application is being published to the cloud.<br>
+                It will be available via a public link for 24 hours.<br>
+                You can share the link with anyone — no software installation required.
+              </div>
+            </div>
+
+            <!-- User Stories Table -->
+            <div class="table-container">
+              <table class="us-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>User Story</th>
+                    <th>Agent</th>
+                    <th>Status</th>
+                    <th>Cost</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="us-table-body">
+                  <!-- User stories will be populated here -->
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="4"><strong>Total</strong></td>
+                    <td id="total-cost">$0.00</td>
+                    <td id="total-time">0s</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Action Buttons (shown when needed) -->
+            <div id="action-buttons" class="action-buttons" style="display: none;">
+              <button id="approve-btn" class="btn btn-success">
+                ✓ Approve
+              </button>
+              <button id="ask-question-btn" class="btn btn-secondary">
+                ❓ Ask Question
+              </button>
+            </div>
+
+            <!-- Questions Area (shown when agent has questions) -->
+            <div id="questions-area" class="questions-area" style="display: none;">
+              <h3>Agent Questions</h3>
+              <div id="questions-list"></div>
+              <form id="answers-form">
+                <textarea 
+                  id="answers-input" 
+                  rows="4" 
+                  placeholder="Provide your answers here..."
+                  required
+                ></textarea>
+                <button type="submit" class="btn btn-primary">
+                  Submit Answers
+                </button>
+              </form>
+            </div>
+
+            <!-- Status Messages -->
+            <div id="status-message" class="status-message"></div>
+          </div>
+        </section>
+
+        <!-- BLOCK 3: PICKUP (hidden initially) -->
+        <section id="pickup-block" class="block pickup-block" style="display: none;">
+          <div class="block-header">
+            <h2>🎉 Pickup</h2>
+          </div>
+          
+          <div class="block-content">
+            <div class="success-message">
+              <div class="success-icon">✓</div>
+              <h3>Application Successfully Created!</h3>
+              <p>Your application has been built and is ready to use.</p>
+            </div>
+
+            <div class="pickup-stats">
+              <div class="stat">
+                <span class="stat-label">Total Cost:</span>
+                <span class="stat-value" id="final-cost">$0.00</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Total Time:</span>
+                <span class="stat-value" id="final-time">0s</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Files Created:</span>
+                <span class="stat-value" id="final-files">0</span>
+              </div>
+            </div>
+
+            <!-- Public URL Section (v0.2) -->
+            <div id="public-url-section" class="public-url-section" style="display: none;">
+              <h3 class="public-url-title">🌐 Your App is Live!</h3>
+              
+              <div class="public-url-content">
+                <!-- Left Block: URL and Buttons -->
+                <div class="public-url-left">
+                  <div class="public-url-display">
+                    <a id="public-url-link" href="#" target="_blank" rel="noopener noreferrer" class="public-url-link"></a>
+                    <div id="fake-url-badge" class="fake-url-badge" style="display: none;">
+                      ⚠ Mock deploy — URL is fake, nothing was actually deployed
+                    </div>
+                  </div>
+
+                  <div class="public-url-actions">
+                    <button id="open-public-btn" class="btn btn-primary btn-large">
+                      🚀 Open
+                    </button>
+                    <button id="copy-url-btn" class="btn btn-secondary btn-large">
+                      📋 Copy Link
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Right Block: QR Code -->
+                <div class="public-url-right">
+                  <div id="qr-code" class="qr-code-container">
+                    <canvas id="qr-canvas"></canvas>
+                  </div>
                 </div>
               </div>
 
-              <div class="public-url-actions">
-                <button id="open-public-btn" class="btn btn-primary btn-large">
-                  🚀 Open
-                </button>
-                <button id="copy-url-btn" class="btn btn-secondary btn-large">
-                  📋 Copy Link
-                </button>
+              <!-- Info Text -->
+              <div class="public-url-info">
+                <p>⏰ Available for 24 hours. Share the link with anyone.</p>
               </div>
             </div>
 
-            <!-- Right Block: QR Code -->
-            <div class="public-url-right">
-              <div id="qr-code" class="qr-code-container">
-                <canvas id="qr-canvas"></canvas>
+            <!-- Deploy Error Section (shown if publicUrl is missing) -->
+            <div id="deploy-error-section" class="deploy-error-section" style="display: none;">
+              <div class="error-message">
+                <div class="error-icon">⚠️</div>
+                <h4>Deploy Failed</h4>
+                <p>Unable to deploy your application to the cloud. You can still download the source code.</p>
               </div>
             </div>
-          </div>
 
-          <!-- Info Text -->
-          <div class="public-url-info">
-            <p>⏰ Available for 24 hours. Share the link with anyone.</p>
+            <div class="new-order-section">
+              <p>Want to create another application?</p>
+              <button id="new-order-btn" class="btn btn-outline">
+                Create New Order
+              </button>
+            </div>
           </div>
-        </div>
-
-        <!-- Deploy Error Section (shown if publicUrl is missing) -->
-        <div id="deploy-error-section" class="deploy-error-section" style="display: none;">
-          <div class="error-message">
-            <div class="error-icon">⚠️</div>
-            <h4>Deploy Failed</h4>
-            <p>Unable to deploy your application to the cloud. You can still download the source code.</p>
-          </div>
-        </div>
-
-        <div class="new-order-section">
-          <p>Want to create another application?</p>
-          <button id="new-order-btn" class="btn btn-outline">
-            Create New Order
-          </button>
-        </div>
+        </section>
       </div>
-    </section>
-    </div>
-    <!-- End Page: Order -->
+      <!-- End Page: Order -->
 
-    <!-- Page: Products -->
-    <div id="page-products" class="page" style="display: none;">
-      <section class="block products-block">
-        <div class="block-header">
-          <h2>📦 Products</h2>
-          <p>Your created applications</p>
-        </div>
-        <div class="block-content">
-          <div id="products-list"></div>
-          <div id="products-empty" class="products-empty">
-            <p>Nothing here yet.</p>
-            <p>Go to <a href="#" id="go-to-order-link">Order</a> and create your first app.</p>
+      <!-- Page: Products -->
+      <div id="page-products" class="page" style="display: none;">
+        <section class="block products-block">
+          <div class="block-header">
+            <h2>📦 My Apps</h2>
           </div>
-        </div>
-      </section>
-    </div>
-    <!-- End Page: Products -->
-
-    <!-- Footer -->
-    <footer class="footer">
-      <p>Dark Factory v0.2 - Powered by AI Agents</p>
-    </footer>
+          <div class="block-content">
+            <div id="products-list"></div>
+            <div id="products-empty" class="products-empty">
+              <p>Nothing here yet.</p>
+              <p>Go to <a href="#" id="go-to-order-link">Order</a> and create your first app.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+      <!-- End Page: Products -->
+    </main>
   </div>
 
   <!-- Loading Overlay -->

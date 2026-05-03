@@ -101,7 +101,7 @@ function setupEventListeners() {
 
 // Setup Tabs
 function setupTabs() {
-  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabButtons = document.querySelectorAll('.sidebar-btn');
   
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -122,8 +122,8 @@ function setupTabs() {
 
 // Switch Tab
 function switchTab(tabName) {
-  // Update buttons
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  // Update sidebar buttons
+  document.querySelectorAll('.sidebar-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
   
@@ -440,8 +440,9 @@ async function handleOrderSubmit(e) {
     
     if (result.success) {
       showStatus('Order submitted successfully!', 'success');
-      orderInput.disabled = true;
-      submitOrderBtn.disabled = true;
+      
+      // Update order block
+      updateOrderBlockAfterSubmit(orderDescription);
       
       // Show manufacturing block
       manufacturingBlock.style.display = 'block';
@@ -454,6 +455,41 @@ async function handleOrderSubmit(e) {
     console.error('Error submitting order:', error);
     showStatus('Failed to submit order. Please try again.', 'error');
     hideLoading();
+  }
+}
+
+// Update Order Block After Submit
+function updateOrderBlockAfterSubmit(orderText) {
+  // Change title
+  const orderTitle = document.getElementById('order-title');
+  if (orderTitle) {
+    orderTitle.textContent = '📝 Your Order';
+  }
+  
+  // Hide form
+  const orderForm = document.getElementById('order-form');
+  if (orderForm) {
+    orderForm.style.display = 'none';
+  }
+  
+  // Show order display
+  const orderDisplay = document.getElementById('order-display');
+  const orderTextEl = document.getElementById('order-text');
+  if (orderDisplay && orderTextEl) {
+    orderTextEl.textContent = orderText;
+    
+    // Check if text is longer than 2 lines (approximate)
+    // If longer, add tooltip with full text
+    const lineHeight = 1.5; // from CSS
+    const fontSize = 13; // from CSS
+    const approxCharsPerLine = 80; // approximate
+    
+    if (orderText.length > approxCharsPerLine * 2) {
+      orderTextEl.setAttribute('data-full-text', orderText);
+      orderTextEl.title = orderText; // Fallback for browsers
+    }
+    
+    orderDisplay.style.display = 'block';
   }
 }
 
