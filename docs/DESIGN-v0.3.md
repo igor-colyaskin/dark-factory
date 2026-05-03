@@ -44,14 +44,13 @@ Order → Architect → [Questions?] → [More questions?] → [Blocker?] → Su
 blocker
 {
   "mode": "blocker",
-  "message": "Заказ упоминает API OpenWeatherMap. Это платный сервис.",
+  "message": "Для отображения прогноза погоды нужен внешний API.",
   "options": [
-    "У меня есть ключ, продолжаем",
-    "Замени на бесплатный аналог",
-    "Отменить заказ"
-  ]
+    "OpenWeatherMap — бесплатный план (1000 запросов/день), нужна регистрация",
+    "Open-Meteo — полностью бесплатный, без ключа, но менее точный"
+  ],
+  "allowOther": true
 }
-
 spec
 {
   "mode": "spec",

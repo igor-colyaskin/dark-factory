@@ -133,7 +133,7 @@ npm run demo
 | **API вызовы** | ✅ Real | ❌ Mock | ❌ Mock | ❌ Mock |
 | **Запись файлов** | ✅ Yes | ✅ Yes | ❌ Copy | ❌ Copy |
 | **AC Checker** | ✅ Full | ✅ Full | ❌ Skip | ❌ Skip |
-| **Время** | 60-90s | ~6s | ~6s | ~9s |
+| **Время** | 60-90s | ~6s | ~6s | ~16s |
 | **Стоимость** | $$$ | $0 | $0 | $0 |
 | **Качество кода** | Real | Mock | Mock | Mock |
 | **Предсказуемость** | ❌ | ✅ | ✅ | ✅ |
