@@ -29,4 +29,7 @@ Thumbs.db
 # Archives (generated zips for download)
 *.zip
 
+# Upload folder (temporary files for sharing)
+upload/
+
 /state/

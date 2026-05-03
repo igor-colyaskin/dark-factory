@@ -385,8 +385,9 @@
   [ ] 8.5  Релизный коммит + тег v0.2.1
 
   
+
 ## ============================================
-## v0.3 — NEGOTIATE version: 2026-05-02
+## v0.3 — NEGOTIATE
 ## ============================================
 
   Цель: архитектор останавливает конвейер и разговаривает с заказчиком.
@@ -396,42 +397,47 @@
     Order → Architect → Approve → Dev → Test → Deploy → Done
 
   Pipeline после v0.3:
-    Order → Analyze → [Clarify?] → Spec Review → Approve → Dev → Test → Deploy → Done
+    Order → Analyze → [Clarify?] → [Blocker?] → Summary → Start → Dev → Test → Deploy → Done
 
-  Ключевой вопрос: как агент решает, что спрашивать, а что нет?
+  Дизайн-решения: docs/DESIGN-v0.3.md
 
 
-  ФАЗА 0: ДИЗАЙН-СЕССИЯ ⬜
+  ФАЗА 0: ДИЗАЙН-СЕССИЯ ✅: выполнено
   =========================
 
-  Цель: зафиксировать форматы до написания кода.
-
-  [ ] 0.1  Определить формат ответа архитектора v2:
-           Режим "clarify": { mode: "clarify", questions: [...] }
-           Режим "spec":    { mode: "spec", spec: {...}, warnings: [...] }
-  [ ] 0.2  Определить формат вопроса с guided options:
-           { question: "...", options: ["A", "B", "Другое"], default: "A" }
-  [ ] 0.3  Определить формат spec:
-           { appSlug, summary, features: [...], screens: [...],
-             constraints: [...], warnings: [...], estimatedCost, estimatedTime }
-  [ ] 0.4  Определить формат Spec Review UI: что показываем, как группируем
-  [ ] 0.5  Зафиксировать решения в docs/DESIGN-v0.3.md
-  [ ] 0.6  Коммит: "v0.3 phase 0: design decisions"
+  [x] 0.1  Формат ответа архитектора: три режима (clarify / blocker / spec)
+  [x] 0.2  Формат вопроса: { id, text, options[], allowOther }
+  [x] 0.3  Формат blocker: { message, options[], allowOther }, Cancel — кнопка UI
+  [x] 0.4  Формат spec: { appSlug, summary, features, screens, constraints, warnings, estimated* }
+  [x] 0.5  Summary page: всегда показывается (даже без вопросов)
+  [x] 0.6  Кнопки Summary: Start / Cancel / Поправить (disabled placeholder)
+  [x] 0.7  questionsLog собирается оркестратором, не архитектором
+  [x] 0.8  Max 3 раунда вопросов, ~5 вопросов за раунд (мягкий лимит)
+  [x] 0.9  Зафиксировано в docs/DESIGN-v0.3.md
+  [x] 0.10 Коммит: "v0.3 phase 0: design decisions"
 
 
   ФАЗА 1: ARCHITECT PROMPT V2 ⬜
   ===============================
 
-  Цель: архитектор умеет работать в двух режимах — clarify и spec.
+  Цель: архитектор надёжно работает в трёх режимах (clarify/blocker/spec).
+  Это 80% успеха v0.3 — если промпт не работает, всё остальное бесполезно.
 
-  [ ] 1.1  Переписать system prompt: роль "tech lead на встрече с заказчиком"
-  [ ] 1.2  Логика выбора режима: если заказ неоднозначен → clarify,
-           если ясен → сразу spec
-  [ ] 1.3  Формат вопросов: guided options (варианты + "Другое")
-  [ ] 1.4  Формат spec: структурированный, человекочитаемый
-  [ ] 1.5  Warnings как часть spec (риски, платные API, ограничения)
-  [ ] 1.6  Ручной тест: вызвать архитектора с ясным заказом → должен вернуть spec
-  [ ] 1.7  Ручной тест: вызвать с неоднозначным заказом → должен вернуть questions
+  [ ] 1.1  Переписать system prompt:
+           - Роль: "tech lead на первой встрече с заказчиком"
+           - JSON schema для трёх режимов с примерами
+           - Правило: спрашивай ТОЛЬКО если ответ меняет архитектуру
+           - Правило: минимум вопросов для старта, детали — в feedback (v0.4)
+           - Правило: формулируй вопросы, которые подталкивают к ответам
+           - Запрет: не спрашивай про цвета, шрифты, анимации
+  [ ] 1.2  Два шаблона user prompt:
+           - Template A (первый вызов): order
+           - Template B (повторный): order + clarifyHistory + round/maxRounds
+  [ ] 1.3  Ручной тест: ясный заказ ("простой TODO") → должен вернуть mode: "spec"
+  [ ] 1.4  Ручной тест: неоднозначный заказ ("приложение для работы") → mode: "clarify"
+  [ ] 1.5  Ручной тест: заказ с внешней зависимостью ("покажи погоду") → mode: "blocker"
+  [ ] 1.6  Ручной тест: повторный вызов с history → mode: "spec"
+  [ ] 1.7  Проверка: все ответы — валидный JSON, поле mode присутствует
   [ ] 1.8  Коммит: "v0.3 phase 1: architect prompt v2"
 
 
@@ -440,81 +446,114 @@
 
   Цель: mock-agent-manager поддерживает оба пути для тестирования UI.
 
-  [ ] 2.1  Мок "clarify" — возвращает 2-3 вопроса с вариантами
-  [ ] 2.2  Мок "spec" — возвращает полный spec
-  [ ] 2.3  Логика переключения: первый вызов → clarify, второй → spec
-           (или по ключевому слову в заказе для удобства тестирования)
-  [ ] 2.4  Коммит: "v0.3 phase 2: mock agent v2"
+  [ ] 2.1  Мок "clarify" — 2-3 вопроса с вариантами и allowOther
+  [ ] 2.2  Мок "blocker" — сообщение + варианты
+  [ ] 2.3  Мок "spec" — полный spec со всеми полями
+  [ ] 2.4  Логика переключения: первый вызов → clarify,
+           второй → spec (или по ключевому слову в заказе)
+  [ ] 2.5  Коммит: "v0.3 phase 2: mock agent v2"
 
 
-  ФАЗА 3: ORCHESTRATOR — НОВЫЕ СОСТОЯНИЯ ⬜
+  ФАЗА 3: ORCHESTRATOR — NEGOTIATE LOOP ⬜
   ==========================================
 
-  Цель: state machine поддерживает clarify → spec review → approve цикл.
+  Цель: state machine поддерживает цикл clarify → blocker → spec review.
 
-  [ ] 3.1  Новое состояние CLARIFYING: ожидание ответов от пользователя
-  [ ] 3.2  Новое состояние SPEC_REVIEW: spec готов, ждём approve/reject
-  [ ] 3.3  Переход ARCH_WORKING → CLARIFYING (если mode === "clarify")
-  [ ] 3.4  Переход CLARIFYING → ARCH_WORKING (после ответов, повторный вызов)
-  [ ] 3.5  Переход ARCH_WORKING → SPEC_REVIEW (если mode === "spec")
-  [ ] 3.6  Переход SPEC_REVIEW → DEV_WORKING (approve)
-  [ ] 3.7  Переход SPEC_REVIEW → ARCH_WORKING (request changes + feedback)
-  [ ] 3.8  Переход SPEC_REVIEW → IDLE (cancel, без расходов на dev)
-  [ ] 3.9  Spec сохраняется в agentOutputs для передачи Developer'у
-  [ ] 3.10 Коммит: "v0.3 phase 3: orchestrator negotiate states"
-
-
-  ФАЗА 4: UI — CLARIFYING ⬜
-  ===========================
-
-  Цель: пользователь видит вопросы архитектора и отвечает.
-
-  [ ] 4.1  Блок Clarifying Questions в manufacturing-block
-  [ ] 4.2  Рендер вопросов с radio-кнопками (options) + поле "Другое"
-  [ ] 4.3  Кнопка "Ответить" → POST /api/answers → возврат к ARCH_WORKING
-  [ ] 4.4  Визуально: выглядит как диалог, а не как форма
-  [ ] 4.5  Коммит: "v0.3 phase 4: clarifying UI"
+  [ ] 3.1  Новые поля state: clarifyHistory[], clarifyRound, maxClarifyRounds(3),
+           currentSpec, blockerInfo
+  [ ] 3.2  Состояние CLARIFYING: архитектор вернул вопросы, ждём ответы
+  [ ] 3.3  Состояние BLOCKER: архитектор нашёл препятствие, ждём решение
+  [ ] 3.4  Состояние SPEC_REVIEW: spec готов, ждём Start/Cancel
+  [ ] 3.5  Переход ARCH_WORKING → CLARIFYING (mode === "clarify")
+  [ ] 3.6  Переход ARCH_WORKING → BLOCKER (mode === "blocker")
+  [ ] 3.7  Переход ARCH_WORKING → SPEC_REVIEW (mode === "spec")
+  [ ] 3.8  Переход CLARIFYING → ARCH_WORKING (ответы получены, history обновлена)
+  [ ] 3.9  Переход BLOCKER → ARCH_WORKING (заказчик выбрал вариант)
+  [ ] 3.10 Переход BLOCKER → IDLE (заказчик нажал Cancel)
+  [ ] 3.11 Переход SPEC_REVIEW → DEV_WORKING (Start)
+  [ ] 3.12 Переход SPEC_REVIEW → IDLE (Cancel)
+  [ ] 3.13 questionsLog: оркестратор собирает из clarifyHistory для передачи в UI
+  [ ] 3.14 Spec передаётся Developer'у как контекст (вместо старого architectOutput)
+  [ ] 3.15 Endpoint POST /api/cancel для Cancel из Blocker и Summary
+  [ ] 3.16 Удалить/переработать старый ARCH_REVIEW (заменён на SPEC_REVIEW)
+  [ ] 3.17 Reset: очистка новых полей при reset()
+  [ ] 3.18 Коммит: "v0.3 phase 3: orchestrator negotiate loop"
 
 
-  ФАЗА 5: UI — SPEC REVIEW ⬜
-  =============================
+  ФАЗА 4: UI — CLARIFYING + BLOCKER ⬜
+  ======================================
 
-  Цель: пользователь видит spec и принимает решение.
+  Цель: заказчик видит вопросы и блокеры, отвечает через radio + кнопки.
 
-  [ ] 5.1  Блок Spec Review: структурированное отображение spec
-  [ ] 5.2  Секции: Summary, Features, Screens, Constraints, Warnings
-  [ ] 5.3  Warnings выделены визуально (⚠ жёлтый блок)
-  [ ] 5.4  Оценка стоимости и времени (из spec)
-  [ ] 5.5  Три кнопки: Approve / Request Changes / Cancel
-  [ ] 5.6  Request Changes: текстовое поле "что поменять" → ARCH_WORKING
-  [ ] 5.7  Cancel: возврат в IDLE, заказ не выполняется
-  [ ] 5.8  Коммит: "v0.3 phase 5: spec review UI"
+  [ ] 4.1  HTML: блок clarifying-section в manufacturing-block
+  [ ] 4.2  Рендер вопросов: radio-кнопки для options
+  [ ] 4.3  allowOther: последняя опция "Другое" раскрывает textarea
+  [ ] 4.4  Текст progress от архитектора вверху блока
+  [ ] 4.5  Кнопка "Ответить" → POST /api/answers
+  [ ] 4.6  HTML: блок blocker-section в manufacturing-block
+  [ ] 4.7  Рендер блокера: ⚠️ стиль, radio для вариантов, allowOther
+  [ ] 4.8  Две кнопки внизу блокера: "Отменить заказ" (secondary) + "Продолжить" (primary)
+  [ ] 4.9  "Отменить заказ" → POST /api/cancel → возврат в IDLE
+  [ ] 4.10 Стили: blocker визуально отличается от clarify (жёлтый/warning)
+  [ ] 4.11 Коммит: "v0.3 phase 4: clarifying and blocker UI"
 
 
-  ФАЗА 6: ИНТЕГРАЦИЯ И DOGFOODING ⬜
+  ФАЗА 5: UI — SUMMARY (SPEC REVIEW) ⬜
+  =======================================
+
+  Цель: заказчик видит полный spec и принимает решение.
+
+  [ ] 5.1  HTML: блок summary-section в manufacturing-block
+  [ ] 5.2  Секция "Заказ" — исходный текст заказа
+  [ ] 5.3  Секция "Уточнения" — Q&A из clarifyHistory (оркестратор)
+  [ ] 5.4  Секция "Что будет сделано" — features из spec (✓ маркеры)
+  [ ] 5.5  Секция "Ограничения" — constraints из spec
+  [ ] 5.6  Секция "Предупреждения" — warnings из spec (⚠ стиль)
+  [ ] 5.7  Секция "Оценка" — estimatedCost + estimatedTime
+  [ ] 5.8  Три кнопки: Cancel / Поправить (disabled) / Start
+  [ ] 5.9  Start → POST /api/approve → DEV_WORKING
+  [ ] 5.10 Cancel → POST /api/cancel → IDLE
+  [ ] 5.11 Коммит: "v0.3 phase 5: summary UI"
+
+
+  ФАЗА 6: DEVELOPER PROMPT UPDATE ⬜
+  ====================================
+
+  Цель: Developer получает spec вместо старого architectOutput.
+
+  [ ] 6.1  Обновить server/prompts/developer.js: user prompt принимает spec
+  [ ] 6.2  Проверить что tester prompt тоже работает с новым форматом
+  [ ] 6.3  Обновить mock-agent-manager если нужно
+  [ ] 6.4  Коммит: "v0.3 phase 6: developer prompt update"
+
+
+  ФАЗА 7: ИНТЕГРАЦИЯ И DOGFOODING ⬜
   ====================================
 
   Цель: полный прогон обоих путей, реальные заказы.
 
-  [ ] 6.1  mock:fast — путь с вопросами (clarify → answers → spec → approve)
-  [ ] 6.2  mock:fast — путь без вопросов (spec → approve)
-  [ ] 6.3  mock:fast — cancel на этапе spec review
-  [ ] 6.4  mock:fast — request changes на spec review
-  [ ] 6.5  production — ясный заказ ("простой TODO")
-  [ ] 6.6  production — неоднозначный заказ ("сделай мне приложение для работы")
-  [ ] 6.7  production — заказ с внешней зависимостью ("покажи погоду из OpenWeather")
-  [ ] 6.8  Записать метрики: стоимость, время, количество уточнений
-  [ ] 6.9  Коммит: "v0.3 phase 6: integration testing"
+  [ ] 7.1  mock:fast — путь с вопросами (clarify → answers → spec → start)
+  [ ] 7.2  mock:fast — путь без вопросов (spec → start)
+  [ ] 7.3  mock:fast — blocker → продолжить → spec → start
+  [ ] 7.4  mock:fast — blocker → отменить заказ
+  [ ] 7.5  mock:fast — cancel на этапе summary
+  [ ] 7.6  production — ясный заказ ("простой TODO")
+  [ ] 7.7  production — неоднозначный заказ ("сделай приложение для работы")
+  [ ] 7.8  production — заказ с внешней зависимостью ("покажи погоду")
+  [ ] 7.9  Проверить что Products/Details работают с новым форматом spec
+  [ ] 7.10 Записать метрики: стоимость, время, количество раундов
+  [ ] 7.11 Коммит: "v0.3 phase 7: integration testing"
 
 
-  ФАЗА 7: ДОКУМЕНТАЦИЯ И РЕЛИЗ ⬜
+  ФАЗА 8: ДОКУМЕНТАЦИЯ И РЕЛИЗ ⬜
   =================================
 
-  [ ] 7.1  Обновить CONCEPT.md: описание negotiate-цикла
-  [ ] 7.2  Обновить docs/ROADMAP.md: v0.3 → ✅
-  [ ] 7.3  Обновить README.md
-  [ ] 7.4  Записать инсайты в docs/insights.md
-  [ ] 7.5  Релизный коммит + тег v0.3
+  [ ] 8.1  Обновить CONCEPT.md: описание negotiate-цикла
+  [ ] 8.2  Обновить docs/ROADMAP.md: v0.3 → ✅
+  [ ] 8.3  Обновить README.md
+  [ ] 8.4  2-3 dogfooding-заказа
+  [ ] 8.5  Записать инсайты в docs/insights.md
+  [ ] 8.6  Релизный коммит + тег v0.3
 
 ## ============================================
 ## Известные риски
