@@ -7,7 +7,7 @@
 | v0.1 | 2026-04-26 | Утверждено | Первоначальная концепция |
 | v0.2 | 2026-05-01 | Утверждено | Deploy to Cloud: Fly.io |
 | v0.2.1 | 2026-05-02 | Утверждено | My Apps page, архив приложений |
-| v0.3 | in progress | — | Agency: NEGOTIATE |
+| v0.3 | 2026-05-03 | Утверждено | NEGOTIATE: architect clarifying questions, spec review |
 
 ## 1. Что такое Dark Factory
 

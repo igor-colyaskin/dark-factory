@@ -1,75 +1,126 @@
 {
-  "totalCost": 0.9,
-  "totalTime": 4,
+  "totalCost": 0.2982804,
+  "totalTime": 148,
   "entries": [
     {
-      "id": "1777823927394",
-      "timestamp": "2026-05-03T15:58:47.394Z",
+      "id": "1777824271591",
+      "timestamp": "2026-05-03T16:04:31.591Z",
       "usId": 1,
       "usName": "Architecture",
       "agent": "architect",
-      "model": "mock-architect",
-      "cost": 0.25,
-      "time": 1,
+      "model": "anthropic/claude-opus-4",
+      "cost": 0.046005,
+      "time": 22,
       "tokens": {
         "prompt": 0,
         "completion": 0,
-        "total": 1500
+        "total": 0
       },
       "status": "success",
       "error": null
     },
     {
-      "id": "1777823938095",
-      "timestamp": "2026-05-03T15:58:58.095Z",
-      "usId": 1,
-      "usName": "Architecture",
-      "agent": "architect",
-      "model": "mock-architect",
-      "cost": 0.25,
-      "time": 1,
-      "tokens": {
-        "prompt": 0,
-        "completion": 0,
-        "total": 1500
-      },
-      "status": "success",
-      "error": null
-    },
-    {
-      "id": "1777823955601",
-      "timestamp": "2026-05-03T15:59:15.601Z",
+      "id": "1777824319397",
+      "timestamp": "2026-05-03T16:05:19.397Z",
       "usId": 2,
       "usName": "Development",
       "agent": "developer",
-      "model": "mock-developer",
-      "cost": 0.35,
-      "time": 1,
+      "model": "anthropic/claude-sonnet-4",
+      "cost": 0.073176,
+      "time": 34,
       "tokens": {
         "prompt": 0,
         "completion": 0,
-        "total": 1500
+        "total": 0
       },
       "status": "success",
       "error": null
     },
     {
-      "id": "1777823956781",
-      "timestamp": "2026-05-03T15:59:16.781Z",
+      "id": "1777824323085",
+      "timestamp": "2026-05-03T16:05:23.085Z",
       "usId": 3,
       "usName": "Testing",
       "agent": "tester",
-      "model": "mock-tester",
-      "cost": 0.05,
-      "time": 1,
+      "model": "google/gemini-2.5-flash",
+      "cost": 0.0021303,
+      "time": 4,
       "tokens": {
         "prompt": 0,
         "completion": 0,
-        "total": 1500
+        "total": 0
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777824537561",
+      "timestamp": "2026-05-03T16:08:57.561Z",
+      "usId": 1,
+      "usName": "Architecture",
+      "agent": "architect",
+      "model": "anthropic/claude-opus-4",
+      "cost": 0.04506,
+      "time": 21,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 0
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777824601195",
+      "timestamp": "2026-05-03T16:10:01.195Z",
+      "usId": 1,
+      "usName": "Architecture",
+      "agent": "architect",
+      "model": "anthropic/claude-opus-4",
+      "cost": 0.046095,
+      "time": 22,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 0
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777824653480",
+      "timestamp": "2026-05-03T16:10:53.480Z",
+      "usId": 2,
+      "usName": "Development",
+      "agent": "developer",
+      "model": "anthropic/claude-sonnet-4",
+      "cost": 0.083007,
+      "time": 41,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 0
+      },
+      "status": "success",
+      "error": null
+    },
+    {
+      "id": "1777824658095",
+      "timestamp": "2026-05-03T16:10:58.095Z",
+      "usId": 3,
+      "usName": "Testing",
+      "agent": "tester",
+      "model": "google/gemini-2.5-flash",
+      "cost": 0.0028071,
+      "time": 4,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "total": 0
       },
       "status": "success",
       "error": null
     }
   ],
-  "savedAt": "2026-05-03T15:59:16.781Z"
+  "savedAt": "2026-05-03T16:10:58.096Z"
 }

@@ -13,39 +13,31 @@
 
 ## Architect `draft`
 
-### Роль
-Анализирует заказ пользователя, проектирует архитектуру, генерирует
-`appSlug` для Fly app name.
-В v0.3+ также оценивает сложность (для time/cost estimate в spec).
+## Architect `baseline`
 
-**Совмещение ролей (temporary):** в текущих версиях Architect совмещает
-роли Architect + Planner (разбивка на US, оценка ресурсов). Разделение
-запланировано на v0.5-v0.6, когда план станет динамическим.
-См. ROADMAP.md.
+### Роль
+Анализирует заказ, задаёт уточняющие вопросы, генерирует спецификацию.
+Два режима ответа: `clarify` (вопросы с вариантами) и `spec` (спецификация).
 
 ### Модель
 `anthropic/claude-opus-4` — $15 / $75 per 1M tokens
 
-### Вход / выход (high-level)
-- Вход: `orderDescription` + опционально `answers[]` (если был clarifying round)
-- Выход: JSON с `appSlug`, `files[]` (без content), `questions[]`, `summary`, `next_steps[]`
-- Первый файл всегда `ARCHITECTURE.md`
+### Вход / выход
+- Вход: `orderDescription` + опционально `clarifyHistory[]` + `round` / `maxRounds`
+- Выход (clarify): `{ mode: "clarify", questions: [{ id, text, options[], allowOther }], progress }`
+- Выход (spec): `{ mode: "spec", appSlug, spec: { summary, features[], screens[], constraints[], warnings[], estimatedCost, estimatedTime } }`
 
 ### Ключевые правила
-- Если есть неясности → вопросы в `questions[]` → orchestrator переходит в CLARIFYING
-- Проектирует под ограничения Target App (см. ниже)
-- Только один раунд clarifying в v0.2.1 (будет расширено в v0.3)
+- Ясный заказ → spec сразу, без вопросов
+- Неоднозначный → clarify, 1-5 вопросов с вариантами
+- Max 3 раунда, на последнем — принудительный spec
+- Вопросы только если ответ меняет архитектуру
+- Никогда не спрашивает про цвета, шрифты, анимации
 
 ### Источники истины
 - **System prompt:** `server/prompts/architect.js` → `systemPrompt`
 - **User prompt template:** `server/prompts/architect.js` → `generateUserPrompt()`
-- **Ответы в orchestrator:** `server/orchestrator.js` → `handleAgentComplete`
-- **Retry logic:** `server/agent-manager.js` → `callAgentWithRetry`
-
-### Known issues (pending)
-- Example в system prompt включает `content` для ARCHITECTURE.md,
-  что противоречит правилу "no content". Фикс — в v0.3 Phase 1.
-
+- **Калибровочный тест:** `scripts/test-architect-v2.js` (10 заказов, критерий 9/10)
 ---
 
 ## Developer `draft`
@@ -110,7 +102,7 @@ Code review после успешного AC check. Рекомендации, н
 **НЕ AI.** Обычный JavaScript class.
 
 ### States
-`IDLE → ORDERING → ARCH_WORKING → [CLARIFYING →] ARCH_REVIEW →
+`IDLE → ORDERING → ARCH_WORKING → [CLARIFYING →] SPEC_REVIEW →
 DEV_WORKING → DEV_CHECK → TEST_RUNNING → DELIVERING → DEPLOYING → DONE`
 
 При ошибках → `ERROR`
@@ -126,7 +118,7 @@ DEV_WORKING → DEV_CHECK → TEST_RUNNING → DELIVERING → DEPLOYING → DONE
 ### Поля state
 Полный список полей — в конструкторе класса `Orchestrator`.
 Для UI/SSE важны: `state`, `userStories`, `questions`, `publicUrl`,
-`appName`, `error`, `isFakeDeploy` (computed), `runMode`.
+`appName`, `error`, `isFakeDeploy` (computed), `runMode`, `clarifyHistory`, `clarifyRound`, `currentSpec`
 
 ### Источники истины
 - **State machine, переходы, поля:** `server/orchestrator.js`

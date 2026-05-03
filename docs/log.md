@@ -249,6 +249,31 @@ spec'ом, verification report'ом и другими артефактами age
 - Фаза 7.5: App slug из заказа
 - Фаза 8: Документация и релиз
 
+## v0.3 — NEGOTIATE
+
+### Decisions
+- Два режима архитектора (clarify/spec), без blocker (отложен в v0.3.1)
+- Max 3 раунда вопросов, на последнем — принудительный spec
+- Кнопка "Поправить" не показывается до v0.4
+- ARCHITECTURE.md больше не генерируется архитектором
+- Одна строка Architecture в таблице US, cost/time суммируется по раундам
+- Поле architectOutput в apps-store сохранено, содержит JSON.stringify(spec)
+
+### Insights
+- Калибровочный тест (10 заказов) — эффективный способ валидации промпта: 10/10 за $0.40
+- Architect prompt v2 надёжно различает ясные и неоднозначные заказы с первой попытки
+- Стоимость negotiate-раунда ≈ $0.04-0.06 (один вызов Claude Opus)
+- Общая стоимость заказа с вопросами ($0.18) всего на 50% выше чем без ($0.12)
+
+### Phases
+- Phase 1: Architect Prompt v2 (system prompt + calibration test, 10/10)
+- Phase 2: Mock Agent v2 (clarify/spec modes, keyword detection)
+- Phase 3: Orchestrator negotiate loop (CLARIFYING → SPEC_REVIEW states)
+- Phase 4+5: Clarifying UI (radio buttons) + Spec Review UI (summary card)
+- Phase 6: Developer prompt accepts spec directly
+- Phase 7: Production dogfooding (2 orders, both deployed successfully)
+- Phase 8: Documentation & release
+
 ---
 
 ## Graveyard
