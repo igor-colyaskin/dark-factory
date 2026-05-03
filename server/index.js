@@ -181,7 +181,8 @@ app.post('/api/approve', async (req, res) => {
 // POST endpoint to submit answers
 app.post('/api/answers', async (req, res) => {
   const { answers } = req.body;
-  
+
+  // answers: array of { id, text, answer }
   if (!answers || !Array.isArray(answers)) {
     return res.status(400).json({
       success: false,
@@ -204,6 +205,23 @@ app.post('/api/answers', async (req, res) => {
     
   } catch (error) {
     console.error('Error submitting answers:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/cancel', async (req, res) => {
+  try {
+    await orchestrator.handleCancel();
+
+    res.status(200).json({
+      success: true,
+      message: 'Order cancelled'
+    });
+  } catch (error) {
+    console.error('Error cancelling:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -342,7 +360,9 @@ async function runArchitect() {
   const systemPrompt = architectPrompts.systemPrompt;
   const userPrompt = architectPrompts.generateUserPrompt(
     state.orderDescription,
-    state.answers
+    state.clarifyHistory,
+    state.clarifyRound,
+    state.maxClarifyRounds
   );
   
   const result = await agentManager.callAgentWithRetry(
@@ -370,16 +390,11 @@ async function runArchitect() {
     throw new Error(`Architect failed: ${result.error}`);
   }
   
-  console.log(`[COST-DEBUG] Architect result.cost: ${result.cost}, result.time: ${result.time}`);
-  console.log(`[COST-DEBUG] Architect result.content.cost: ${result.content.cost}`);
-  
   const architectData = {
     ...result.content,
-    cost: result.cost,  // Override any cost from content
-    time: result.time   // Override any time from content
+    cost: result.cost,
+    time: result.time
   };
-  
-  console.log(`[COST-DEBUG] Passing to orchestrator - cost: ${architectData.cost}, time: ${architectData.time}`);
   
   await orchestrator.handleAgentComplete(1, architectData);
 }
@@ -389,11 +404,14 @@ async function runDeveloper() {
   console.log('Running Developer agent...');
   
   const state = orchestrator.getState();
-  console.log('Current state.agentOutputs:', JSON.stringify(state.agentOutputs, null, 2));
-  const architectOutput = state.agentOutputs[1];
-  
+
+  // v0.3: developer receives spec (or falls back to agentOutputs[1])
+  const architectOutput = state.currentSpec
+    ? { summary: state.currentSpec.summary, spec: state.currentSpec }
+    : state.agentOutputs[1];
+
   if (!architectOutput) {
-    console.error('Architecture output not found! agentOutputs:', state.agentOutputs);
+    console.error('Architecture output not found!');
     throw new Error('Architecture output not found');
   }
   

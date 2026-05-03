@@ -1,176 +1,131 @@
-import fetch from 'node-fetch';
-import appsStore from '../server/apps-store.js';
-
 /**
- * Test script for Phase 3 API endpoints
- * Tests GET /api/my-apps, GET /api/my-apps/:id, DELETE /api/my-apps/:id
- * 
- * Prerequisites: Server must be running on http://localhost:3000
- * Run with: node scripts/test-phase-3.js
+ * Phase 3 test: orchestrator negotiate loop.
+ * Tests state transitions for clarify → spec → approve/cancel flows.
+ *
+ * Usage: node scripts/test-phase-3.js
  */
 
-const BASE_URL = 'http://localhost:3000';
-let passedChecks = 0;
-let totalChecks = 0;
+import orchestrator, { STATES } from '../server/orchestrator.js';
 
-function check(condition, message) {
-  totalChecks++;
+let passed = 0;
+let failed = 0;
+
+function check(name, condition) {
   if (condition) {
-    passedChecks++;
-    console.log(`[test]   ✓ ${message}`);
-    return true;
+    console.log('  ✅ ' + name);
+    passed++;
   } else {
-    console.log(`[test]   ✗ FAIL: ${message}`);
-    return false;
+    console.log('  ❌ ' + name);
+    failed++;
   }
 }
 
-async function runTests() {
-  console.log('[test] === Phase 3 API Endpoints Test ===\n');
+// --- Test 1: Clear order path (spec immediately) ---
+console.log('\n--- Test 1: Clear order → SPEC_REVIEW → Approve → DEV_WORKING ---');
 
-  try {
-    // Step 1: Test GET /api/my-apps
-    console.log('[test] 1. Testing GET /api/my-apps...');
-    
-    const listResponse = await fetch(`${BASE_URL}/api/my-apps`);
-    check(listResponse.status === 200, `GET /api/my-apps returns 200 (got ${listResponse.status})`);
-    
-    const listData = await listResponse.json();
-    check(listData.success === true, 'Response has success: true');
-    check(Array.isArray(listData.apps), 'Response has apps array');
-    
-    console.log(`[test]   Found ${listData.apps.length} apps in archive`);
-    console.log();
+await orchestrator.reset();
+check('Initial state is IDLE', orchestrator.state === STATES.IDLE);
 
-    // Step 2: Test GET /api/my-apps/:id with nonexistent ID
-    console.log('[test] 2. Testing GET /api/my-apps/:id with nonexistent ID...');
-    
-    const notFoundResponse = await fetch(`${BASE_URL}/api/my-apps/nonexistent-app-12345`);
-    check(notFoundResponse.status === 404, `GET nonexistent app returns 404 (got ${notFoundResponse.status})`);
-    
-    const notFoundData = await notFoundResponse.json();
-    check(notFoundData.success === false, 'Response has success: false');
-    check(notFoundData.message === 'App not found', 'Response has correct error message');
-    console.log();
+await orchestrator.startOrder('Simple TODO app');
+check('After startOrder: ARCH_WORKING', orchestrator.state === STATES.ARCH_WORKING);
 
-    // Step 3: Test GET /api/my-apps/:id with existing ID (if any)
-    if (listData.apps.length > 0) {
-      console.log('[test] 3. Testing GET /api/my-apps/:id with existing ID...');
-      
-      const testApp = listData.apps[0];
-      console.log(`[test]   Using app ID: ${testApp.id}`);
-      
-      const getResponse = await fetch(`${BASE_URL}/api/my-apps/${testApp.id}`);
-      check(getResponse.status === 200, `GET existing app returns 200 (got ${getResponse.status})`);
-      
-      const getData = await getResponse.json();
-      check(getData.success === true, 'Response has success: true');
-      check(getData.app !== null && getData.app !== undefined, 'Response has app object');
-      check(getData.app.id === testApp.id, `App ID matches (${getData.app.id})`);
-      console.log();
-    } else {
-      console.log('[test] 3. Skipping GET existing app test (no apps in archive)\n');
-    }
+// Simulate architect returning spec
+await orchestrator.handleAgentComplete(1, {
+  mode: 'spec',
+  appSlug: 'todo-app',
+  spec: { summary: 'TODO app', features: ['Add tasks'], screens: ['Main'], constraints: [], warnings: [] },
+  cost: 0.25,
+  time: 10
+});
+check('After spec: SPEC_REVIEW', orchestrator.state === STATES.SPEC_REVIEW);
+check('currentSpec is set', orchestrator.currentSpec !== null);
+check('currentSpec.summary', orchestrator.currentSpec.summary === 'TODO app');
 
-    // Step 4: Test DELETE /api/my-apps/:id with nonexistent ID
-    console.log('[test] 4. Testing DELETE /api/my-apps/:id with nonexistent ID...');
-    
-    const deleteNotFoundResponse = await fetch(`${BASE_URL}/api/my-apps/nonexistent-app-12345`, {
-      method: 'DELETE'
-    });
-    check(deleteNotFoundResponse.status === 404, `DELETE nonexistent app returns 404 (got ${deleteNotFoundResponse.status})`);
-    
-    const deleteNotFoundData = await deleteNotFoundResponse.json();
-    check(deleteNotFoundData.success === false, 'Response has success: false');
-    console.log();
+await orchestrator.handleApproval();
+check('After approve: DEV_WORKING', orchestrator.state === STATES.DEV_WORKING);
+check('US1 status done', orchestrator.userStories[0].status === 'done');
+check('US2 status running', orchestrator.userStories[1].status === 'running');
 
-    // Step 5: Create a test app and delete it
-    console.log('[test] 5. Testing DELETE /api/my-apps/:id with mock app...');
-    
-    // Create a test mock app directly in the store
-    const testMockApp = await appsStore.addApp({
-      id: 'df-mock-test-delete',
-      flyAppName: 'df-mock-test-delete',
-      createdAt: new Date().toISOString(),
-      order: 'Test app for deletion',
-      architectOutput: 'Mock architecture',
-      url: 'https://df-mock-test-delete.fly.dev',
-      metrics: {
-        totalCost: 0.10,
-        totalTime: 1000,
-        agents: {
-          arc: { cost: 0.05, time: 500 },
-          dev: { cost: 0.05, time: 500 }
-        }
-      }
-    });
-    
-    console.log(`[test]   Created test app: ${testMockApp.id}`);
-    
-    // Delete it via API
-    const deleteResponse = await fetch(`${BASE_URL}/api/my-apps/${testMockApp.id}`, {
-      method: 'DELETE'
-    });
-    check(deleteResponse.status === 200, `DELETE mock app returns 200 (got ${deleteResponse.status})`);
-    
-    const deleteData = await deleteResponse.json();
-    check(deleteData.success === true, 'Response has success: true');
-    check(deleteData.message === 'App deleted', 'Response has correct message');
-    
-    // Verify it's gone from archive
-    const verifyDeleted = await appsStore.getApp(testMockApp.id);
-    check(verifyDeleted === null, 'App is removed from archive');
-    console.log();
+// --- Test 2: Ambiguous order path (clarify → spec) ---
+console.log('\n--- Test 2: Ambiguous → CLARIFYING → answers → ARCH_WORKING → SPEC_REVIEW ---');
 
-    // Step 6: Show manual testing info
-    if (listData.apps.length > 0) {
-      console.log('[test] 6. Manual testing information:');
-      console.log(`[test]   Available apps for manual DELETE testing:`);
-      listData.apps.slice(0, 3).forEach(app => {
-        console.log(`[test]     - ${app.id} (${app.url})`);
-      });
-      console.log(`[test]   To delete: curl -X DELETE ${BASE_URL}/api/my-apps/<id>`);
-      console.log();
-    }
+await orchestrator.reset();
+await orchestrator.startOrder('An app for work');
 
-    // Final summary
-    if (passedChecks === totalChecks) {
-      console.log(`[test] === ALL CHECKS PASSED (${passedChecks} of ${totalChecks}) ===`);
-      process.exit(0);
-    } else {
-      console.log(`[test] === SOME CHECKS FAILED (${passedChecks} of ${totalChecks}) ===`);
-      process.exit(1);
-    }
+// Architect asks questions
+await orchestrator.handleAgentComplete(1, {
+  mode: 'clarify',
+  questions: [
+    { id: 'q1', text: 'What kind?', options: ['Tasks', 'Notes'], allowOther: true }
+  ],
+  progress: 'Just checking.',
+  cost: 0.20,
+  time: 8
+});
+check('After clarify: CLARIFYING', orchestrator.state === STATES.CLARIFYING);
+check('questions stored', orchestrator.questions.length === 1);
 
-  } catch (error) {
-    console.error('\n[test] ✗ Test failed with error:', error.message);
-    console.error(error.stack);
-    process.exit(1);
-  }
+// User answers
+await orchestrator.handleAnswers([
+  { id: 'q1', text: 'What kind?', answer: 'Tasks' }
+]);
+check('After answers: ARCH_WORKING', orchestrator.state === STATES.ARCH_WORKING);
+check('clarifyHistory has 1 entry', orchestrator.clarifyHistory.length === 1);
+check('clarifyRound is 1', orchestrator.clarifyRound === 1);
+
+// Architect returns spec on second call
+await orchestrator.handleAgentComplete(1, {
+  mode: 'spec',
+  appSlug: 'task-mgr',
+  spec: { summary: 'Task manager', features: ['Add'], screens: ['Main'], constraints: [], warnings: [] },
+  cost: 0.25,
+  time: 10
+});
+check('After second spec: SPEC_REVIEW', orchestrator.state === STATES.SPEC_REVIEW);
+check('US1 cost accumulated', orchestrator.userStories[0].cost > 0.40);
+
+// --- Test 3: Cancel from SPEC_REVIEW ---
+console.log('\n--- Test 3: Cancel from SPEC_REVIEW → IDLE ---');
+
+// Already in SPEC_REVIEW from test 2
+await orchestrator.handleCancel();
+check('After cancel: IDLE', orchestrator.state === STATES.IDLE);
+check('clarifyHistory cleared', orchestrator.clarifyHistory.length === 0);
+check('currentSpec cleared', orchestrator.currentSpec === null);
+check('orderDescription cleared', orchestrator.orderDescription === '');
+
+// --- Test 4: Cancel from CLARIFYING ---
+console.log('\n--- Test 4: Cancel from CLARIFYING → IDLE ---');
+
+await orchestrator.reset();
+await orchestrator.startOrder('Something');
+await orchestrator.handleAgentComplete(1, {
+  mode: 'clarify',
+  questions: [{ id: 'q1', text: 'What?', options: ['A', 'B'], allowOther: false }],
+  cost: 0.10,
+  time: 5
+});
+check('State is CLARIFYING', orchestrator.state === STATES.CLARIFYING);
+
+await orchestrator.handleCancel();
+check('After cancel: IDLE', orchestrator.state === STATES.IDLE);
+
+// --- Test 5: State snapshot includes v0.3 fields ---
+console.log('\n--- Test 5: getState() includes v0.3 fields ---');
+
+await orchestrator.reset();
+const snapshot = orchestrator.getState();
+check('has clarifyHistory', Array.isArray(snapshot.clarifyHistory));
+check('has clarifyRound', typeof snapshot.clarifyRound === 'number');
+check('has maxClarifyRounds', snapshot.maxClarifyRounds === 3);
+check('has currentSpec (null)', snapshot.currentSpec === null);
+
+// --- Summary ---
+console.log('\n═══════════════════════════════════════');
+console.log('  Passed: ' + passed + ' / ' + (passed + failed));
+if (failed === 0) {
+  console.log('  ALL CHECKS PASSED');
+} else {
+  console.log('  ' + failed + ' FAILED');
+  process.exit(1);
 }
-
-// Check if server is running
-async function checkServer() {
-  try {
-    const response = await fetch(`${BASE_URL}/api/info`);
-    if (response.ok) {
-      return true;
-    }
-  } catch (error) {
-    return false;
-  }
-  return false;
-}
-
-// Main
-(async () => {
-  const serverRunning = await checkServer();
-  
-  if (!serverRunning) {
-    console.error('[test] ✗ Server is not running on http://localhost:3000');
-    console.error('[test]   Please start the server first: npm start');
-    process.exit(1);
-  }
-  
-  await runTests();
-})();

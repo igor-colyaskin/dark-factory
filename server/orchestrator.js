@@ -18,7 +18,7 @@ export const STATES = {
   ORDERING: 'ORDERING',
   ARCH_WORKING: 'ARCH_WORKING',
   CLARIFYING: 'CLARIFYING',
-  ARCH_REVIEW: 'ARCH_REVIEW',
+  SPEC_REVIEW: 'SPEC_REVIEW',
   DEV_WORKING: 'DEV_WORKING',
   DEV_CHECK: 'DEV_CHECK',
   TEST_RUNNING: 'TEST_RUNNING',
@@ -97,7 +97,11 @@ class Orchestrator {
     this.maxDeployRetries = 2;
     this.deployTimeout = 300000; // 5 minutes
     this.questions = [];
-    this.answers = [];
+    // v0.3: negotiate fields
+    this.clarifyHistory = [];
+    this.clarifyRound = 0;
+    this.maxClarifyRounds = 3;
+    this.currentSpec = null;
     this.agentOutputs = {};
     this.publicUrl = null;
     this.appName = null;
@@ -160,6 +164,11 @@ class Orchestrator {
       totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0),
       isFakeDeploy: this.runMode.fakeDeploy,
       runMode: this.runMode.name,
+      // v0.3
+      clarifyHistory: this.clarifyHistory,
+      clarifyRound: this.clarifyRound,
+      maxClarifyRounds: this.maxClarifyRounds,
+      currentSpec: this.currentSpec,
     };
   }
 
@@ -248,18 +257,7 @@ class Orchestrator {
   async handleAgentComplete(usId, result) {
     const us = this.userStories.find(u => u.id === usId);
     if (!us) {
-      throw new Error(`User story ${usId} not found`);
-    }
-
-    // Check if agent returned questions
-    if (result.questions && result.questions.length > 0) {
-      this.currentUS = usId;
-      await this.transition(STATES.CLARIFYING, {
-        usId,
-        questions: result.questions,
-        agentOutput: result
-      });
-      return this.getState();
+      throw new Error('User story ' + usId + ' not found');
     }
 
     // Update US with cost and time
@@ -270,43 +268,65 @@ class Orchestrator {
       agentOutput: result
     });
 
-    // Determine next state based on current state
-    switch (this.state) {
-      case STATES.ARCH_WORKING:
-        await this.transition(STATES.ARCH_REVIEW, {
+    // --- Architect (US 1) — v0.3 negotiate logic ---
+    if (usId === 1) {
+      const mode = result.mode;
+
+      if (mode === 'clarify') {
+        // Architect wants to ask questions
+        this.questions = result.questions || [];
+        await this.transition(STATES.CLARIFYING, {
+          usId: 1,
+          status: 'clarifying'
+        });
+        return this.getState();
+      }
+
+      if (mode === 'spec') {
+        // Architect produced a spec — go to review
+        this.currentSpec = result.spec || null;
+        this.questions = [];
+        await this.transition(STATES.SPEC_REVIEW, {
           usId: 1,
           status: 'review',
           agentOutput: result
         });
-        break;
+        return this.getState();
+      }
 
-      case STATES.DEV_WORKING:
-        await this.transition(STATES.DEV_CHECK, {
-          usId: 2,
-          status: 'checking',
-          agentOutput: result
-        });
-        break;
-
-      case STATES.TEST_RUNNING:
-        await this.transition(STATES.DELIVERING, {
-          usId: 3,
-          status: 'done',
-          agentOutput: result
-        });
-        break;
-
-      default:
-        console.warn(`Unexpected state after agent complete: ${this.state}`);
+      // Unknown mode — treat as error
+      console.error('Unknown architect mode:', mode);
+      throw new Error('Architect returned unknown mode: ' + mode);
     }
 
+    // --- Developer (US 2) ---
+    if (usId === 2) {
+      await this.transition(STATES.DEV_CHECK, {
+        usId: 2,
+        status: 'checking',
+        agentOutput: result
+      });
+      return this.getState();
+    }
+
+    // --- Tester (US 3) ---
+    if (usId === 3) {
+      await this.transition(STATES.DELIVERING, {
+        usId: 3,
+        status: 'done',
+        agentOutput: result
+      });
+      return this.getState();
+    }
+
+    console.warn('Unexpected usId in handleAgentComplete:', usId);
     return this.getState();
   }
 
-  // Handle user approval (for ARCH_REVIEW)
+  // Handle user approval (for SPEC_REVIEW)
   async handleApproval() {
-    if (this.state !== STATES.ARCH_REVIEW) {
-      throw new Error(`Cannot approve in state: ${this.state}`);
+    if (this.state !== STATES.SPEC_REVIEW) {
+      throw new Error('Cannot approve in state: ' + this.state);
     }
 
     await this.transition(STATES.DEV_WORKING, {
@@ -323,22 +343,34 @@ class Orchestrator {
   }
 
   // Handle answers to clarifying questions
-  async handleAnswers(answers) {
+  async handleAnswers(answeredQuestions) {
     if (this.state !== STATES.CLARIFYING) {
-      throw new Error(`Cannot provide answers in state: ${this.state}`);
+      throw new Error('Cannot provide answers in state: ' + this.state);
     }
 
-    this.answers = answers;
+    // answeredQuestions: array of { id, text, answer }
+    // Store in history
+    this.clarifyHistory.push({ questions: answeredQuestions });
+    this.clarifyRound++;
     this.questions = [];
 
-    // Return to the appropriate working state
-    if (this.currentUS === 1) {
-      await this.transition(STATES.ARCH_WORKING, {
-        usId: 1,
-        status: 'running'
-      });
+    // Return to architect
+    await this.transition(STATES.ARCH_WORKING, {
+      usId: 1,
+      status: 'running'
+    });
+
+    return this.getState();
+  }
+
+  async handleCancel() {
+    // Allowed from SPEC_REVIEW or CLARIFYING
+    if (this.state !== STATES.SPEC_REVIEW && this.state !== STATES.CLARIFYING) {
+      throw new Error('Cannot cancel in state: ' + this.state);
     }
 
+    console.log('[ORCHESTRATOR] Order cancelled by user from state:', this.state);
+    await this.reset();
     return this.getState();
   }
 
@@ -460,10 +492,14 @@ class Orchestrator {
         };
       });
 
-      // Serialize architectOutput if it's an object
-      let architectOutput = this.agentOutputs[1] || 'N/A';
-      if (typeof architectOutput === 'object') {
-        architectOutput = JSON.stringify(architectOutput, null, 2);
+      // Serialize spec or architectOutput
+      let architectOutput = 'N/A';
+      if (this.currentSpec) {
+        architectOutput = JSON.stringify(this.currentSpec, null, 2);
+      } else if (this.agentOutputs[1]) {
+        architectOutput = typeof this.agentOutputs[1] === 'object'
+          ? JSON.stringify(this.agentOutputs[1], null, 2)
+          : this.agentOutputs[1];
       }
 
       const appRecord = await appsStore.addApp({
@@ -681,7 +717,9 @@ class Orchestrator {
     this.retryCount = 0;
     this.deployRetryCount = 0;
     this.questions = [];
-    this.answers = [];
+    this.clarifyHistory = [];
+    this.clarifyRound = 0;
+    this.currentSpec = null;
     this.agentOutputs = {};
     this.publicUrl = null;
     this.appName = null;
