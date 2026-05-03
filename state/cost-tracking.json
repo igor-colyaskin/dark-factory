@@ -1,16 +1,16 @@
 {
-  "totalCost": 1.3,
-  "totalTime": 18,
+  "totalCost": 0.5,
+  "totalTime": 2,
   "entries": [
     {
-      "id": "1777786230555",
-      "timestamp": "2026-05-03T05:30:30.555Z",
+      "id": "1777823663646",
+      "timestamp": "2026-05-03T15:54:23.647Z",
       "usId": 1,
       "usName": "Architecture",
       "agent": "architect",
       "model": "mock-architect",
       "cost": 0.25,
-      "time": 3,
+      "time": 1,
       "tokens": {
         "prompt": 0,
         "completion": 0,
@@ -20,82 +20,14 @@
       "error": null
     },
     {
-      "id": "1777786237142",
-      "timestamp": "2026-05-03T05:30:37.142Z",
-      "usId": 2,
-      "usName": "Development",
-      "agent": "developer",
-      "model": "mock-developer",
-      "cost": 0.35,
-      "time": 3,
-      "tokens": {
-        "prompt": 0,
-        "completion": 0,
-        "total": 1500
-      },
-      "status": "success",
-      "error": null
-    },
-    {
-      "id": "1777786240380",
-      "timestamp": "2026-05-03T05:30:40.380Z",
-      "usId": 3,
-      "usName": "Testing",
-      "agent": "tester",
-      "model": "mock-tester",
-      "cost": 0.05,
-      "time": 3,
-      "tokens": {
-        "prompt": 0,
-        "completion": 0,
-        "total": 1500
-      },
-      "status": "success",
-      "error": null
-    },
-    {
-      "id": "1777786480276",
-      "timestamp": "2026-05-03T05:34:40.276Z",
+      "id": "1777823671612",
+      "timestamp": "2026-05-03T15:54:31.612Z",
       "usId": 1,
       "usName": "Architecture",
       "agent": "architect",
       "model": "mock-architect",
       "cost": 0.25,
-      "time": 3,
-      "tokens": {
-        "prompt": 0,
-        "completion": 0,
-        "total": 1500
-      },
-      "status": "success",
-      "error": null
-    },
-    {
-      "id": "1777786485178",
-      "timestamp": "2026-05-03T05:34:45.178Z",
-      "usId": 2,
-      "usName": "Development",
-      "agent": "developer",
-      "model": "mock-developer",
-      "cost": 0.35,
-      "time": 3,
-      "tokens": {
-        "prompt": 0,
-        "completion": 0,
-        "total": 1500
-      },
-      "status": "success",
-      "error": null
-    },
-    {
-      "id": "1777786488363",
-      "timestamp": "2026-05-03T05:34:48.363Z",
-      "usId": 3,
-      "usName": "Testing",
-      "agent": "tester",
-      "model": "mock-tester",
-      "cost": 0.05,
-      "time": 3,
+      "time": 1,
       "tokens": {
         "prompt": 0,
         "completion": 0,
@@ -105,5 +37,5 @@
       "error": null
     }
   ],
-  "savedAt": "2026-05-03T05:34:48.363Z"
+  "savedAt": "2026-05-03T15:54:31.612Z"
 }

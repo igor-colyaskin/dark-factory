@@ -117,31 +117,26 @@
               </table>
             </div>
 
-            <!-- Action Buttons (shown when needed) -->
-            <div id="action-buttons" class="action-buttons" style="display: none;">
-              <button id="approve-btn" class="btn btn-success">
-                ✓ Approve
-              </button>
-              <button id="ask-question-btn" class="btn btn-secondary">
-                ❓ Ask Question
+            <!-- Clarify Section (shown in CLARIFYING state) -->
+            <div id="clarify-section" class="clarify-section" style="display: none;">
+              <div id="clarify-progress" class="clarify-progress"></div>
+              <div id="clarify-questions" class="clarify-questions"></div>
+              <button id="submit-answers-btn" class="btn btn-primary">
+                Ответить
               </button>
             </div>
 
-            <!-- Questions Area (shown when agent has questions) -->
-            <div id="questions-area" class="questions-area" style="display: none;">
-              <h3>Agent Questions</h3>
-              <div id="questions-list"></div>
-              <form id="answers-form">
-                <textarea 
-                  id="answers-input" 
-                  rows="4" 
-                  placeholder="Provide your answers here..."
-                  required
-                ></textarea>
-                <button type="submit" class="btn btn-primary">
-                  Submit Answers
+            <!-- Spec Review Section (shown in SPEC_REVIEW state) -->
+            <div id="spec-review-section" class="spec-review-section" style="display: none;">
+              <div id="spec-content" class="spec-content"></div>
+              <div class="spec-actions">
+                <button id="cancel-order-btn" class="btn btn-secondary">
+                  Cancel
                 </button>
-              </form>
+                <button id="start-dev-btn" class="btn btn-success">
+                  ▶ Start
+                </button>
+              </div>
             </div>
 
             <!-- Status Messages -->

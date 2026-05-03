@@ -19,13 +19,14 @@ const submitOrderBtn = document.getElementById('submit-order-btn');
 const usTableBody = document.getElementById('us-table-body');
 const totalCost = document.getElementById('total-cost');
 const totalTime = document.getElementById('total-time');
-const actionButtons = document.getElementById('action-buttons');
-const approveBtn = document.getElementById('approve-btn');
-const askQuestionBtn = document.getElementById('ask-question-btn');
-const questionsArea = document.getElementById('questions-area');
-const questionsList = document.getElementById('questions-list');
-const answersForm = document.getElementById('answers-form');
-const answersInput = document.getElementById('answers-input');
+const clarifySection = document.getElementById('clarify-section');
+const clarifyProgress = document.getElementById('clarify-progress');
+const clarifyQuestions = document.getElementById('clarify-questions');
+const submitAnswersBtn = document.getElementById('submit-answers-btn');
+const specReviewSection = document.getElementById('spec-review-section');
+const specContent = document.getElementById('spec-content');
+const cancelOrderBtn = document.getElementById('cancel-order-btn');
+const startDevBtn = document.getElementById('start-dev-btn');
 const statusMessage = document.getElementById('status-message');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingMessage = document.getElementById('loading-message');
@@ -84,9 +85,9 @@ async function loadRunMode() {
 // Setup Event Listeners
 function setupEventListeners() {
   orderForm.addEventListener('submit', handleOrderSubmit);
-  approveBtn.addEventListener('click', handleApprove);
-  askQuestionBtn.addEventListener('click', handleAskQuestion);
-  answersForm.addEventListener('submit', handleAnswersSubmit);
+  submitAnswersBtn.addEventListener('click', handleSubmitAnswers);
+  cancelOrderBtn.addEventListener('click', handleCancelOrder);
+  startDevBtn.addEventListener('click', handleStartDev);
   newOrderBtn.addEventListener('click', handleNewOrder);
   openPublicBtn.addEventListener('click', handleOpenPublic);
   copyUrlBtn.addEventListener('click', handleCopyUrl);
@@ -493,78 +494,6 @@ function updateOrderBlockAfterSubmit(orderText) {
   }
 }
 
-// Handle Approve
-async function handleApprove() {
-  showLoading('Approving architecture...');
-  
-  try {
-    const response = await fetch('/api/approve', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      showStatus('Architecture approved!', 'success');
-      actionButtons.style.display = 'none';
-    } else {
-      showStatus(result.message || 'Failed to approve', 'error');
-      hideLoading();
-    }
-  } catch (error) {
-    console.error('Error approving:', error);
-    showStatus('Failed to approve. Please try again.', 'error');
-    hideLoading();
-  }
-}
-
-// Handle Ask Question
-function handleAskQuestion() {
-  // TODO: Implement question dialog
-  showStatus('Question feature coming soon', 'info');
-}
-
-// Handle Answers Submit
-async function handleAnswersSubmit(e) {
-  e.preventDefault();
-  
-  const answers = answersInput.value.trim();
-  
-  if (!answers) {
-    showStatus('Please provide your answers', 'error');
-    return;
-  }
-  
-  showLoading('Submitting answers...');
-  
-  try {
-    const response = await fetch('/api/answers', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ answers: [answers] })
-    });
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      showStatus('Answers submitted!', 'success');
-      questionsArea.style.display = 'none';
-      answersInput.value = '';
-    } else {
-      showStatus(result.message || 'Failed to submit answers', 'error');
-      hideLoading();
-    }
-  } catch (error) {
-    console.error('Error submitting answers:', error);
-    showStatus('Failed to submit answers. Please try again.', 'error');
-    hideLoading();
-  }
-}
 
 // Handle Open Public URL
 function handleOpenPublic() {
@@ -612,85 +541,373 @@ function handleNewOrder() {
 // Update UI based on state
 function updateUI(state) {
   console.log('Updating UI with state:', state);
-  
+
   // Update User Stories table
   updateUserStoriesTable(state.userStories);
-  
+
   // Update totals
   updateTotals(state.totalCost, state.totalTime);
-  
-  // Handle state-specific UI
+
+  // Hide all dynamic sections first
+  clarifySection.style.display = 'none';
+  specReviewSection.style.display = 'none';
+  deployInfo.style.display = 'none';
+
   switch (state.state) {
     case 'IDLE':
       hideLoading();
-      deployInfo.style.display = 'none';
+      // Reset UI to initial state (handles cancel and fresh load)
+      manufacturingBlock.style.display = 'none';
+      pickupBlock.style.display = 'none';
+      // Restore order form
+      orderForm.style.display = 'flex';
+      var orderDisplay = document.getElementById('order-display');
+      if (orderDisplay) orderDisplay.style.display = 'none';
       break;
-      
+
     case 'ORDERING':
       showLoading('Processing your order...');
-      deployInfo.style.display = 'none';
       break;
-      
+
     case 'ARCH_WORKING':
-      showLoading('Architect is designing your application...');
-      deployInfo.style.display = 'none';
+      showLoading('Architect is analyzing your order...');
       break;
-      
+
     case 'CLARIFYING':
       hideLoading();
-      showQuestions(state.questions);
-      deployInfo.style.display = 'none';
+      renderClarifySection(state);
+      clarifySection.style.display = 'block';
       break;
-      
-    case 'ARCH_REVIEW':
+
+    case 'SPEC_REVIEW':
       hideLoading();
-      showApprovalButtons();
-      showStatus('Architecture is ready for review', 'info');
-      deployInfo.style.display = 'none';
+      renderSpecReview(state);
+      specReviewSection.style.display = 'block';
+      showStatus('Spec is ready for review', 'info');
       break;
-      
+
     case 'DEV_WORKING':
       showLoading('Developer is writing code...');
-      actionButtons.style.display = 'none';
-      deployInfo.style.display = 'none';
       break;
-      
+
     case 'DEV_CHECK':
       showLoading('Checking code quality...');
-      deployInfo.style.display = 'none';
       break;
-      
+
     case 'TEST_RUNNING':
       showLoading('Tester is reviewing code...');
-      deployInfo.style.display = 'none';
       break;
-      
+
     case 'DELIVERING':
       showLoading('Preparing your application...');
-      deployInfo.style.display = 'none';
       break;
-      
+
     case 'DEPLOYING':
-      // No full-screen overlay during deploy — deploy-info block is the progress UI
       hideLoading();
       deployInfo.style.display = 'block';
       if (deployStatusText) {
         deployStatusText.textContent = 'Starting deployment...';
       }
       break;
-      
+
     case 'DONE':
       hideLoading();
-      deployInfo.style.display = 'none';
       showPickupBlock(state);
-      // Refresh products list if it was loaded
       loadProducts();
       break;
-      
+
     case 'ERROR':
       hideLoading();
       showStatus('An error occurred. Please try again.', 'error');
       break;
+  }
+}
+
+// Render clarifying questions with radio buttons
+function renderClarifySection(state) {
+  // Progress text from architect
+  const progress = state.agentOutputs && state.agentOutputs[1]
+    ? state.agentOutputs[1].progress || ''
+    : '';
+
+  if (progress) {
+    clarifyProgress.textContent = progress;
+    clarifyProgress.style.display = 'block';
+  } else {
+    clarifyProgress.style.display = 'none';
+  }
+
+  // Render questions
+  const questions = state.questions || [];
+  clarifyQuestions.innerHTML = '';
+
+  questions.forEach(function (q) {
+    const qDiv = document.createElement('div');
+    qDiv.className = 'clarify-question';
+    qDiv.dataset.questionId = q.id;
+
+    // Question text
+    const qText = document.createElement('div');
+    qText.className = 'clarify-question-text';
+    qText.textContent = q.text;
+    qDiv.appendChild(qText);
+
+    // Options as radio buttons
+    const optionsDiv = document.createElement('div');
+    optionsDiv.className = 'clarify-options';
+
+    q.options.forEach(function (opt, idx) {
+      const label = document.createElement('label');
+      label.className = 'clarify-option';
+
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'question-' + q.id;
+      radio.value = opt;
+
+      const span = document.createElement('span');
+      span.textContent = opt;
+
+      label.appendChild(radio);
+      label.appendChild(span);
+      optionsDiv.appendChild(label);
+    });
+
+    // "Other" option if allowed
+    if (q.allowOther) {
+      const label = document.createElement('label');
+      label.className = 'clarify-option clarify-option-other';
+
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'question-' + q.id;
+      radio.value = '__other__';
+
+      const span = document.createElement('span');
+      span.textContent = 'Другое:';
+
+      const textarea = document.createElement('textarea');
+      textarea.className = 'clarify-other-input';
+      textarea.rows = 2;
+      textarea.placeholder = 'Ваш вариант...';
+      textarea.disabled = true;
+
+      // Enable textarea when "other" is selected
+      radio.addEventListener('change', function () {
+        textarea.disabled = false;
+        textarea.focus();
+      });
+
+      // Disable textarea when another option is selected
+      optionsDiv.addEventListener('change', function (e) {
+        if (e.target.value !== '__other__') {
+          textarea.disabled = true;
+          textarea.value = '';
+        }
+      });
+
+      label.appendChild(radio);
+      label.appendChild(span);
+      label.appendChild(textarea);
+      optionsDiv.appendChild(label);
+    }
+
+    qDiv.appendChild(optionsDiv);
+    clarifyQuestions.appendChild(qDiv);
+  });
+}
+
+// Render spec review (summary) section
+function renderSpecReview(state) {
+  const spec = state.currentSpec;
+  if (!spec) {
+    specContent.innerHTML = '<p>No spec available.</p>';
+    return;
+  }
+
+  const parts = [];
+
+  // Summary
+  parts.push('<div class="spec-section">');
+  parts.push('<h4>Summary</h4>');
+  parts.push('<p>' + escapeHtml(spec.summary) + '</p>');
+  parts.push('</div>');
+
+  // Clarifications (Q&A history)
+  if (state.clarifyHistory && state.clarifyHistory.length > 0) {
+    parts.push('<div class="spec-section">');
+    parts.push('<h4>Уточнения</h4>');
+    parts.push('<ul class="spec-qa-list">');
+    state.clarifyHistory.forEach(function (round) {
+      round.questions.forEach(function (q) {
+        parts.push('<li><strong>' + escapeHtml(q.text) + '</strong> → ' + escapeHtml(q.answer) + '</li>');
+      });
+    });
+    parts.push('</ul>');
+    parts.push('</div>');
+  }
+
+  // Features
+  if (spec.features && spec.features.length > 0) {
+    parts.push('<div class="spec-section">');
+    parts.push('<h4>Что будет сделано</h4>');
+    parts.push('<ul class="spec-features-list">');
+    spec.features.forEach(function (f) {
+      parts.push('<li>✓ ' + escapeHtml(f) + '</li>');
+    });
+    parts.push('</ul>');
+    parts.push('</div>');
+  }
+
+  // Screens
+  if (spec.screens && spec.screens.length > 0) {
+    parts.push('<div class="spec-section">');
+    parts.push('<h4>Экраны</h4>');
+    parts.push('<ul>');
+    spec.screens.forEach(function (s) {
+      parts.push('<li>' + escapeHtml(s) + '</li>');
+    });
+    parts.push('</ul>');
+    parts.push('</div>');
+  }
+
+  // Constraints
+  if (spec.constraints && spec.constraints.length > 0) {
+    parts.push('<div class="spec-section">');
+    parts.push('<h4>Ограничения</h4>');
+    parts.push('<ul>');
+    spec.constraints.forEach(function (c) {
+      parts.push('<li>' + escapeHtml(c) + '</li>');
+    });
+    parts.push('</ul>');
+    parts.push('</div>');
+  }
+
+  // Warnings
+  if (spec.warnings && spec.warnings.length > 0) {
+    parts.push('<div class="spec-section spec-warnings">');
+    parts.push('<h4>Предупреждения</h4>');
+    spec.warnings.forEach(function (w) {
+      parts.push('<div class="spec-warning-item">⚠ ' + escapeHtml(w) + '</div>');
+    });
+    parts.push('</div>');
+  }
+
+  // Estimate
+  if (spec.estimatedCost || spec.estimatedTime) {
+    parts.push('<div class="spec-section spec-estimate">');
+    if (spec.estimatedCost) parts.push('<span class="spec-est-item">💰 ' + escapeHtml(spec.estimatedCost) + '</span>');
+    if (spec.estimatedTime) parts.push('<span class="spec-est-item">⏱ ' + escapeHtml(spec.estimatedTime) + '</span>');
+    parts.push('</div>');
+  }
+
+  specContent.innerHTML = parts.join('\n');
+}
+
+// Collect answers from radio buttons and submit
+async function handleSubmitAnswers() {
+  const questionDivs = clarifyQuestions.querySelectorAll('.clarify-question');
+  const answers = [];
+  let allAnswered = true;
+
+  questionDivs.forEach(function (qDiv) {
+    const qId = qDiv.dataset.questionId;
+    const qText = qDiv.querySelector('.clarify-question-text').textContent;
+    const selected = qDiv.querySelector('input[type="radio"]:checked');
+
+    if (!selected) {
+      allAnswered = false;
+      return;
+    }
+
+    let answerValue = selected.value;
+
+    // If "other" is selected, get textarea value
+    if (answerValue === '__other__') {
+      const textarea = qDiv.querySelector('.clarify-other-input');
+      answerValue = textarea ? textarea.value.trim() : '';
+      if (!answerValue) {
+        allAnswered = false;
+        return;
+      }
+    }
+
+    answers.push({ id: qId, text: qText, answer: answerValue });
+  });
+
+  if (!allAnswered) {
+    showStatus('Please answer all questions', 'error');
+    return;
+  }
+
+  showLoading('Submitting answers...');
+
+  try {
+    const response = await fetch('/api/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers: answers })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showStatus('Answers submitted!', 'success');
+    } else {
+      showStatus(result.message || 'Failed to submit answers', 'error');
+      hideLoading();
+    }
+  } catch (error) {
+    console.error('Error submitting answers:', error);
+    showStatus('Failed to submit answers', 'error');
+    hideLoading();
+  }
+}
+
+// Start development (approve spec)
+async function handleStartDev() {
+  showLoading('Starting development...');
+
+  try {
+    const response = await fetch('/api/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showStatus('Development started!', 'success');
+    } else {
+      showStatus(result.message || 'Failed to start', 'error');
+      hideLoading();
+    }
+  } catch (error) {
+    console.error('Error starting dev:', error);
+    showStatus('Failed to start development', 'error');
+    hideLoading();
+  }
+}
+
+// Cancel order
+async function handleCancelOrder() {
+  try {
+    const response = await fetch('/api/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showStatus('Order cancelled', 'info');
+      // UI will reset via SSE state update (IDLE)
+    } else {
+      showStatus(result.message || 'Failed to cancel', 'error');
+    }
+  } catch (error) {
+    console.error('Error cancelling:', error);
+    showStatus('Failed to cancel order', 'error');
   }
 }
 
@@ -736,30 +953,6 @@ function updateTotals(cost, time) {
   } else {
     totalTime.textContent = '0s';
   }
-}
-
-// Show Questions
-function showQuestions(questions) {
-  if (!questions || questions.length === 0) {
-    questionsArea.style.display = 'none';
-    return;
-  }
-  
-  questionsList.innerHTML = '';
-  
-  questions.forEach((question, index) => {
-    const div = document.createElement('div');
-    div.className = 'question-item';
-    div.textContent = `${index + 1}. ${question}`;
-    questionsList.appendChild(div);
-  });
-  
-  questionsArea.style.display = 'block';
-}
-
-// Show Approval Buttons
-function showApprovalButtons() {
-  actionButtons.style.display = 'flex';
 }
 
 // Show Pickup Block

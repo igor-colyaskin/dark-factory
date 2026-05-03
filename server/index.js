@@ -405,10 +405,22 @@ async function runDeveloper() {
   
   const state = orchestrator.getState();
 
-  // v0.3: developer receives spec (or falls back to agentOutputs[1])
-  const architectOutput = state.currentSpec
-    ? { summary: state.currentSpec.summary, spec: state.currentSpec }
-    : state.agentOutputs[1];
+  // v0.3: build architectOutput compatible with developer prompt
+  let architectOutput;
+  if (state.currentSpec) {
+    // Wrap spec as fake architectOutput for developer prompt compatibility
+    architectOutput = {
+      summary: state.currentSpec.summary,
+      files: [
+        {
+          path: 'ARCHITECTURE.md',
+          content: JSON.stringify(state.currentSpec, null, 2)
+        }
+      ]
+    };
+  } else {
+    architectOutput = state.agentOutputs[1];
+  }
 
   if (!architectOutput) {
     console.error('Architecture output not found!');
