@@ -189,49 +189,64 @@ You MUST respond with valid JSON in this exact structure:
 /**
  * Generate user prompt for developer agent
  * @param {string} orderDescription - Original user order
- * @param {object} architectureOutput - Output from architect agent
+ * @param {object} spec - Application spec from architect (v0.3 format)
+ *   Expected fields: summary, features[], screens[], constraints[], warnings[]
+ *   Fallback: legacy format with .files[] and .summary
  * @param {number} retryCount - Number of retry attempts (0 for first attempt)
  * @param {string} errorFeedback - Error feedback from previous attempt
  * @returns {string} User prompt
  */
-export function generateUserPrompt(orderDescription, architectureOutput, retryCount = 0, errorFeedback = null) {
-  let prompt = `# Original User Order
+export function generateUserPrompt(orderDescription, spec, retryCount = 0, errorFeedback = null) {
+  // Build architecture section from spec
+  let architectureSection;
 
-${orderDescription}
+  if (spec.features && Array.isArray(spec.features)) {
+    // v0.3 spec format
+    const parts = [];
+    parts.push('Summary: ' + spec.summary);
+    parts.push('');
+    parts.push('Features:');
+    spec.features.forEach(function (f) { parts.push('- ' + f); });
+    parts.push('');
+    parts.push('Screens:');
+    (spec.screens || []).forEach(function (s) { parts.push('- ' + s); });
+    parts.push('');
+    parts.push('Constraints:');
+    (spec.constraints || []).forEach(function (c) { parts.push('- ' + c); });
+    if (spec.warnings && spec.warnings.length > 0) {
+      parts.push('');
+      parts.push('Warnings:');
+      spec.warnings.forEach(function (w) { parts.push('- ' + w); });
+    }
+    architectureSection = parts.join('\n');
+  } else if (spec.files && Array.isArray(spec.files)) {
+    // Legacy format (v0.2 fallback)
+    const archFile = spec.files.find(function (f) { return f.path === 'ARCHITECTURE.md'; });
+    architectureSection = (spec.summary || '') + '\n\n' + (archFile ? archFile.content : 'No architecture document provided');
+  } else {
+    // Fallback: stringify whatever we got
+    architectureSection = typeof spec === 'string' ? spec : JSON.stringify(spec, null, 2);
+  }
 
-# Architecture Design
-
-${architectureOutput.summary}
-
-## Architecture Document
-
-${architectureOutput.files.find(f => f.path === 'ARCHITECTURE.md')?.content || 'No architecture document provided'}
-
-# Your Task
-
-Implement the complete application based on this architecture design.
-
-**Critical Requirements:**
-- Provide COMPLETE code for ALL files (no placeholders, no truncation)
-- Follow the architecture exactly
-- Ensure code is syntactically correct and runnable
-- Use CommonJS (require/module.exports) for Node.js
-- Keep it simple - vanilla HTML/CSS/JS only
-
-Respond with valid JSON following the required format.`;
+  let prompt = '# Original User Order\n\n' +
+    orderDescription + '\n\n' +
+    '# Application Specification\n\n' +
+    architectureSection + '\n\n' +
+    '# Your Task\n\n' +
+    'Implement the complete application based on this specification.\n\n' +
+    '**Critical Requirements:**\n' +
+    '- Provide COMPLETE code for ALL files (no placeholders, no truncation)\n' +
+    '- Follow the specification exactly\n' +
+    '- Ensure code is syntactically correct and runnable\n' +
+    '- Use CommonJS (require/module.exports) for Node.js\n' +
+    '- Keep it simple - vanilla HTML/CSS/JS only\n\n' +
+    'Respond with valid JSON following the required format.';
 
   if (retryCount > 0 && errorFeedback) {
-    prompt += `\n\n# ⚠️ RETRY ATTEMPT ${retryCount}
-
-Your previous implementation had issues:
-
-${errorFeedback}
-
-Please fix these issues and provide a corrected implementation. Make sure:
-- All syntax errors are fixed
-- All files are complete
-- Code follows best practices
-- Application will run successfully`;
+    prompt += '\n\n# ⚠️ RETRY ATTEMPT ' + retryCount + '\n\n' +
+      'Your previous implementation had issues:\n\n' +
+      errorFeedback + '\n\n' +
+      'Please fix these issues and provide a corrected implementation.';
   }
 
   return prompt;

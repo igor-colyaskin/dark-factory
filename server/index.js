@@ -402,45 +402,31 @@ async function runArchitect() {
 // Run Developer agent
 async function runDeveloper() {
   console.log('Running Developer agent...');
-  
+
   const state = orchestrator.getState();
 
-  // v0.3: build architectOutput compatible with developer prompt
-  let architectOutput;
-  if (state.currentSpec) {
-    // Wrap spec as fake architectOutput for developer prompt compatibility
-    architectOutput = {
-      summary: state.currentSpec.summary,
-      files: [
-        {
-          path: 'ARCHITECTURE.md',
-          content: JSON.stringify(state.currentSpec, null, 2)
-        }
-      ]
-    };
-  } else {
-    architectOutput = state.agentOutputs[1];
-  }
+  // v0.3: pass spec directly to developer prompt
+  const spec = state.currentSpec || state.agentOutputs[1] || null;
 
-  if (!architectOutput) {
-    console.error('Architecture output not found!');
+  if (!spec) {
+    console.error('Spec/architecture not found!');
     throw new Error('Architecture output not found');
   }
-  
+
   const systemPrompt = developerPrompts.systemPrompt;
   const userPrompt = developerPrompts.generateUserPrompt(
     state.orderDescription,
-    architectOutput,
+    spec,
     state.retryCount
   );
-  
+
   const result = await agentManager.callAgentWithRetry(
     'developer',
     systemPrompt,
     userPrompt,
     { max_tokens: 16000 }
   );
-  
+
   // Record cost
   costTracker.recordEntry({
     usId: 2,
@@ -452,41 +438,33 @@ async function runDeveloper() {
     tokens: result.usage,
     status: result.success ? 'success' : 'error'
   });
-  
+
   await costTracker.save();
-  
+
   if (!result.success) {
-    throw new Error(`Developer failed: ${result.error}`);
+    throw new Error('Developer failed: ' + result.error);
   }
-  
+
   // Write files to workspace
   if (useMockWorkspace) {
-    // Copy pre-built mock-workspace
     console.log('[MOCK-FAST] Copying pre-built mock-workspace/');
     await fileManager.copyMockWorkspace();
   } else {
-    // Write files from agent response
     await fileManager.initWorkspace();
     const writeResult = await fileManager.writeFiles(result.content.files);
-    
     if (!writeResult.success) {
       console.error('Some files failed to write:', writeResult.errors);
     }
   }
-  
-  console.log(`[COST-DEBUG] Developer result.cost: ${result.cost}, result.time: ${result.time}`);
-  console.log(`[COST-DEBUG] Developer result.content.cost: ${result.content.cost}`);
-  
+
   const developerData = {
     ...result.content,
-    cost: result.cost,  // Override any cost from content
-    time: result.time   // Override any time from content
+    cost: result.cost,
+    time: result.time
   };
-  
-  console.log(`[COST-DEBUG] Passing to orchestrator - cost: ${developerData.cost}, time: ${developerData.time}`);
-  
+
   await orchestrator.handleAgentComplete(2, developerData);
-  
+
   // Continue to AC check
   await runPipeline();
 }
