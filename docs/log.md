@@ -249,7 +249,7 @@ spec'ом, verification report'ом и другими артефактами age
 - Фаза 7.5: App slug из заказа
 - Фаза 8: Документация и релиз
 
-## v0.3 — NEGOTIATE
+## v0.3 — NEGOTIATE ✅
 
 ### Decisions
 - Два режима архитектора (clarify/spec), без blocker (отложен в v0.3.1)

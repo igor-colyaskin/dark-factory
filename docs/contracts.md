@@ -11,8 +11,6 @@
 
 ---
 
-## Architect `draft`
-
 ## Architect `baseline`
 
 ### Роль
