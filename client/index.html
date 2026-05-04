@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
 </head>
+
 <body>
   <!-- Run Mode Badge (fixed position) -->
   <div id="run-mode-badge" class="run-mode-badge"></div>
@@ -19,7 +21,7 @@
       <div class="sidebar-logo" data-tooltip="Dark Factory v0.2">
         🏭
       </div>
-      
+
       <!-- Navigation Icons -->
       <nav class="sidebar-nav">
         <button class="sidebar-btn active" data-tab="order" data-tooltip="Order">
@@ -27,13 +29,22 @@
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
         </button>
-        
+
         <button class="sidebar-btn" data-tab="products" data-tooltip="My Apps">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>
             <rect x="14" y="14" width="7" height="7"></rect>
             <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+
+        <button class="sidebar-btn" data-tab="settings" data-tooltip="Settings">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
           </svg>
         </button>
       </nav>
@@ -48,22 +59,18 @@
           <div class="block-header">
             <h2 id="order-title">📝 Order</h2>
           </div>
-          
+
           <div class="block-content">
             <form id="order-form">
-              <textarea
-                id="order-input"
-                name="order"
-                rows="6"
+              <textarea id="order-input" name="order" rows="6"
                 placeholder="Example: Create a simple TODO application where users can add, complete, and delete tasks."
-                required
-              ></textarea>
-              
+                required></textarea>
+
               <button type="submit" class="btn btn-primary" id="submit-order-btn">
                 Submit Order
               </button>
             </form>
-            
+
             <!-- Order display (shown after submit) -->
             <div id="order-display" class="order-display" style="display: none;">
               <div id="order-text" class="order-text"></div>
@@ -76,7 +83,7 @@
           <div class="block-header">
             <h2>⚙️ Manufacturing</h2>
           </div>
-          
+
           <div class="block-content">
             <!-- Deploy Info (shown during DEPLOYING state) -->
             <div id="deploy-info" class="deploy-info" style="display: none;">
@@ -149,7 +156,7 @@
           <div class="block-header">
             <h2>🎉 Pickup</h2>
           </div>
-          
+
           <div class="block-content">
             <div class="success-message">
               <div class="success-icon">✓</div>
@@ -175,12 +182,13 @@
             <!-- Public URL Section (v0.2) -->
             <div id="public-url-section" class="public-url-section" style="display: none;">
               <h3 class="public-url-title">🌐 Your App is Live!</h3>
-              
+
               <div class="public-url-content">
                 <!-- Left Block: URL and Buttons -->
                 <div class="public-url-left">
                   <div class="public-url-display">
-                    <a id="public-url-link" href="#" target="_blank" rel="noopener noreferrer" class="public-url-link"></a>
+                    <a id="public-url-link" href="#" target="_blank" rel="noopener noreferrer"
+                      class="public-url-link"></a>
                     <div id="fake-url-badge" class="fake-url-badge" style="display: none;">
                       ⚠ Mock deploy — URL is fake, nothing was actually deployed
                     </div>
@@ -246,6 +254,54 @@
         </section>
       </div>
       <!-- End Page: Products -->
+
+      <!-- Page: Settings -->
+      <div id="page-settings" class="page" style="display: none;">
+        <section class="block settings-block">
+          <div class="block-header">
+            <h2>⚙️ Settings</h2>
+          </div>
+          <div class="block-content">
+            <!-- GitHub Integration Section -->
+            <div class="settings-section">
+              <h3 class="settings-section-title">GitHub Integration</h3>
+              <p class="settings-section-description">
+                Connect your GitHub account to automatically save generated apps as repositories.
+                Each app will be pushed to a separate private repository in your account.
+              </p>
+
+              <!-- Status: Not Connected -->
+              <div id="github-not-connected" class="github-status" style="display: none;">
+                <div class="github-status-indicator">
+                  <span class="status-dot status-dot-off"></span>
+                  <span class="status-text">Not connected</span>
+                </div>
+                <button id="github-connect-btn" class="btn btn-primary">
+                  Connect GitHub
+                </button>
+              </div>
+
+              <!-- Status: Connected -->
+              <div id="github-connected" class="github-status" style="display: none;">
+                <div class="github-status-indicator">
+                  <span class="status-dot status-dot-on"></span>
+                  <span class="status-text">Connected as <strong id="github-username"></strong></span>
+                </div>
+                <div class="github-connected-meta">
+                  <span id="github-connected-at" class="github-connected-at"></span>
+                </div>
+                <button id="github-disconnect-btn" class="btn btn-secondary">
+                  Disconnect
+                </button>
+              </div>
+
+              <!-- Status messages (after OAuth callback) -->
+              <div id="github-message" class="github-message" style="display: none;"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <!-- End Page: Settings -->
     </main>
   </div>
 
@@ -278,4 +334,5 @@
 
   <script src="app.js"></script>
 </body>
+
 </html>

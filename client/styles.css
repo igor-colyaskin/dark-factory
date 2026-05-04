@@ -1370,3 +1370,89 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--vscode-hover-bg);
 }
+
+/* ============================================================================
+   Settings Page
+   ============================================================================ */
+
+.settings-block {
+  max-width: 800px;
+}
+
+.settings-section {
+  padding: 20px 0;
+}
+
+.settings-section-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.settings-section-description {
+  margin: 0 0 20px 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.github-status {
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+  margin-bottom: 12px;
+}
+
+.github-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot-off {
+  background: #aaa;
+}
+
+.status-dot-on {
+  background: #4caf50;
+}
+
+.status-text {
+  font-size: 14px;
+}
+
+.github-connected-meta {
+  margin-bottom: 12px;
+}
+
+.github-connected-at {
+  font-size: 12px;
+  color: #888;
+}
+
+.github-message {
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.github-message-success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.github-message-error {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}

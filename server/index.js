@@ -11,6 +11,7 @@ import architectPrompts from './prompts/architect.js';
 import developerPrompts from './prompts/developer.js';
 import testerPrompts from './prompts/tester.js';
 import { validateEnvOrExit } from './env-validator.js';
+import githubAuthRouter from './routes/github-auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +57,11 @@ app.use(express.json());
 
 // Serve static files from client directory
 app.use(express.static(path.join(__dirname, '../client')));
+
+// SPA fallback: /settings etc. serve index.html
+app.get('/settings', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/index.html'));
+});
 
 // SSE endpoint for real-time updates
 app.get('/events', (req, res) => {
@@ -237,6 +243,9 @@ app.get('/api/info', (req, res) => {
     port: PORT
   });
 });
+
+// GitHub OAuth routes
+app.use('/api/github', githubAuthRouter);
 
 // GET endpoint to get all archived apps
 app.get('/api/my-apps', async (req, res) => {

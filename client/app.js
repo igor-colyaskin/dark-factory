@@ -47,14 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initSessionId();
   setupEventListeners();
   setupTabs();
+  setupSettings();
   connectSSE();
   loadRunMode();
+  handleGitHubCallback();
 });
 
 // Initialize or retrieve session ID
 function initSessionId() {
   sessionId = localStorage.getItem('df-session-id');
-  
+
   if (!sessionId) {
     sessionId = crypto.randomUUID();
     localStorage.setItem('df-session-id', sessionId);
@@ -69,13 +71,13 @@ async function loadRunMode() {
   try {
     const response = await fetch('/api/info');
     const info = await response.json();
-    
+
     const badge = document.getElementById('run-mode-badge');
     const mode = info.runMode || 'production';
-    
+
     badge.textContent = mode.toUpperCase();
     badge.className = `run-mode-badge ${mode}`;
-    
+
     console.log(`Running in ${mode} mode`);
   } catch (error) {
     console.error('Error loading run mode:', error);
@@ -91,7 +93,7 @@ function setupEventListeners() {
   newOrderBtn.addEventListener('click', handleNewOrder);
   openPublicBtn.addEventListener('click', handleOpenPublic);
   copyUrlBtn.addEventListener('click', handleCopyUrl);
-  
+
   // Close delete modal on outside click
   document.getElementById('delete-modal').addEventListener('click', (e) => {
     if (e.target.id === 'delete-modal') {
@@ -103,14 +105,14 @@ function setupEventListeners() {
 // Setup Tabs
 function setupTabs() {
   const tabButtons = document.querySelectorAll('.sidebar-btn');
-  
+
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetTab = btn.dataset.tab;
       switchTab(targetTab);
     });
   });
-  
+
   // "Go to Order" link inside products empty state
   const goToOrderLink = document.getElementById('go-to-order-link');
   if (goToOrderLink) {
@@ -127,14 +129,20 @@ function switchTab(tabName) {
   document.querySelectorAll('.sidebar-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
-  
+
   // Update pages
   document.getElementById('page-order').style.display = tabName === 'order' ? 'block' : 'none';
   document.getElementById('page-products').style.display = tabName === 'products' ? 'block' : 'none';
-  
+  document.getElementById('page-settings').style.display = tabName === 'settings' ? 'block' : 'none';
+
   // Load products when switching to that tab
   if (tabName === 'products') {
     loadProducts();
+  }
+
+  // Load GitHub status when switching to Settings
+  if (tabName === 'settings') {
+    loadGitHubStatus();
   }
 }
 
@@ -142,22 +150,22 @@ function switchTab(tabName) {
 async function loadProducts() {
   const productsList = document.getElementById('products-list');
   const productsEmpty = document.getElementById('products-empty');
-  
+
   try {
     const response = await fetch('/api/my-apps');
     const data = await response.json();
-    
+
     if (!data.success || !data.apps || data.apps.length === 0) {
       productsCache = [];
       productsList.innerHTML = '';
       productsEmpty.style.display = 'block';
       return;
     }
-    
+
     productsCache = data.apps;
     productsEmpty.style.display = 'none';
     productsList.innerHTML = data.apps.map(app => renderAppCard(app)).join('');
-    
+
   } catch (error) {
     console.error('Error loading products:', error);
     productsCache = [];
@@ -171,7 +179,7 @@ function renderAppCard(app) {
   const orderExcerpt = app.order && app.order.length > 80
     ? app.order.substring(0, 80) + '...'
     : (app.order || '');
-  
+
   const dateFormatted = formatDate(app.createdAt);
   const costFormatted = app.metrics && typeof app.metrics.totalCost === 'number'
     ? `$${app.metrics.totalCost.toFixed(2)}`
@@ -179,7 +187,7 @@ function renderAppCard(app) {
   const timeFormatted = app.metrics && typeof app.metrics.totalTime === 'number'
     ? formatTime(app.metrics.totalTime)
     : '--';
-  
+
   return `
     <div class="app-card" data-app-id="${app.id}">
       <div class="app-card-header">
@@ -223,11 +231,11 @@ function escapeHtml(text) {
 function handleDetails(appId) {
   const detailsDiv = document.getElementById(`details-${appId}`);
   const btn = document.querySelector(`.app-card[data-app-id="${appId}"] [data-action="details"]`);
-  
+
   if (!detailsDiv || !btn) return;
-  
+
   const isVisible = detailsDiv.style.display !== 'none';
-  
+
   if (isVisible) {
     // Collapse
     detailsDiv.style.display = 'none';
@@ -248,25 +256,25 @@ function handleDetails(appId) {
 function handleDeleteClick(appId) {
   const app = productsCache.find(a => a.id === appId);
   if (!app) return;
-  
+
   deleteTargetId = appId;
-  
+
   // Populate modal
   const modalInfo = document.getElementById('delete-modal-info');
   modalInfo.textContent = `#${app.number} (${app.id})`;
-  
+
   // Reset state
   const errorDiv = document.getElementById('delete-modal-error');
   errorDiv.style.display = 'none';
   errorDiv.textContent = '';
-  
+
   const confirmBtn = document.getElementById('delete-confirm-btn');
   confirmBtn.disabled = false;
   confirmBtn.textContent = 'Да, удалить';
-  
+
   const cancelBtn = document.getElementById('delete-cancel-btn');
   cancelBtn.disabled = false;
-  
+
   // Show modal
   document.getElementById('delete-modal').style.display = 'flex';
 }
@@ -280,47 +288,47 @@ function closeDeleteModal() {
 // Confirm Delete
 async function confirmDelete() {
   if (!deleteTargetId) return;
-  
+
   const confirmBtn = document.getElementById('delete-confirm-btn');
   const cancelBtn = document.getElementById('delete-cancel-btn');
   const errorDiv = document.getElementById('delete-modal-error');
-  
+
   // Loading state
   confirmBtn.disabled = true;
   confirmBtn.textContent = 'Удаление...';
   cancelBtn.disabled = true;
   errorDiv.style.display = 'none';
-  
+
   try {
     const response = await fetch(`/api/my-apps/${deleteTargetId}`, {
       method: 'DELETE'
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       // Success — remove card from UI first, then close modal
       // Store ID before closing modal (which resets deleteTargetId)
       const idToDelete = deleteTargetId;
-      
+
       // Remove card from DOM
       const card = document.querySelector(`.app-card[data-app-id="${idToDelete}"]`);
       if (card) {
         card.remove();
       }
-      
+
       // Update cache
       productsCache = productsCache.filter(a => a.id !== idToDelete);
-      
+
       // Show empty state if no cards left
       if (productsCache.length === 0) {
         document.getElementById('products-list').innerHTML = '';
         document.getElementById('products-empty').style.display = 'block';
       }
-      
+
       // Close modal after UI update
       closeDeleteModal();
-      
+
       showStatus('Application deleted', 'success');
     } else {
       // Error from server
@@ -343,13 +351,13 @@ async function confirmDelete() {
 // Connect to SSE
 function connectSSE() {
   console.log('Connecting to SSE...');
-  
+
   eventSource = new EventSource('/events');
-  
+
   eventSource.onopen = () => {
     console.log('SSE connection established');
   };
-  
+
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
@@ -358,11 +366,11 @@ function connectSSE() {
       console.error('Error parsing SSE message:', error);
     }
   };
-  
+
   eventSource.onerror = (error) => {
     console.error('SSE connection error:', error);
     showStatus('Connection error. Retrying...', 'error');
-    
+
     // Reconnect after 5 seconds
     setTimeout(() => {
       if (eventSource.readyState === EventSource.CLOSED) {
@@ -375,30 +383,30 @@ function connectSSE() {
 // Handle SSE Messages
 function handleSSEMessage(data) {
   console.log('SSE message:', data);
-  
+
   switch (data.type) {
     case 'connected':
       console.log('Connected to server');
       break;
-      
+
     case 'heartbeat':
       // Keep-alive, no action needed
       break;
-      
+
     case 'state_update':
       currentState = data.state;
       updateUI(data.state);
       break;
-      
+
     case 'deploy_progress':
       handleDeployProgress(data);
       break;
-      
+
     case 'error':
       showStatus(data.message, 'error');
       hideLoading();
       break;
-      
+
     default:
       console.log('Unknown message type:', data.type);
   }
@@ -417,16 +425,16 @@ function handleDeployProgress(data) {
 // Handle Order Submit
 async function handleOrderSubmit(e) {
   e.preventDefault();
-  
+
   const orderDescription = orderInput.value.trim();
-  
+
   if (!orderDescription) {
     showStatus('Please describe your application', 'error');
     return;
   }
-  
+
   showLoading('Submitting your order...');
-  
+
   try {
     const response = await fetch('/api/order', {
       method: 'POST',
@@ -436,15 +444,15 @@ async function handleOrderSubmit(e) {
       },
       body: JSON.stringify({ description: orderDescription })
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       showStatus('Order submitted successfully!', 'success');
-      
+
       // Update order block
       updateOrderBlockAfterSubmit(orderDescription);
-      
+
       // Show manufacturing block
       manufacturingBlock.style.display = 'block';
       manufacturingBlock.scrollIntoView({ behavior: 'smooth' });
@@ -466,30 +474,30 @@ function updateOrderBlockAfterSubmit(orderText) {
   if (orderTitle) {
     orderTitle.textContent = '📝 Your Order';
   }
-  
+
   // Hide form
   const orderForm = document.getElementById('order-form');
   if (orderForm) {
     orderForm.style.display = 'none';
   }
-  
+
   // Show order display
   const orderDisplay = document.getElementById('order-display');
   const orderTextEl = document.getElementById('order-text');
   if (orderDisplay && orderTextEl) {
     orderTextEl.textContent = orderText;
-    
+
     // Check if text is longer than 2 lines (approximate)
     // If longer, add tooltip with full text
     const lineHeight = 1.5; // from CSS
     const fontSize = 13; // from CSS
     const approxCharsPerLine = 80; // approximate
-    
+
     if (orderText.length > approxCharsPerLine * 2) {
       orderTextEl.setAttribute('data-full-text', orderText);
       orderTextEl.title = orderText; // Fallback for browsers
     }
-    
+
     orderDisplay.style.display = 'block';
   }
 }
@@ -506,26 +514,26 @@ function handleOpenPublic() {
 // Handle Copy URL
 async function handleCopyUrl() {
   const url = publicUrlLink.href;
-  
+
   if (!url || url === '#') {
     showStatus('No URL to copy', 'error');
     return;
   }
-  
+
   try {
     await navigator.clipboard.writeText(url);
-    
+
     // Change button text temporarily
     const originalText = copyUrlBtn.textContent;
     copyUrlBtn.textContent = '✓ Скопировано';
     copyUrlBtn.disabled = true;
-    
+
     // Restore after 2 seconds
     setTimeout(() => {
       copyUrlBtn.textContent = originalText;
       copyUrlBtn.disabled = false;
     }, 2000);
-    
+
     showStatus('URL copied to clipboard', 'success');
   } catch (error) {
     console.error('Error copying URL:', error);
@@ -914,19 +922,19 @@ async function handleCancelOrder() {
 // Update User Stories Table
 function updateUserStoriesTable(userStories) {
   usTableBody.innerHTML = '';
-  
+
   if (!userStories || !Array.isArray(userStories)) {
     console.warn('userStories is undefined or not an array');
     return;
   }
-  
+
   userStories.forEach(us => {
     const row = document.createElement('tr');
-    
+
     const statusClass = `status-${us.status.toLowerCase()}`;
     const costDisplay = typeof us.cost === 'number' ? `$${us.cost.toFixed(4)}` : '--';
     const timeDisplay = us.time > 0 ? formatTime(us.time) : '--';
-    
+
     row.innerHTML = `
       <td>${us.id}</td>
       <td>${us.name}</td>
@@ -935,7 +943,7 @@ function updateUserStoriesTable(userStories) {
       <td>${costDisplay}</td>
       <td>${timeDisplay}</td>
     `;
-    
+
     usTableBody.appendChild(row);
   });
 }
@@ -947,7 +955,7 @@ function updateTotals(cost, time) {
   } else {
     totalCost.textContent = '$0.00';
   }
-  
+
   if (typeof time === 'number') {
     totalTime.textContent = formatTime(time);
   } else {
@@ -959,10 +967,10 @@ function updateTotals(cost, time) {
 function showPickupBlock(state) {
   pickupBlock.style.display = 'block';
   pickupBlock.scrollIntoView({ behavior: 'smooth' });
-  
+
   finalCost.textContent = `$${state.totalCost.toFixed(2)}`;
   finalTime.textContent = formatTime(state.totalTime);
-  
+
   // Count files from agent outputs
   let fileCount = 0;
   if (state.agentOutputs) {
@@ -973,14 +981,14 @@ function showPickupBlock(state) {
     }
   }
   finalFiles.textContent = fileCount;
-  
+
   // Show public URL section if available (v0.2)
   if (state.publicUrl) {
     publicUrlSection.style.display = 'block';
     publicUrlLink.href = state.publicUrl;
     publicUrlLink.textContent = state.publicUrl;
     deployErrorSection.style.display = 'none';
-    
+
     // v0.2: mark fake URLs (mock-fast, demo) with a visible badge
     const fakeBadge = document.getElementById('fake-url-badge');
     if (state.isFakeDeploy) {
@@ -989,7 +997,7 @@ function showPickupBlock(state) {
     } else {
       fakeBadge.style.display = 'none';
     }
-    
+
     // Generate QR code
     const qrCanvas = document.getElementById('qr-canvas');
     if (qrCanvas && typeof QRCode !== 'undefined') {
@@ -1014,7 +1022,7 @@ function showStatus(message, type = 'info') {
   statusMessage.textContent = message;
   statusMessage.className = `status-message ${type}`;
   statusMessage.style.display = 'block';
-  
+
   // Auto-hide after 5 seconds
   setTimeout(() => {
     statusMessage.style.display = 'none';
@@ -1037,8 +1045,114 @@ function formatTime(seconds) {
   if (seconds < 60) {
     return `${seconds}s`;
   }
-  
+
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}m ${remainingSeconds}s`;
+}
+
+// ============================================================================
+// Settings: GitHub Integration
+// ============================================================================
+
+async function loadGitHubStatus() {
+  try {
+    const response = await fetch('/api/github/status');
+    const data = await response.json();
+    renderGitHubStatus(data);
+  } catch (err) {
+    console.error('Failed to load GitHub status:', err);
+    renderGitHubStatus({ connected: false });
+  }
+}
+
+function renderGitHubStatus(data) {
+  const notConnectedBlock = document.getElementById('github-not-connected');
+  const connectedBlock = document.getElementById('github-connected');
+  const usernameEl = document.getElementById('github-username');
+  const connectedAtEl = document.getElementById('github-connected-at');
+
+  if (data.connected) {
+    notConnectedBlock.style.display = 'none';
+    connectedBlock.style.display = 'block';
+    usernameEl.textContent = '@' + data.username;
+    if (data.connectedAt) {
+      const date = new Date(data.connectedAt);
+      connectedAtEl.textContent = 'Connected on ' + date.toLocaleDateString() +
+        ' at ' + date.toLocaleTimeString();
+    }
+  } else {
+    notConnectedBlock.style.display = 'block';
+    connectedBlock.style.display = 'none';
+  }
+}
+
+function connectGitHub() {
+  window.location.href = '/api/github/authorize';
+}
+
+async function disconnectGitHub() {
+  if (!confirm('Disconnect GitHub? Your token will be removed. ' +
+               'Existing repositories on GitHub will not be affected.')) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/github/disconnect', { method: 'POST' });
+    if (!response.ok) {
+      throw new Error('Server returned ' + response.status);
+    }
+    await loadGitHubStatus();
+    showGitHubMessage('Disconnected from GitHub.', 'success');
+  } catch (err) {
+    console.error('Failed to disconnect:', err);
+    showGitHubMessage('Failed to disconnect. Check console for details.', 'error');
+  }
+}
+
+function showGitHubMessage(text, type) {
+  const messageEl = document.getElementById('github-message');
+  messageEl.textContent = text;
+  messageEl.className = 'github-message github-message-' + type;
+  messageEl.style.display = 'block';
+
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    messageEl.style.display = 'none';
+  }, 5000);
+}
+
+function handleGitHubCallback() {
+  // Parse ?github=... from URL
+  const params = new URLSearchParams(window.location.search);
+  const githubParam = params.get('github');
+
+  if (!githubParam) return;
+
+  // If we got here, user was redirected from OAuth callback
+  // Switch to Settings tab automatically
+  switchTab('settings');
+
+  if (githubParam === 'connected') {
+    showGitHubMessage('Successfully connected to GitHub!', 'success');
+  } else if (githubParam === 'error') {
+    const reason = params.get('reason') || 'unknown';
+    showGitHubMessage('Connection failed: ' + reason, 'error');
+  }
+
+  // Clean URL: remove query params without reload
+  const cleanUrl = window.location.pathname;
+  window.history.replaceState({}, '', cleanUrl);
+}
+
+function setupSettings() {
+  const connectBtn = document.getElementById('github-connect-btn');
+  if (connectBtn) {
+    connectBtn.addEventListener('click', connectGitHub);
+  }
+
+  const disconnectBtn = document.getElementById('github-disconnect-btn');
+  if (disconnectBtn) {
+    disconnectBtn.addEventListener('click', disconnectGitHub);
+  }
 }
