@@ -42,6 +42,15 @@ const deployErrorSection = document.getElementById('deploy-error-section');
 const deployInfo = document.getElementById('deploy-info');
 const deployStatusText = document.getElementById('deploy-status-text');
 
+// Routing
+const TAB_ROUTES = { order: '/', products: '/my-apps', settings: '/settings' };
+
+function getTabFromPath(pathname) {
+  if (pathname === '/my-apps') return 'products';
+  if (pathname === '/settings') return 'settings';
+  return 'order';
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   initSessionId();
@@ -50,7 +59,20 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSettings();
   connectSSE();
   loadRunMode();
+  initFromUrl();
   handleGitHubCallback();
+});
+
+// Route: show correct page on initial load
+function initFromUrl() {
+  const tab = getTabFromPath(window.location.pathname);
+  switchTab(tab, { updateUrl: false });
+}
+
+// Route: handle browser back/forward
+window.addEventListener('popstate', (e) => {
+  const tab = e.state?.page || getTabFromPath(window.location.pathname);
+  switchTab(tab, { updateUrl: false });
 });
 
 // Initialize or retrieve session ID
@@ -124,7 +146,7 @@ function setupTabs() {
 }
 
 // Switch Tab
-function switchTab(tabName) {
+function switchTab(tabName, { updateUrl = true } = {}) {
   // Update sidebar buttons
   document.querySelectorAll('.sidebar-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
@@ -134,6 +156,11 @@ function switchTab(tabName) {
   document.getElementById('page-order').style.display = tabName === 'order' ? 'block' : 'none';
   document.getElementById('page-products').style.display = tabName === 'products' ? 'block' : 'none';
   document.getElementById('page-settings').style.display = tabName === 'settings' ? 'block' : 'none';
+
+  // Update URL (only on user-initiated navigation)
+  if (updateUrl) {
+    history.pushState({ page: tabName }, '', TAB_ROUTES[tabName]);
+  }
 
   // Load products when switching to that tab
   if (tabName === 'products') {
@@ -1123,15 +1150,13 @@ function showGitHubMessage(text, type) {
 }
 
 function handleGitHubCallback() {
-  // Parse ?github=... from URL
   const params = new URLSearchParams(window.location.search);
   const githubParam = params.get('github');
 
   if (!githubParam) return;
 
-  // If we got here, user was redirected from OAuth callback
-  // Switch to Settings tab automatically
-  switchTab('settings');
+  // Switch to Settings without pushing new history entry
+  switchTab('settings', { updateUrl: false });
 
   if (githubParam === 'connected') {
     showGitHubMessage('Successfully connected to GitHub!', 'success');
@@ -1140,9 +1165,8 @@ function handleGitHubCallback() {
     showGitHubMessage('Connection failed: ' + reason, 'error');
   }
 
-  // Clean URL: remove query params without reload
-  const cleanUrl = window.location.pathname;
-  window.history.replaceState({}, '', cleanUrl);
+  // Clean URL: remove query params, set correct path
+  window.history.replaceState({ page: 'settings' }, '', '/settings');
 }
 
 function setupSettings() {

@@ -58,8 +58,11 @@ app.use(express.json());
 // Serve static files from client directory
 app.use(express.static(path.join(__dirname, '../client')));
 
-// SPA fallback: /settings etc. serve index.html
+// SPA fallback: serve index.html for client-side routes
 app.get('/settings', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/index.html'));
+});
+app.get('/my-apps', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 
