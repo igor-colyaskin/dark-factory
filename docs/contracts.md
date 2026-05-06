@@ -3,7 +3,7 @@
 Контракты между компонентами DF: что принимают, что возвращают,
 какие инварианты соблюдают.
 
-**Текущее состояние:** v0.5
+**Текущее состояние:** v0.6
 
 **Статус документа:** draft — конспективное содержание со ссылками
 на источники. Детали достаются из source по запросу, когда становятся
@@ -122,7 +122,7 @@ DEV_WORKING → DEV_CHECK → TEST_RUNNING → DELIVERING → DEPLOYING → GITH
 
 ### Источники истины
 - **State machine, переходы, поля:** `server/orchestrator.js`
-- **Deploy механика:** `server/orchestrator.js` → `executeDeploy` / `executeFakeDeploy`
+- **Deploy механика:** `server/orchestrator.js` → `executeLocalDeploy` / `executeFakeDeploy`
 - **SSE broadcasting:** `server/index.js` → `broadcastState`, plus
   `orchestrator.broadcastEvent` для deploy_progress events
 
@@ -152,6 +152,32 @@ GitHub Client — первая и единственная имплемента�
 - **Token storage:** `server/github-tokens.js` → `state/github-tokens.json`
 - **README/SPEC генерация:** `server/readme-generator.js`
 - **Интеграция:** `server/orchestrator.js` → `executeGithubPush()`
+
+---
+
+## Local Runner `baseline`
+
+### Роль
+Запускает сгенерированное приложение локально. Первая (и единственная) реализация
+Deployer-контракта (v0.6). Fly.io-адаптер — Area-51 до разблокировки VDI.
+
+### Контракт
+- `deploy(appName, onProgress?) → { url, pid, port }` — копирует workspace, npm install, npm start, ждёт HTTP
+- `teardown(pid, appName) → void` — SIGTERM процессу
+
+> Facade-модуль `deployer.js` не создаётся до появления второй реализации.
+
+### Process Registry
+`server/process-registry.js` — singleton, in-memory Map.
+- `register(appName, { pid, port })` / `get(appName)` / `remove(appName)` / `list()`
+- Не переживает перезапуск сервера — by design (on-demand модель)
+
+### Источники истины
+- **Local Runner:** `server/local-runner.js`
+- **Process Registry:** `server/process-registry.js`
+- **Интеграция:** `server/orchestrator.js` → `executeLocalDeploy()`
+- **On-demand API:** `server/index.js` → `POST /api/my-apps/:id/open`, `GET /api/my-apps/:id/status`
+- **Workspaces:** `workspaces/{appName}/` (в `.gitignore`)
 
 ---
 

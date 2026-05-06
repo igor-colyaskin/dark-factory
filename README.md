@@ -94,8 +94,8 @@ npm run demo
 
 | Режим | Агенты | Файлы | Deploy | Время | Стоимость | Использование |
 |-------|--------|-------|--------|-------|-----------|---------------|
-| **production** | Real API | workspace/ | Real Fly.io | 60-90s | $$$ | Реальная генерация |
-| **mock-full**  | Mock | workspace/ | Real Fly.io | ~90s | $0 LLM + ~$0.01 Fly | Отладка интеграции с Fly |
+| **production** | Real API | workspace/ | Local Runner (localhost) | 60-90s | $$$ | Реальная генерация |
+| **mock-full**  | Mock | workspace/ | Local Runner (localhost) | ~90s | $0 | Отладка интеграции |
 | **mock-fast**  | Mock | mock-workspace/ → workspace/ | Fake URL | ~10s | $0 | Отладка UI/UX |
 | **demo**       | Mock | mock-workspace/ → workspace/ | Fake URL | ~15s | $0 | Презентации |
 ## Использование

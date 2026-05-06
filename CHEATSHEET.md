@@ -39,24 +39,25 @@ npm run fresh          # Очистка + перезапуск
 | Режим | Время | $ | Для чего |
 |-------|-------|---|----------|
 | production | 60-90s | $$$ | Реальная генерация |
-| mock-full | 6s | $0 | Отладка backend |
+| mock-full | ~30s | $0 | Отладка backend + Local Runner |
 | mock-fast | 6s | $0 | Отладка UI |
 | demo | 9s | $0 | Презентации |
 
 ## Порты
 
 - **3000** — Dark Factory
-- **3001** — Созданные приложения
+- **3100–3999** — Созданные приложения (Local Runner, v0.6+)
 
 ## Запуск созданного приложения
 
+Кнопка **"Открыть"** на карточке в Products → Local Runner стартует приложение → новая вкладка.
+
+Или вручную:
+
 ```bash
-cd workspace
-npm install
+cd workspaces/<appName>
 npm start
 ```
-
-Откройте http://localhost:3001
 
 ## Troubleshooting
 

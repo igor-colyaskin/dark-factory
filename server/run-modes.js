@@ -1,8 +1,11 @@
 /**
- * Run Modes configuration for Dark Factory v0.2
+ * Run Modes configuration for Dark Factory v0.6
  *
  * Each mode is a set of boolean flags controlling pipeline behavior.
  * This allows combining features without multiplying string-based branches.
+ *
+ * fakeDeploy: false → uses Local Runner (localhost, v0.6+)
+ * fakeDeploy: true  → uses executeFakeDeploy (mock URL, no real process)
  */
 
 export const RUN_MODES = {
@@ -14,8 +17,8 @@ export const RUN_MODES = {
     fakeDeploy: false,
     demoDelays: false
   },
-  // Mock LLM + real file write + real AC + real deploy.
-  // For debugging File Manager, AC Checker, Fly Manager without LLM cost.
+  // Mock LLM + real file write + real AC + Local Runner deploy.
+  // For debugging File Manager, AC Checker, Local Runner without LLM cost.
   'mock-full': {
     mockLLM: true,
     mockWorkspace: false,
@@ -23,7 +26,7 @@ export const RUN_MODES = {
     fakeDeploy: false,
     demoDelays: false
   },
-  // Mock everything. For UI/UX/SSE debugging. ~6 seconds, zero cost, no Fly.
+  // Mock everything. For UI/UX/SSE debugging. ~6 seconds, zero cost, no Local Runner.
   'mock-fast': {
     mockLLM: true,
     mockWorkspace: true,

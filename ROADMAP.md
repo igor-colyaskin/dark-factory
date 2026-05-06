@@ -94,7 +94,22 @@ README.md и SPEC.md генерируются и коммитятся вмест
 - Весь spec передаётся целиком — spec маленький, вопрос не в объёме, а в поведении архитектора
 - Prefix stripped в `generateUserPrompt` — агент видит только дельту пользователя
 - Pattern Library (режим B) → Area-51
-- Fly заблокирован на VDI → GITHUB_PUSH не тестировался end-to-end (блокер v0.7)
+- Fly заблокирован на VDI → GITHUB_PUSH не тестировался end-to-end (блокер — решён в v0.6)
+
+### v0.6 — Local Runner ✅
+Fly.io заменён на локальный запуск. Полный pipeline работает на корп. VDI.
+
+Каждое приложение сохраняется в `workspaces/{appName}/`. On-demand UX:
+кнопка "Открыть" в Products стартует приложение и открывает `http://localhost:PORT`.
+QR-код скрыт для localhost.
+
+Ключевые решения:
+- `local-runner.js`: копирует workspace, npm install, npm start, ждёт HTTP → возвращает `{ url, pid, port }`
+- `process-registry.js`: in-memory реестр `{ appName → { pid, port } }` для teardown
+- `executeLocalDeploy()` в оркестраторе — заменяет `executeDeploy()` (Fly) в реальном режиме
+- On-demand UX, не постоянный URL — честная модель для localhost
+- Нет Deployer facade — до появления второй реализации
+- workspaces/ eviction → Area-51
 
 ---
 

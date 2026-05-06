@@ -10,6 +10,7 @@
 | v0.3 | 2026-05-03 | Утверждено | NEGOTIATE: architect clarifying questions, spec review |
 | v0.4 | 2026-05-06 | Утверждено | GitHub Integration, миграция на Hyperspace LiteLLM |
 | v0.5 | 2026-05-06 | Утверждено | REMEMBER: Order by Reference, readApp, кнопка "Повторить с изменениями" |
+| v0.6 | 2026-05-06 | Утверждено | Local Runner: localhost deploy, workspaces/, on-demand UX, полный pipeline на VDI |
 
 ## 1. Что такое Dark Factory
 

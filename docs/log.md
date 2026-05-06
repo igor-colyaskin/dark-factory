@@ -342,3 +342,34 @@ spec'ом, verification report'ом и другими артефактами age
 Отвергнутые идеи. Записываются, чтобы через полгода не вернуться к ним случайно.
 
 *(пока пусто — заполним по мере возникновения)*
+
+---
+
+## v0.6 — Local Runner ✅
+
+### Decisions
+
+| Дата | Решение | Причина |
+|------|---------|---------|
+| 2026-05-06 | v0.6 = Local Runner (было VERIFY), v0.7 = VERIFY | VERIFY требует живого URL; без деплоя это слабый code review |
+| 2026-05-06 | Workspace per app: `workspaces/{appName}/` | Изоляция; eviction критерии неизвестны → Area-51 |
+| 2026-05-06 | On-demand UX: кнопка "Открыть", не постоянный URL | Честная модель; снимает проблему persistence после рестарта |
+| 2026-05-06 | Нет Deployer facade | Контракт выводится из двух реализаций, не из одной |
+| 2026-05-06 | puppeteer-core + системный Chrome | Проверено на VDI до старта v0.6 |
+| 2026-05-06 | Verifier = VerifierA + VerifierB + compositor | Разные задачи, единый контракт; форма Report — из VerifierA |
+
+### Insights
+- Full pipeline на VDI теперь работает: DEPLOYING → GITHUB_PUSH → DONE (проверено в mock-full)
+- mock-full время изменилось: ~6s → ~30s (npm install в Local Runner занимает время)
+- `executeFakeDeploy()` оставлен без изменений — mock-fast и demo не затронуты
+- Архитектурное обсуждение v0.7 VERIFY до старта кода — правильный подход:
+  зафиксированы VerifierA/B/compositor, контракт, vision-подход — без строчки кода
+
+### Phases
+- Phase 1: `local-runner.js` — deploy/teardown, free port, HTTP polling
+- Phase 2: `process-registry.js` — in-memory lifecycle tracking
+- Phase 3: Orchestrator — `executeLocalDeploy()`, GITHUB_PUSH → DONE path
+- Phase 4: Delete flow — teardown on app delete + `/open` + `/status` endpoints
+- Phase 5: UI — "Открыть" button, hide QR for localhost
+- Phase 6: Integration test (mock-full: full pipeline end-to-end)
+- Phase 7: Documentation & release
