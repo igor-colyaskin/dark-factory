@@ -12,6 +12,7 @@ import developerPrompts from './prompts/developer.js';
 import testerPrompts from './prompts/tester.js';
 import { validateEnvOrExit } from './env-validator.js';
 import githubAuthRouter from './routes/github-auth.js';
+import githubClient from './github-client.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -280,49 +281,54 @@ app.get('/api/my-apps/:id', async (req, res) => {
 // DELETE endpoint to delete an archived app
 app.delete('/api/my-apps/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
-    // 1. Check that record exists
     const appRecord = await appsStore.getApp(id);
-    
+
     if (!appRecord) {
       return res.status(404).json({ success: false, message: 'App not found' });
     }
-    
-    // 2. Delete from Fly.io (skip for fake deploys)
-    const isFake = appRecord.flyAppName && appRecord.flyAppName.startsWith('df-mock-');
-    
-    if (!isFake) {
-      const flyManager = await import('./fly-manager.js');
-      const flyResult = await flyManager.default.destroyApp(appRecord.flyAppName);
-      
-      if (!flyResult.success) {
-        // Parse: "not found" on Fly is ok, delete from archive anyway
-        // Other errors - don't touch archive
-        const isNotFound = flyResult.error &&
-          flyResult.error.toLowerCase().includes('could not find app');
-        
-        if (!isNotFound) {
-          console.error(`[DELETE] Fly destroy failed for ${id}: ${flyResult.error}`);
-          return res.status(502).json({
-            success: false,
-            message: `Failed to destroy app on Fly.io: ${flyResult.error}`
-          });
+
+    // 1. Fly teardown — non-blocking (VDI may block flyctl)
+    const isMock = appRecord.flyAppName && appRecord.flyAppName.startsWith('df-mock-');
+    if (!isMock && appRecord.flyAppName) {
+      try {
+        const flyManager = await import('./fly-manager.js');
+        const flyResult = await flyManager.default.destroyApp(appRecord.flyAppName);
+        if (!flyResult.success) {
+          console.warn(`[DELETE] Fly destroy failed for ${appRecord.flyAppName}: ${flyResult.error} — proceeding anyway`);
         }
-        
-        // App not found on Fly - consider already deleted, continue
-        console.log(`[DELETE] App ${appRecord.flyAppName} not found on Fly, proceeding with archive cleanup`);
+      } catch (err) {
+        console.warn(`[DELETE] Fly destroy error: ${err.message} — proceeding anyway`);
       }
-    } else {
-      console.log(`[DELETE] Skipping Fly destroy for mock app: ${appRecord.flyAppName}`);
     }
-    
-    // 3. Delete from archive
+
+    // 2. GitHub repo deletion — non-blocking
+    if (appRecord.sourceUrl) {
+      try {
+        const parsed = new URL(appRecord.sourceUrl);
+        const parts = parsed.pathname.slice(1).split('/');
+        const owner = parts[0];
+        const repoName = parts[1];
+        if (owner && repoName) {
+          const ghResult = await githubClient.deleteRepo(owner, repoName);
+          if (!ghResult.success) {
+            console.warn(`[DELETE] GitHub repo delete failed: ${ghResult.error} — proceeding anyway`);
+          } else {
+            console.log(`[DELETE] GitHub repo ${owner}/${repoName} deleted`);
+          }
+        }
+      } catch (err) {
+        console.warn(`[DELETE] GitHub repo delete error: ${err.message} — proceeding anyway`);
+      }
+    }
+
+    // 3. Delete from archive — always
     await appsStore.deleteApp(id);
-    
-    console.log(`[DELETE] App ${id} fully deleted`);
+
+    console.log(`[DELETE] App ${id} deleted`);
     res.json({ success: true, message: 'App deleted' });
-    
+
   } catch (error) {
     console.error('Error deleting app:', error);
     res.status(500).json({ success: false, message: 'Failed to delete app' });
