@@ -8,6 +8,8 @@ node_modules/
 
 # Generated target app (runtime output, not source)
 workspace/
+# Per-app local workspaces (Local Runner, v0.6+)
+workspaces/
 # Note: mock-workspace/ is committed (used for mock-fast and demo modes)
 
 # Runtime state
