@@ -7,6 +7,7 @@ import { resolveRunMode } from './run-modes.js';
 import appsStore from './apps-store.js';
 import githubTokens from './github-tokens.js';
 import githubClient from './github-client.js';
+import { generateReadme, generateSpec } from './readme-generator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -577,6 +578,30 @@ class Orchestrator {
       return null;
     }
 
+    // Generate README.md and SPEC.md, replacing the auto_init README
+    const appSlug = this.agentOutputs[1]?.appSlug || null;
+    const createdAt = new Date().toISOString();
+    const readmeContent = generateReadme({
+      appName: this.appName,
+      appSlug,
+      orderDescription: this.orderDescription,
+      spec: this.currentSpec,
+      createdAt
+    });
+    const specContent = generateSpec({
+      appName: this.appName,
+      appSlug,
+      orderDescription: this.orderDescription,
+      spec: this.currentSpec,
+      createdAt
+    });
+
+    const allFiles = [
+      ...files,
+      { path: 'README.md', content: readmeContent },
+      { path: 'SPEC.md', content: specContent }
+    ];
+
     let repoCreated = false;
     try {
       const createResult = await githubClient.createRepo(repoName, {
@@ -589,7 +614,7 @@ class Orchestrator {
       repoCreated = true;
 
       const branch = createResult.repo.defaultBranch || 'main';
-      const commitResult = await githubClient.commitFiles(owner, repoName, files, 'Initial commit by Dark Factory', branch);
+      const commitResult = await githubClient.commitFiles(owner, repoName, allFiles, 'Initial commit by Dark Factory', branch);
       if (!commitResult.success) {
         throw new Error(`Failed to commit files: ${commitResult.error}`);
       }
