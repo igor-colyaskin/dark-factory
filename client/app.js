@@ -228,7 +228,11 @@ function renderAppCard(app) {
         <span class="app-card-metric">⏱ ${timeFormatted}</span>
       </div>
       <div class="app-card-url">
-        <a href="${app.url}" target="_blank" rel="noopener noreferrer">🌐 ${app.url}</a>
+        ${app.url && !app.url.startsWith('http://localhost')
+          ? `<a href="${app.url}" target="_blank" rel="noopener noreferrer">🌐 ${app.url}</a>`
+          : app.url
+            ? `<button class="btn btn-sm btn-primary" onclick="handleOpenApp('${app.id}')">▶ Открыть</button>`
+            : ''}
         ${app.sourceUrl ? `<a href="${app.sourceUrl}" target="_blank" rel="noopener noreferrer" class="app-card-github-link"><svg height="13" viewBox="0 0 16 16" width="13" fill="currentColor" style="vertical-align:-2px;margin-right:4px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Source Code</a>` : ''}
       </div>
       <div class="app-card-actions">
@@ -295,6 +299,24 @@ function handleRepeatWithChanges(appNumber) {
   orderInput.value = `На основе #${appNumber}: `;
   orderInput.focus();
   orderInput.setSelectionRange(orderInput.value.length, orderInput.value.length);
+}
+
+async function handleOpenApp(appId) {
+  const btn = document.querySelector(`.app-card[data-app-id="${appId}"] [onclick^="handleOpenApp"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Запускаю...'; }
+  try {
+    const res = await fetch(`/api/my-apps/${appId}/open`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      window.open(data.url, '_blank');
+    } else {
+      alert(`Не удалось запустить: ${data.message}`);
+    }
+  } catch (e) {
+    alert(`Ошибка: ${e.message}`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '▶ Открыть'; }
+  }
 }
 
 // Handle Delete Click (Phase 7)
@@ -1043,9 +1065,12 @@ function showPickupBlock(state) {
       fakeBadge.style.display = 'none';
     }
 
-    // Generate QR code
+    // Generate QR code — skip for localhost (only useful on the same machine)
     const qrCanvas = document.getElementById('qr-canvas');
-    if (qrCanvas && typeof QRCode !== 'undefined') {
+    const qrContainer = document.getElementById('qr-code');
+    const isLocalhost = state.publicUrl.startsWith('http://localhost');
+    if (qrContainer) qrContainer.style.display = isLocalhost ? 'none' : '';
+    if (!isLocalhost && qrCanvas && typeof QRCode !== 'undefined') {
       QRCode.toCanvas(qrCanvas, state.publicUrl, {
         width: 200,
         margin: 2
