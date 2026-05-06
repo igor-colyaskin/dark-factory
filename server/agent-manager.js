@@ -2,28 +2,28 @@
 const AGENTS = {
   architect: {
     name: 'Architect',
-    model: 'anthropic/claude-opus-4',
+    model: 'anthropic--claude-4.6-opus',
     role: 'Architecture and planning'
   },
   developer: {
     name: 'Developer',
-    model: 'anthropic/claude-sonnet-4',
+    model: 'anthropic--claude-4.6-sonnet',
     role: 'Code implementation'
   },
   tester: {
     name: 'Tester',
-    model: 'google/gemini-2.5-flash',
+    model: 'gemini-2.5-flash',
     role: 'Code review and testing'
   }
 };
 
 class AgentManager {
   constructor() {
-    this.apiKey = process.env.OPENROUTER_API_KEY;
-    this.apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+    this.apiKey = process.env.LLM_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN;
+    this.apiUrl = process.env.LLM_BASE_URL || 'http://localhost:6655/litellm/v1/chat/completions';
 
     if (!this.apiKey) {
-      console.warn('WARNING: OPENROUTER_API_KEY not set in environment variables');
+      console.warn('WARNING: LLM_API_KEY / ANTHROPIC_AUTH_TOKEN not set in environment variables');
     }
   }
 
@@ -42,7 +42,7 @@ class AgentManager {
     }
 
     if (!this.apiKey) {
-      throw new Error('OPENROUTER_API_KEY is not configured');
+      throw new Error('LLM_API_KEY / ANTHROPIC_AUTH_TOKEN is not configured');
     }
 
     console.log(`Calling ${agent.name} agent (${agent.model})...`);
@@ -53,9 +53,7 @@ class AgentManager {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://dark-factory.local',
-          'X-Title': 'Dark Factory v0.1'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: agent.model,
@@ -78,7 +76,7 @@ class AgentManager {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}\n${errorText}`);
+        throw new Error(`LLM API error: ${response.status} ${response.statusText}\n${errorText}`);
       }
 
       const data = await response.json();
@@ -221,10 +219,9 @@ class AgentManager {
       
       // These are approximate prices, actual prices may vary
       const modelPricing = {
-        'anthropic/claude-opus-4': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
-        'anthropic/claude-sonnet-4': { input: 3 / 1_000_000, output: 15 / 1_000_000 },
-        'google/gemini-2.5-flash': { input: 0.15 / 1_000_000, output: 0.60 / 1_000_000 },
-        'google/gemini-2.0-flash-exp:free': { input: 0, output: 0 }
+        'claude-opus-4': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
+        'claude-sonnet-4': { input: 3 / 1_000_000, output: 15 / 1_000_000 },
+        'gemini-2.5-flash': { input: 0.15 / 1_000_000, output: 0.60 / 1_000_000 },
       };
 
       const model = data.model || '';

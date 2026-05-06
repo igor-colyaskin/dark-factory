@@ -1,5 +1,5 @@
 /**
- * Environment variables validator for Dark Factory v0.2
+ * Environment variables validator for Dark Factory
  *
  * Policy: combined (C).
  * - Critical vars missing for current RUN_MODE → exit(1) with a clear message.
@@ -7,38 +7,42 @@
  *
  * Requirements per mode:
  *
- *   production  : OPENROUTER_API_KEY, FLY_API_TOKEN, FLY_ORG_SLUG
- *   mock-full   : FLY_API_TOKEN, FLY_ORG_SLUG (real deploy, mock LLM)
- *   mock-fast   : none required (but missing keys reported as info)
- *   demo        : none required (but missing keys reported as info)
+ *   production  : LLM API key (LLM_API_KEY or ANTHROPIC_AUTH_TOKEN)
+ *   mock-full   : none required (mock LLM, local runner)
+ *   mock-fast   : none required
+ *   demo        : none required
  */
 
 const REQUIREMENTS = {
   'production': {
-    required: ['OPENROUTER_API_KEY', 'FLY_API_TOKEN', 'FLY_ORG_SLUG'],
-    optional: []
+    required: ['LLM_API_KEY'],
+    optional: ['LLM_BASE_URL']
   },
   'mock-full': {
-    required: ['FLY_API_TOKEN', 'FLY_ORG_SLUG'],
-    optional: ['OPENROUTER_API_KEY']
+    required: [],
+    optional: ['LLM_API_KEY']
   },
   'mock-fast': {
     required: [],
-    optional: ['OPENROUTER_API_KEY', 'FLY_API_TOKEN', 'FLY_ORG_SLUG']
+    optional: ['LLM_API_KEY']
   },
   'demo': {
     required: [],
-    optional: ['OPENROUTER_API_KEY', 'FLY_API_TOKEN', 'FLY_ORG_SLUG']
+    optional: ['LLM_API_KEY']
   }
 };
 
 const HELP_LINKS = {
-  OPENROUTER_API_KEY: 'Get your key at https://openrouter.ai/keys',
-  FLY_API_TOKEN:      'Run: fly auth token   (after: fly auth login)',
-  FLY_ORG_SLUG:       'Run: fly orgs list    (use the "Slug" column)'
+  LLM_API_KEY: 'Set LLM_API_KEY in .env, or ensure ANTHROPIC_AUTH_TOKEN is set by hai proxy',
+  LLM_BASE_URL: 'Default: http://localhost:6655/litellm/v1/chat/completions'
 };
 
 function isSet(varName) {
+  // LLM_API_KEY has a fallback to ANTHROPIC_AUTH_TOKEN
+  if (varName === 'LLM_API_KEY') {
+    const v = process.env.LLM_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN;
+    return typeof v === 'string' && v.trim().length > 0;
+  }
   const v = process.env[varName];
   return typeof v === 'string' && v.trim().length > 0 && !v.includes('your-') && !v.includes('ВСТАВЬ');
 }

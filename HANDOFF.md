@@ -58,7 +58,7 @@ v0.3 (NEGOTIATE) — завершена: Architect научился разгов
 метрики в порядке (~$0.12-0.18 на приложение).
 
 v0.4 (GitHub Integration) — в работе, гигиена документации
-завершена, все open questions закрыты. Phase 1: OAuth App Setup - завершена с багом в сроке адреса.
+завершена, все open questions закрыты. Phase 1: OAuth App Setup - завершена
 
 Подробности в `docs/work/v0.4-github.md`.
 
@@ -72,11 +72,3 @@ v0.4 (GitHub Integration) — в работе, гигиена документа
   принятые решения, их нужно уважать
 - Не предлагай пересмотр уже принятых архитектурных решений
   без явного запроса с моей стороны
-
-CONCEPT.md
-TRACKER.md
-ROADMAP.md
-docs/log.md
-docs/contracts.md
-docs/infra.md
-docs/work/v0.4-github.md
