@@ -13,6 +13,8 @@ import testerPrompts from './prompts/tester.js';
 import { validateEnvOrExit } from './env-validator.js';
 import githubAuthRouter from './routes/github-auth.js';
 import githubClient from './github-client.js';
+import localRunner from './local-runner.js';
+import processRegistry from './process-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -289,7 +291,16 @@ app.delete('/api/my-apps/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'App not found' });
     }
 
-    // 1. Fly teardown — non-blocking (VDI may block flyctl)
+    // 1. Local Runner teardown — non-blocking
+    if (appRecord.flyAppName) {
+      const proc = processRegistry.get(appRecord.flyAppName);
+      if (proc) {
+        localRunner.teardown(proc.pid, appRecord.flyAppName);
+        processRegistry.remove(appRecord.flyAppName);
+      }
+    }
+
+    // 2. Fly teardown — non-blocking (VDI may block flyctl)
     const isMock = appRecord.flyAppName && appRecord.flyAppName.startsWith('df-mock-');
     if (!isMock && appRecord.flyAppName) {
       try {
@@ -303,7 +314,7 @@ app.delete('/api/my-apps/:id', async (req, res) => {
       }
     }
 
-    // 2. GitHub repo deletion — non-blocking
+    // 3. GitHub repo deletion — non-blocking
     if (appRecord.sourceUrl) {
       try {
         const parsed = new URL(appRecord.sourceUrl);
@@ -323,7 +334,7 @@ app.delete('/api/my-apps/:id', async (req, res) => {
       }
     }
 
-    // 3. Delete from archive — always
+    // 4. Delete from archive — always
     await appsStore.deleteApp(id);
 
     console.log(`[DELETE] App ${id} deleted`);
@@ -333,6 +344,41 @@ app.delete('/api/my-apps/:id', async (req, res) => {
     console.error('Error deleting app:', error);
     res.status(500).json({ success: false, message: 'Failed to delete app' });
   }
+});
+
+// Open app on-demand: start if not running, return url
+app.post('/api/my-apps/:id/open', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const appRecord = await appsStore.getApp(id);
+    if (!appRecord) return res.status(404).json({ success: false, message: 'App not found' });
+
+    const appName = appRecord.flyAppName;
+    if (!appName) return res.status(400).json({ success: false, message: 'App has no local workspace' });
+
+    // Already running?
+    const existing = processRegistry.get(appName);
+    if (existing) {
+      return res.json({ success: true, url: `http://localhost:${existing.port}` });
+    }
+
+    // Start it
+    const { url, pid, port } = await localRunner.deploy(appName, () => {});
+    processRegistry.register(appName, { pid, port });
+    res.json({ success: true, url });
+  } catch (e) {
+    console.error('[OPEN]', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// App running status
+app.get('/api/my-apps/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const appRecord = await appsStore.getApp(id).catch(() => null);
+  if (!appRecord) return res.status(404).json({ success: false });
+  const proc = appRecord.flyAppName ? processRegistry.get(appRecord.flyAppName) : null;
+  res.json({ running: !!proc, url: proc ? `http://localhost:${proc.port}` : null });
 });
 
 // Serve workspace files (for viewing static files)
