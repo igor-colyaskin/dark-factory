@@ -8,6 +8,7 @@
 | v0.2 | 2026-05-01 | Утверждено | Deploy to Cloud: Fly.io |
 | v0.2.1 | 2026-05-02 | Утверждено | My Apps page, архив приложений |
 | v0.3 | 2026-05-03 | Утверждено | NEGOTIATE: architect clarifying questions, spec review |
+| v0.4 | 2026-05-06 | В работе | GitHub Integration, миграция на Hyperspace LiteLLM |
 
 ## 1. Что такое Dark Factory
 
@@ -41,7 +42,7 @@ Dark Factory (DF) — веб-приложение, реализующее кон
   Это vibe coding процесс для курсового проекта.
 
 Уровень 2 (продукт):
-  Dark Factory + OpenRouter API -> строит целевое приложение.
+  Dark Factory + Hyperspace LiteLLM API -> строит целевое приложение.
   Roo Code НЕ используется внутри DF.
   DF — самостоятельное веб-приложение с собственным backend.
 
@@ -80,10 +81,10 @@ Dark Factory (DF) — веб-приложение, реализующее кон
   |  |  DELIVERING → DEPLOYING → DONE               |  |
   |  +-------|----------------|---------------------+  |
   |          |                |                        |
-  |    +-----v-----+   +------v-----+   +----------+   |
-  |    |   Agent   |   |     AC     |   |   Fly    |   |
-  |    |  Manager  |   |  Checker   |   | Manager  |   |
-  |    +-----+-----+   +------------+   +----+-----+   |
+  |    +-----v-----+   +------v-----+   +-----------+  |
+  |    |   Agent   |   |     AC     |   | Deployer  |  |
+  |    |  Manager  |   |  Checker   |   | (contract)|  |
+  |    +-----+-----+   +------------+   +----+------+  |
   |          |                                |        |
   |          |         +-----------+          |        |
   |          |         | Apps      |          |        |
@@ -92,11 +93,11 @@ Dark Factory (DF) — веб-приложение, реализующее кон
   |          |         +-----+-----+          |        |
   +----------|---------------|----------------|--------+
              |               |                |
-             v HTTPS         v file           v flyctl CLI
-  +---------------+    +-----------+    +-------------+
-  |  OpenRouter   |    |  state/   |    |   Fly.io    |
-  |     API       |    | apps.json |    |   (cloud)   |
-  +---------------+    +-----------+    +-------------+
+             v HTTPS         v file           v deploy contract
+  +---------------+    +-----------+    +----------------+
+  |  Hyperspace   |    |  state/   |    | Local Runner / |
+  | (LiteLLM API) |    | apps.json |    | Fly.io         |
+  +---------------+    +-----------+    +----------------+
 
 
 ### 4.2 Детали компонентов
