@@ -7,44 +7,50 @@
 
 ## Быстрый статус
 
-**Версия в работе:** v0.6 — Local Runner (следующая)
-**Последняя выпущенная:** v0.5 — REMEMBER ✅ (тег `v0.5`)
+**Версия в работе:** v0.7 — VERIFY (следующая)
+**Последняя выпущенная:** v0.6 — Local Runner ✅ (тег `v0.6`)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
-**Рабочий документ:** `docs/work/` (файла для v0.6 ещё нет — нужно создать)
+**Рабочий документ:** `docs/work/` (файла для v0.7 ещё нет — нужно создать)
 
 ## Что сделать в первую очередь
 
 1. Прочитай файлы в таком порядке:
    - `CONCEPT.md` — принципы, философия, архитектура (быстро)
-   - `ROADMAP.md` — вектор и описание v0.6 Local Runner
-   - `docs/log.md` — история фаз и решений, включая v0.5
+   - `ROADMAP.md` — вектор и описание v0.7 VERIFY
+   - `docs/log.md` — история фаз и решений, включая v0.6
    - `docs/contracts.md` — контракты компонентов
 
 2. После прочтения — кратко перескажи:
-   - Что такое VERIFY и какие у него два режима
-   - Что v0.5 оставила для v0.6
-   - Какой первый вопрос нужно решить, чтобы стартовать v0.6
+   - Что такое VERIFY и его архитектура (VerifierA + VerifierB + compositor)
+   - Что v0.6 оставила для v0.7
+   - Какой первый вопрос нужно решить, чтобы стартовать v0.7
    - Есть ли что-то неясное
 
 3. Жди подтверждения прежде чем предлагать действия.
 
-## Что v0.5 дала проекту
+## Что v0.6 дала проекту
 
-- **`readApp(sourceUrl)`** в `github-client.js` — читает SPEC.md из репо
-- **`resolveReferenceSpec()`** в оркестраторе — детектирует `На основе #N:`,
-  загружает spec, non-blocking fallback
-- **`referenceSpec`** в state — передаётся архитектору как baseline
-- **Architect prompt** — режим reference: strip prefix, baseline-инструкция,
-  архитектор идёт сразу в spec
-- **UI кнопка** "Повторить с изменениями" на карточках в Products
+- **`server/local-runner.js`** — запускает сгенерированное приложение локально.
+  `deploy(appName)` → копирует workspace, npm install, npm start, ждёт HTTP, возвращает `{ url, pid, port }`
+- **`server/process-registry.js`** — in-memory реестр запущенных процессов `{ appName → { pid, port } }`
+- **`executeLocalDeploy()`** в оркестраторе — заменяет Fly.io в реальном режиме.
+  После деплоя: GITHUB_PUSH → DONE (тот же путь что и раньше)
+- **`workspaces/{appName}/`** — изолированный workspace для каждого приложения
+- **On-demand UX:** кнопка "Открыть" в Products вместо постоянного URL.
+  `POST /api/my-apps/:id/open` — стартует если не запущен, возвращает localhost URL
+- **`GET /api/my-apps/:id/status`** — проверяет process registry
+- **Delete flow:** при удалении приложения убивает локальный процесс из registry
+- **QR-код** скрыт для localhost URL (бессмысленен на той же машине)
 
 ## Известный блокер
 
-**Fly.io заблокирован на корп. VDI** — `fly` не найден в PATH.
-DEPLOYING падает → GITHUB_PUSH никогда не запускается.
-Это системный блокер, решается в **v0.6 (Local Runner)**.
-До v0.6 полный end-to-end с GitHub push не тестируется.
+**Fly.io заблокирован на корп. VDI** — решён через Local Runner (v0.6).
+Полный pipeline теперь работает: DEPLOYING → GITHUB_PUSH → DONE.
+Тестировалось в mock-full режиме (реальный deploy, фиктивный LLM).
+
+**Ephemeral URLs:** `publicUrl: http://localhost:PORT` не переживает перезапуск сервера.
+Это by design — on-demand модель. Приложение стартует при клике "Открыть".
 
 LLM-часть pipeline (Arc + Dev + Tst) работает нормально через Hyperspace.
 **LLM_API_KEY нужно прописывать вручную в `.env`** — Hyperspace токен
@@ -54,11 +60,24 @@ LLM-часть pipeline (Arc + Dev + Tst) работает нормально ч
 
 - **sourceUrl, не githubUrl** — абстракция от конкретного бэкенда
 - **Нет Storage facade** до второй реализации ("контракт из двух, не из одной")
-- **Deployer контракт (v0.6):** async-first (`deploy`, `teardown`),
-  Local Runner — первая имплементация. Workspaces в `workspaces/{appName}/`,
-  on-demand запуск через кнопку "Открыть" в Products.
+- **Нет Deployer facade** — Local Runner прямо в оркестраторе до второй реализации
+- **On-demand UX** — приложение не запущено по умолчанию, только по кнопке
+- **workspaces/ eviction** → Area-51 (критерии неизвестны, диск пока не проблема)
 - **GITHUB_PUSH non-blocking** — GitHub-push бонус, не блокер
 - **Pattern Library (REMEMBER режим B)** → Area-51
+
+## Архитектура v0.7 VERIFY (зафиксировано)
+
+Верификатор проверяет живое приложение глазами заказчика:
+- **VerifierA** (структурный модуль): HTTP-проверки, роуты, HTML — быстро, бесплатно
+- **VerifierB** (LLM-агент, vision): скриншот через puppeteer-core + vision-модель
+- **Compositor**: запускает A → B, оркестратор вызывает один `verifier.run(url, spec)`
+- **Контракт:** `verify(url, spec) → Report` — форма Report выводится из VerifierA
+
+`puppeteer-core` + системный Chrome подтверждены на VDI (проверено в начале v0.6).
+
+**Открытый вопрос:** поддерживает ли Hyperspace передачу изображений для Gemini/Sonnet?
+Нужно проверить тестом до начала VerifierB.
 
 ## Важные принципы работы
 
@@ -73,12 +92,13 @@ LLM-часть pipeline (Arc + Dev + Tst) работает нормально ч
 
 - **OS:** Windows 11 VDI (нестабильно — сессии могут обрываться)
 - **Shell:** Git Bash
-- **Node.js:** есть, `npm start` / `npm run dev`
+- **Node.js:** v24, `npm start` / `npm run dev`
 - **LLM:** Hyperspace LiteLLM (localhost:6655, OpenAI-compatible)
   Модели: `anthropic--claude-4.6-opus`, `anthropic--claude-4.6-sonnet`, `gemini-2.5-flash`
 - **GitHub:** личный аккаунт через OAuth App (scope: `repo delete_repo`)
 - **Запуск:** `npm run mock:fast` для быстрой проверки без LLM
 - **Port:** 3000 (помни про зомби-процесс — `npm run restart`)
+- **Local Runner порты:** 3100–3999
 
 ## Чего не делать
 
