@@ -224,6 +224,12 @@ app.post('/api/answers', async (req, res) => {
   }
 });
 
+// Reset orchestrator to IDLE from any state (used by "Повторить с изменениями" from DONE)
+app.post('/api/reset', async (req, res) => {
+  await orchestrator.reset();
+  res.json({ success: true });
+});
+
 app.post('/api/cancel', async (req, res) => {
   try {
     await orchestrator.handleCancel();

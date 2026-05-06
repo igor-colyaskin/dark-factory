@@ -30,6 +30,8 @@ const startDevBtn = document.getElementById('start-dev-btn');
 const statusMessage = document.getElementById('status-message');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingMessage = document.getElementById('loading-message');
+
+let pendingOrderPrefill = null;
 const newOrderBtn = document.getElementById('new-order-btn');
 const finalCost = document.getElementById('final-cost');
 const finalTime = document.getElementById('final-time');
@@ -295,10 +297,10 @@ function handleDetails(appId) {
 
 // Handle "Повторить с изменениями" — prefill order textarea and switch to Order tab
 function handleRepeatWithChanges(appNumber) {
+  pendingOrderPrefill = `На основе #${appNumber}: `;
   switchTab('order');
-  orderInput.value = `На основе #${appNumber}: `;
-  orderInput.focus();
-  orderInput.setSelectionRange(orderInput.value.length, orderInput.value.length);
+  fetch('/api/reset', { method: 'POST' }).catch(() => {});
+  // SSE will deliver IDLE → renderUI → applyPendingPrefill()
 }
 
 async function handleOpenApp(appId) {
@@ -638,6 +640,13 @@ function updateUI(state) {
       orderForm.style.display = 'flex';
       var orderDisplay = document.getElementById('order-display');
       if (orderDisplay) orderDisplay.style.display = 'none';
+      // Apply prefill from "Повторить с изменениями"
+      if (pendingOrderPrefill) {
+        orderInput.value = pendingOrderPrefill;
+        pendingOrderPrefill = null;
+        orderInput.focus();
+        orderInput.setSelectionRange(orderInput.value.length, orderInput.value.length);
+      }
       break;
 
     case 'ORDERING':
