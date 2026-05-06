@@ -380,7 +380,8 @@ async function runArchitect() {
     state.orderDescription,
     state.clarifyHistory,
     state.clarifyRound,
-    state.maxClarifyRounds
+    state.maxClarifyRounds,
+    state.referenceSpec
   );
   
   const result = await agentManager.callAgentWithRetry(

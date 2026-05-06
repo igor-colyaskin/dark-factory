@@ -9,6 +9,7 @@
 | v0.2.1 | 2026-05-02 | Утверждено | My Apps page, архив приложений |
 | v0.3 | 2026-05-03 | Утверждено | NEGOTIATE: architect clarifying questions, spec review |
 | v0.4 | 2026-05-06 | Утверждено | GitHub Integration, миграция на Hyperspace LiteLLM |
+| v0.5 | 2026-05-06 | Утверждено | REMEMBER: Order by Reference, readApp, кнопка "Повторить с изменениями" |
 
 ## 1. Что такое Dark Factory
 

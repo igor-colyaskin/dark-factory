@@ -293,4 +293,41 @@ async function deleteRepo(owner, repoName) {
   return { success: true };
 }
 
-export default { getUser, createRepo, setTopics, commitFiles, deleteRepo };
+/**
+ * Read SPEC.md from a repository by its GitHub URL.
+ * Used in v0.5 REMEMBER: reads spec of a past app to use as reference baseline.
+ * @param {string} sourceUrl - GitHub repo URL (e.g. https://github.com/owner/repo)
+ * @returns {Promise<{success: boolean, spec?: string, error?: string}>}
+ */
+async function readApp(sourceUrl) {
+  if (!sourceUrl) {
+    return { success: false, error: 'No sourceUrl provided' };
+  }
+
+  const match = sourceUrl.match(/^https?:\/\/(?:www\.)?github\.com\/([^/]+)\/([^/?#]+)/);
+  if (!match) {
+    return { success: false, error: 'Invalid GitHub URL format' };
+  }
+
+  const [, owner, repo] = match;
+
+  const res = await githubFetch(`/repos/${owner}/${repo}/contents/SPEC.md`);
+
+  if (res.error === 'not_connected') {
+    return { success: false, error: 'GitHub not connected' };
+  }
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      return { success: false, error: 'SPEC.md not found in repository' };
+    }
+    const err = classifyError(res.status, res.data);
+    return { success: false, error: err.message };
+  }
+
+  // GitHub returns file content as base64
+  const spec = Buffer.from(res.data.content, 'base64').toString('utf-8');
+  return { success: true, spec };
+}
+
+export default { getUser, createRepo, setTopics, commitFiles, deleteRepo, readApp };

@@ -113,6 +113,8 @@ class Orchestrator {
     this.error = null;
     this.runMode = resolveRunMode();
     this.listeners = [];
+    // v0.5: reference spec from past order
+    this.referenceSpec = null;
   }
 
   // Subscribe to state changes
@@ -175,6 +177,8 @@ class Orchestrator {
       clarifyRound: this.clarifyRound,
       maxClarifyRounds: this.maxClarifyRounds,
       currentSpec: this.currentSpec,
+      // v0.5
+      referenceSpec: this.referenceSpec,
     };
   }
 
@@ -241,6 +245,47 @@ class Orchestrator {
     this.notifyListeners();
   }
 
+  /**
+   * Detect "На основе #N:" prefix, look up the referenced app and read its SPEC.md.
+   * Non-blocking: returns null on any failure so the order proceeds normally.
+   * @returns {Promise<string|null>} spec content or null
+   */
+  async resolveReferenceSpec(orderDescription) {
+    const match = orderDescription.match(/^На основе #(\d+):/);
+    if (!match) return null;
+
+    const refNumber = parseInt(match[1], 10);
+    console.log(`[ORCHESTRATOR] Reference detected: app #${refNumber}`);
+
+    try {
+      const apps = await appsStore.getAllApps();
+      const refApp = apps.find(a => a.number === refNumber);
+
+      if (!refApp) {
+        console.warn(`[ORCHESTRATOR] Reference app #${refNumber} not found, proceeding without reference`);
+        return null;
+      }
+
+      if (!refApp.sourceUrl) {
+        console.warn(`[ORCHESTRATOR] Reference app #${refNumber} has no sourceUrl, proceeding without reference`);
+        return null;
+      }
+
+      const result = await githubClient.readApp(refApp.sourceUrl);
+      if (!result.success) {
+        console.warn(`[ORCHESTRATOR] Could not read spec for #${refNumber}: ${result.error}, proceeding without reference`);
+        return null;
+      }
+
+      console.log(`[ORCHESTRATOR] Reference spec loaded from #${refNumber} (${result.spec.length} chars)`);
+      return result.spec;
+
+    } catch (err) {
+      console.warn(`[ORCHESTRATOR] Reference resolution failed: ${err.message}, proceeding without reference`);
+      return null;
+    }
+  }
+
   // Start processing order
   async startOrder(orderDescription) {
     if (this.state !== STATES.IDLE) {
@@ -248,6 +293,8 @@ class Orchestrator {
     }
 
     this.orderDescription = orderDescription;
+    this.referenceSpec = await this.resolveReferenceSpec(orderDescription);
+
     await this.transition(STATES.ORDERING);
 
     // Move to architecture phase
@@ -863,6 +910,7 @@ class Orchestrator {
     this.appName = null;
     this.error = null;
     this.runMode = resolveRunMode(); // Re-read run mode from environment
+    this.referenceSpec = null;
 
     await this.saveState();
     this.notifyListeners();

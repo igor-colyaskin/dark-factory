@@ -312,7 +312,33 @@ spec'ом, verification report'ом и другими артефактами age
 
 ---
 
-## Graveyard
+## v0.5 — REMEMBER ✅
+
+### Decisions
+
+| Дата | Решение | Причина |
+|------|---------|---------|
+| 2026-05-06 | Режим A (Order by Reference), режим B → Area-51 | B — capabilities-шаг, не agency; A даёт то же обучение за меньше сложности |
+| 2026-05-06 | Передавать весь spec целиком | Spec маленький; вопрос не в объёме, а в поведении архитектора |
+| 2026-05-06 | UI-кнопка, не парсинг свободного текста | Детерминированный триггер, принцип Guided decisions |
+| 2026-05-06 | Prefix stripped в `generateUserPrompt` | Агент видит только дельту, appSlug не засоряется префиксом |
+| 2026-05-06 | Создаём новое репо, не обновляем старое | Проще; update — будущих версий territory |
+
+### Insights
+- Reference flow работает: `referenceSpec` грузится, архитектор идёт сразу в `spec` без вопросов, дельта применяется корректно (проверено на живом LLM-вызове)
+- Fly заблокирован на VDI → DEPLOYING падает → GITHUB_PUSH не запускается. Это системный блокер, не баг v0.5. Решается в v0.7 (Local Runner)
+- Архитектор с referenceSpec ведёт себя предсказуемо: baseline берёт целиком, добавляет только запрошенное. Никакого "шума" от полного spec замечено не было
+- `--org undefined` в ошибке flyctl — FLY_ORG_SLUG не прописан в .env. Нужно прописать если Fly когда-нибудь разблокируют
+
+### Phases
+- Phase 1: `readApp(sourceUrl)` в `github-client.js` — читает SPEC.md из репо
+- Phase 2: Orchestrator — `resolveReferenceSpec()`, детект префикса, `referenceSpec` в state
+- Phase 3: Architect prompt — параметр `referenceSpec`, strip prefix, baseline-инструкция
+- Phase 4: UI — кнопка "Повторить с изменениями" в Products, prefill textarea
+- Phase 5: Интеграционный тест (LLM live, Fly blocked — частичный)
+- Phase 6: Документация и коммит
+
+---
 Отвергнутые идеи. Записываются, чтобы через полгода не вернуться к ним случайно.
 
 *(пока пусто — заполним по мере возникновения)*

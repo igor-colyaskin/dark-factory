@@ -134,18 +134,42 @@ All applications you design MUST follow:
  *   [ { questions: [ { id, text, answer }, ... ] }, ... ]
  * @param {number} round — current round index (0 = first call)
  * @param {number} maxRounds — maximum allowed rounds (default 3)
+ * @param {string|null} referenceSpec — SPEC.md content of a past app to use as baseline
  * @returns {string}
  */
-export function generateUserPrompt(orderDescription, clarifyHistory = [], round = 0, maxRounds = 3) {
+export function generateUserPrompt(orderDescription, clarifyHistory = [], round = 0, maxRounds = 3, referenceSpec = null) {
+  // Strip "На основе #N:" prefix from display — reference spec provides the context
+  const displayOrder = orderDescription.replace(/^На основе #\d+:\s*/, '').trim() || orderDescription;
+
   // --- First call: just the order ---
   if (round === 0 || clarifyHistory.length === 0) {
-    return [
+    const lines = [
       '## Order',
       '',
-      orderDescription,
-      '',
-      'Analyze this order. If it is clear enough — produce a spec. If ambiguous — ask clarifying questions.'
-    ].join('\n');
+      displayOrder,
+    ];
+
+    if (referenceSpec) {
+      lines.push(
+        '',
+        '## Reference Spec (baseline)',
+        '',
+        'The user wants to modify an existing app. Below is the spec of the original.',
+        'Use it as a baseline — apply only the changes described in the Order above.',
+        '',
+        referenceSpec,
+        '',
+        'Produce a spec that reflects the original app with the requested modifications applied.',
+        'Go directly to spec mode unless the modification is genuinely ambiguous.'
+      );
+    } else {
+      lines.push(
+        '',
+        'Analyze this order. If it is clear enough — produce a spec. If ambiguous — ask clarifying questions.'
+      );
+    }
+
+    return lines.join('\n');
   }
 
   // --- Repeat call: order + history ---
@@ -162,13 +186,22 @@ export function generateUserPrompt(orderDescription, clarifyHistory = [], round 
   const lines = [
     '## Order',
     '',
-    orderDescription,
+    displayOrder,
     '',
     '## Clarifications So Far',
     '',
     historyText,
     ''
   ];
+
+  if (referenceSpec) {
+    lines.push(
+      '## Reference Spec (baseline)',
+      '',
+      referenceSpec,
+      ''
+    );
+  }
 
   if (isLastRound) {
     lines.push(

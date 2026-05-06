@@ -233,6 +233,9 @@ function renderAppCard(app) {
       </div>
       <div class="app-card-actions">
         <button class="btn btn-sm btn-secondary" onclick="handleDetails('${app.id}')" data-action="details">Детали</button>
+        <button class="btn btn-sm btn-secondary" onclick="handleRepeatWithChanges(${app.number})"
+          ${!app.sourceUrl ? 'disabled title="Source code не сохранён — повтор недоступен"' : ''}
+          data-action="repeat">Повторить с изменениями</button>
         <button class="btn btn-sm btn-danger-outline" onclick="handleDeleteClick('${app.id}')" data-action="delete">Стереть</button>
       </div>
       <div class="app-card-details" id="details-${app.id}" style="display: none;"></div>
@@ -284,6 +287,14 @@ function handleDetails(appId) {
     detailsDiv.style.display = 'block';
     btn.textContent = 'Скрыть';
   }
+}
+
+// Handle "Повторить с изменениями" — prefill order textarea and switch to Order tab
+function handleRepeatWithChanges(appNumber) {
+  switchTab('order');
+  orderInput.value = `На основе #${appNumber}: `;
+  orderInput.focus();
+  orderInput.setSelectionRange(orderInput.value.length, orderInput.value.length);
 }
 
 // Handle Delete Click (Phase 7)
