@@ -108,7 +108,7 @@ async function createRepo(name, { private: isPrivate = true, description = '' } 
       name,
       description,
       private: isPrivate,
-      auto_init: false, // We'll commit files ourselves
+      auto_init: true, // creates initial commit so Git Data API works immediately
     }),
   });
 
@@ -128,6 +128,7 @@ async function createRepo(name, { private: isPrivate = true, description = '' } 
       fullName: res.data.full_name,
       url: res.data.html_url,
       private: res.data.private,
+      defaultBranch: res.data.default_branch,
     },
   };
 }
@@ -163,7 +164,7 @@ async function setTopics(owner, repoName, topics) {
  * @param {string} commitMessage - Commit message
  * @returns {Promise<{success: boolean, commitSha?: string, error?: string}>}
  */
-async function commitFiles(owner, repoName, files, commitMessage) {
+async function commitFiles(owner, repoName, files, commitMessage, branch = 'main') {
   if (!files || files.length === 0) {
     return { success: false, error: 'No files to commit' };
   }
@@ -171,6 +172,19 @@ async function commitFiles(owner, repoName, files, commitMessage) {
   const repoBase = `/repos/${owner}/${repoName}`;
 
   try {
+    // Step 0: Get current HEAD of the default branch
+    let parentSha = null;
+    let baseTreeSha = null;
+
+    const refRes = await githubFetch(`${repoBase}/git/refs/heads/${branch}`);
+    if (refRes.ok) {
+      parentSha = refRes.data.object.sha;
+      const parentCommitRes = await githubFetch(`${repoBase}/git/commits/${parentSha}`);
+      if (parentCommitRes.ok) {
+        baseTreeSha = parentCommitRes.data.tree.sha;
+      }
+    }
+
     // Step 1: Create blobs for each file
     const treeItems = [];
 
@@ -190,17 +204,19 @@ async function commitFiles(owner, repoName, files, commitMessage) {
 
       treeItems.push({
         path: file.path,
-        mode: '100644', // regular file
+        mode: '100644',
         type: 'blob',
         sha: blobRes.data.sha,
       });
     }
 
-    // Step 2: Create tree
-    // For initial commit (empty repo), no base_tree needed
+    // Step 2: Create tree (on top of existing tree if repo was auto_init'd)
+    const treeBody = { tree: treeItems };
+    if (baseTreeSha) treeBody.base_tree = baseTreeSha;
+
     const treeRes = await githubFetch(`${repoBase}/git/trees`, {
       method: 'POST',
-      body: JSON.stringify({ tree: treeItems }),
+      body: JSON.stringify(treeBody),
     });
 
     if (!treeRes.ok) {
@@ -208,14 +224,16 @@ async function commitFiles(owner, repoName, files, commitMessage) {
       return { success: false, error: `Failed to create tree: ${err.message}` };
     }
 
-    // Step 3: Create commit (no parents for initial commit)
+    // Step 3: Create commit
+    const commitBody = {
+      message: commitMessage,
+      tree: treeRes.data.sha,
+      parents: parentSha ? [parentSha] : [],
+    };
+
     const commitRes = await githubFetch(`${repoBase}/git/commits`, {
       method: 'POST',
-      body: JSON.stringify({
-        message: commitMessage,
-        tree: treeRes.data.sha,
-        parents: [], // initial commit
-      }),
+      body: JSON.stringify(commitBody),
     });
 
     if (!commitRes.ok) {
@@ -223,18 +241,25 @@ async function commitFiles(owner, repoName, files, commitMessage) {
       return { success: false, error: `Failed to create commit: ${err.message}` };
     }
 
-    // Step 4: Create ref (main branch)
-    const refRes = await githubFetch(`${repoBase}/git/refs`, {
-      method: 'POST',
-      body: JSON.stringify({
-        ref: 'refs/heads/main',
-        sha: commitRes.data.sha,
-      }),
-    });
-
-    if (!refRes.ok) {
-      const err = classifyError(refRes.status, refRes.data);
-      return { success: false, error: `Failed to create ref: ${err.message}` };
+    // Step 4: Update existing ref (PATCH) or create new one (POST)
+    if (parentSha) {
+      const updateRes = await githubFetch(`${repoBase}/git/refs/heads/${branch}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ sha: commitRes.data.sha }),
+      });
+      if (!updateRes.ok) {
+        const err = classifyError(updateRes.status, updateRes.data);
+        return { success: false, error: `Failed to update ref: ${err.message}` };
+      }
+    } else {
+      const createRefRes = await githubFetch(`${repoBase}/git/refs`, {
+        method: 'POST',
+        body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: commitRes.data.sha }),
+      });
+      if (!createRefRes.ok) {
+        const err = classifyError(createRefRes.status, createRefRes.data);
+        return { success: false, error: `Failed to create ref: ${err.message}` };
+      }
     }
 
     return { success: true, commitSha: commitRes.data.sha };

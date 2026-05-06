@@ -42,7 +42,7 @@ router.get('/authorize', (req, res) => {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: 'http://localhost:3000/api/github/callback',
-    scope: 'repo',
+    scope: 'repo delete_repo',
     state,
   });
 

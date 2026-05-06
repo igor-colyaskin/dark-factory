@@ -588,7 +588,8 @@ class Orchestrator {
       }
       repoCreated = true;
 
-      const commitResult = await githubClient.commitFiles(owner, repoName, files, 'Initial commit by Dark Factory');
+      const branch = createResult.repo.defaultBranch || 'main';
+      const commitResult = await githubClient.commitFiles(owner, repoName, files, 'Initial commit by Dark Factory', branch);
       if (!commitResult.success) {
         throw new Error(`Failed to commit files: ${commitResult.error}`);
       }
@@ -604,10 +605,14 @@ class Orchestrator {
       console.error(`[ORCHESTRATOR] GitHub push failed: ${error.message}`);
       if (repoCreated) {
         try {
-          await githubClient.deleteRepo(owner, repoName);
-          console.log('[ORCHESTRATOR] GitHub rollback: repo deleted');
+          const rollback = await githubClient.deleteRepo(owner, repoName);
+          if (rollback.success) {
+            console.log('[ORCHESTRATOR] GitHub rollback: repo deleted');
+          } else {
+            console.warn('[ORCHESTRATOR] GitHub rollback failed:', rollback.error);
+          }
         } catch (rollbackError) {
-          console.error('[ORCHESTRATOR] GitHub rollback failed:', rollbackError.message);
+          console.error('[ORCHESTRATOR] GitHub rollback exception:', rollbackError.message);
         }
       }
       return null;
