@@ -364,6 +364,9 @@ spec'ом, verification report'ом и другими артефактами age
 - `executeFakeDeploy()` оставлен без изменений — mock-fast и demo не затронуты
 - Архитектурное обсуждение v0.7 VERIFY до старта кода — правильный подход:
   зафиксированы VerifierA/B/compositor, контракт, vision-подход — без строчки кода
+- **Dogfooding bug:** "Повторить с изменениями" из состояния DONE показывала results-view вместо
+  формы ввода. Причина: `/api/cancel` не работает из DONE (только из SPEC_REVIEW/CLARIFYING).
+  Решение: `/api/reset` (любое состояние) + `pendingOrderPrefill` паттерн — применяется при IDLE via SSE
 
 ### Phases
 - Phase 1: `local-runner.js` — deploy/teardown, free port, HTTP polling
