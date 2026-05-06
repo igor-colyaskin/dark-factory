@@ -7,7 +7,7 @@
 
 ## Быстрый статус
 
-**Версия в работе:** v0.6 — VERIFY (следующая)
+**Версия в работе:** v0.6 — Local Runner (следующая)
 **Последняя выпущенная:** v0.5 — REMEMBER ✅ (тег `v0.5`)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
@@ -17,7 +17,7 @@ GitHub — личный аккаунт через OAuth App.
 
 1. Прочитай файлы в таком порядке:
    - `CONCEPT.md` — принципы, философия, архитектура (быстро)
-   - `ROADMAP.md` — вектор и описание v0.6 VERIFY
+   - `ROADMAP.md` — вектор и описание v0.6 Local Runner
    - `docs/log.md` — история фаз и решений, включая v0.5
    - `docs/contracts.md` — контракты компонентов
 
@@ -43,8 +43,8 @@ GitHub — личный аккаунт через OAuth App.
 
 **Fly.io заблокирован на корп. VDI** — `fly` не найден в PATH.
 DEPLOYING падает → GITHUB_PUSH никогда не запускается.
-Это системный блокер, решается в **v0.7 (Local Runner / Deploy Abstraction)**.
-До v0.7 полный end-to-end с GitHub push не тестируется.
+Это системный блокер, решается в **v0.6 (Local Runner)**.
+До v0.6 полный end-to-end с GitHub push не тестируется.
 
 LLM-часть pipeline (Arc + Dev + Tst) работает нормально через Hyperspace.
 **LLM_API_KEY нужно прописывать вручную в `.env`** — Hyperspace токен
@@ -54,8 +54,9 @@ LLM-часть pipeline (Arc + Dev + Tst) работает нормально ч
 
 - **sourceUrl, не githubUrl** — абстракция от конкретного бэкенда
 - **Нет Storage facade** до второй реализации ("контракт из двух, не из одной")
-- **Deployer контракт (v0.7):** async-first (`deploy`, `status`, `teardown`),
-  Local Runner — первая имплементация (Fly.io заблокирован на VDI)
+- **Deployer контракт (v0.6):** async-first (`deploy`, `teardown`),
+  Local Runner — первая имплементация. Workspaces в `workspaces/{appName}/`,
+  on-demand запуск через кнопку "Открыть" в Products.
 - **GITHUB_PUSH non-blocking** — GitHub-push бонус, не блокер
 - **Pattern Library (REMEMBER режим B)** → Area-51
 
