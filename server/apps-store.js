@@ -103,26 +103,37 @@ async function writeAppsFile(data) {
 }
 
 /**
+ * Peek at the next app number without incrementing.
+ * Used to generate app/repo names before archiving.
+ * @returns {Promise<number>}
+ */
+async function getNextNumber() {
+  const state = await readAppsFile();
+  return state.nextNumber;
+}
+
+/**
  * Add a new app to the store
  * @param {Object} appData - App data
- * @param {string} appData.id - Fly app name (e.g., "df-abc123")
+ * @param {string} appData.id - App name (e.g., "df-todo-app-42")
  * @param {string} appData.flyAppName - Fly app name (usually same as id)
  * @param {string} [appData.createdAt] - ISO timestamp (defaults to now)
  * @param {string} appData.order - Original order text
  * @param {string} appData.architectOutput - Full architect response
  * @param {string} appData.url - Deployed app URL
+ * @param {string|null} [appData.sourceUrl] - GitHub repo URL (null if not pushed)
  * @param {Object} appData.metrics - Order metrics
  * @returns {Promise<Object>} - Added app record with assigned number
  */
 async function addApp(appData) {
   const state = await readAppsFile();
-  
+
   // Check for duplicate id
   const existingApp = state.apps.find(app => app.id === appData.id);
   if (existingApp) {
     throw new Error(`App with id ${appData.id} already exists`);
   }
-  
+
   // Create app record
   const appRecord = {
     number: state.nextNumber,
@@ -132,6 +143,7 @@ async function addApp(appData) {
     order: appData.order,
     architectOutput: appData.architectOutput,
     url: appData.url,
+    sourceUrl: appData.sourceUrl || null,
     metrics: appData.metrics
   };
   
@@ -203,6 +215,7 @@ async function deleteApp(id) {
 export default {
   init,
   addApp,
+  getNextNumber,
   getAllApps,
   getApp,
   deleteApp
