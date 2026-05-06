@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'node:crypto';
 import flyManager from './fly-manager.js';
+import localRunner from './local-runner.js';
+import processRegistry from './process-registry.js';
 import { resolveRunMode } from './run-modes.js';
 import appsStore from './apps-store.js';
 import githubTokens from './github-tokens.js';
@@ -488,7 +490,7 @@ class Orchestrator {
     if (this.runMode.fakeDeploy) {
       await this.executeFakeDeploy();
     } else {
-      await this.executeDeploy();
+      await this.executeLocalDeploy();
     }
 
     return this.getState();
@@ -843,6 +845,41 @@ class Orchestrator {
 
   /**
  * Fake deploy for mock-fast and demo modes.
+ * Simulates deploy progress events and sets a plausible-looking fake URL.
+ */
+  async executeLocalDeploy() {
+    console.log('[ORCHESTRATOR] Starting LOCAL deployment');
+
+    const slug = this.agentOutputs[1]?.appSlug;
+    const number = await appsStore.getNextNumber();
+    const appName = slug ? `df-${slug}-${number}` : `df-${crypto.randomUUID().slice(0, 8)}`;
+    this.appName = appName;
+
+    try {
+      const { url, pid, port } = await localRunner.deploy(appName, (step, message) => {
+        this.broadcastEvent({ type: 'deploy_progress', step, message });
+      });
+
+      processRegistry.register(appName, { pid, port });
+      this.publicUrl = url;
+      this.error = null;
+      console.log(`[ORCHESTRATOR] Local deploy complete: ${url}`);
+
+      // GitHub push (non-blocking: failure → sourceUrl null, order still completes)
+      await this.transition(STATES.GITHUB_PUSH);
+      const sourceUrl = await this.executeGithubPush();
+      this.sourceUrl = sourceUrl;
+
+      await this.archiveApp({ sourceUrl });
+      await this.transition(STATES.DONE);
+
+    } catch (e) {
+      console.error(`[ORCHESTRATOR] Local deploy failed: ${e.message}`);
+      await this.transition(STATES.ERROR, { error: e.message });
+    }
+  }
+
+  /**
  * Simulates deploy progress events and sets a plausible-looking fake URL.
  */
   async executeFakeDeploy() {
