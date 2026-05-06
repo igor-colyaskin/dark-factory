@@ -981,6 +981,12 @@ body {
   text-decoration: underline;
 }
 
+.app-card-github-link {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+}
+
 .app-card-actions {
   display: flex;
   gap: 8px;
@@ -1018,6 +1024,22 @@ body {
 }
 
 /* App Card Details (expand) */
+.app-card-details-source {
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: var(--vscode-text-secondary);
+}
+
+.app-card-details-source a {
+  color: var(--vscode-accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.app-card-details-source a:hover {
+  text-decoration: underline;
+}
+
 .app-card-details-content {
   background: var(--vscode-editor-bg);
   border: 1px solid var(--vscode-border);
