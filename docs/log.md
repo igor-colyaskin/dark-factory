@@ -276,6 +276,42 @@ spec'ом, verification report'ом и другими артефактами age
 
 ---
 
+## v0.4 — GitHub Integration ✅
+
+### Decisions
+
+| Дата | Решение | Причина |
+|------|---------|---------|
+| 2026-05-06 | Поле `sourceUrl`, не `githubUrl` | Абстракция от конкретного бэкенда Source Storage |
+| 2026-05-06 | GITHUB_PUSH — non-blocking | GitHub-push бонус, не блокер. Заказ важнее |
+| 2026-05-06 | Facade `storage.js` не создаётся | Контракт выводится из двух реализаций, не из одной |
+| 2026-05-06 | `auto_init: true` при создании репо | Git Data API требует хотя бы одного коммита |
+| 2026-05-06 | `defaultBranch` из createRepo ответа | Разные аккаунты имеют разный default (master/main) |
+| 2026-05-06 | Fly teardown non-blocking | flyctl заблокирован на корп. VDI — не должен блокировать удаление |
+| 2026-05-06 | GitHub repo удаляется при delete | DF создал — DF убирает. Best-effort |
+| 2026-05-06 | Миграция OpenRouter → Hyperspace | SAP internal LiteLLM proxy, решает проблему VDI блокировки |
+
+### Insights
+- `auto_init: true` — обязательный параметр при создании репо через Git Data API.
+  Без него создание blob'а падает с "Git Repository is empty" (409).
+- Хардкод ветки `main` — скрытая ловушка. Нужно читать `defaultBranch` из ответа createRepo.
+  Без этого файлы уходят в orphan-ветку отдельно от README auto_init коммита.
+- Non-blocking паттерн (GITHUB_PUSH, Fly teardown) — правильный выбор для всего,
+  что не является core pipeline. Пользователь не должен страдать из-за внешних сервисов.
+- Принцип "контракт из двух реализаций" — сохраняет архитектуру чистой без преждевременной абстракции.
+
+### Phases
+- Phase 1: GitHub OAuth App setup, callback, token storage
+- Phase 2: GitHub Client module (getUser, createRepo, setTopics, commitFiles, deleteRepo)
+- Phase 3: Orchestrator — GITHUB_PUSH state, executeGithubPush(), readWorkspaceFiles()
+- Phase 4: readme-generator.js — README.md и SPEC.md для каждого репо
+- Phase 5: Products UI — GitHub icon на карточке, Source Code секция в Details
+- Phase 6: Topics (уже в Phase 3), визуальная проверка README
+- Phase 7: Integration testing (mock:fast, live, delete)
+- Phase 8: Documentation & release
+
+---
+
 ## Graveyard
 Отвергнутые идеи. Записываются, чтобы через полгода не вернуться к ним случайно.
 

@@ -637,7 +637,7 @@ Architect completed in 19s, cost: $0.0234
 ### Жизненный цикл записи
 1. **Создание:** orchestrator вызывает `addApp()` перед DONE (не блокирует DONE при ошибке)
 2. **Чтение:** API endpoints `/api/my-apps` (list) и `/api/my-apps/:id` (single)
-3. **Удаление:** API endpoint `DELETE /api/my-apps/:id` — удаляет и с Fly, и из архива
+3. **Удаление:** API endpoint `DELETE /api/my-apps/:id` — Fly teardown и GitHub repo удаление best-effort, запись из архива удаляется всегда
 
 ### Эволюция (планируется)
 - **v0.3+:** заменить `architectOutput` (сырой JSON) на структурированный `spec`
@@ -651,5 +651,59 @@ Architect completed in 19s, cost: $0.0234
 - **Интеграция в orchestrator:** `server/orchestrator.js` → `archiveApp()`
 - **API:** `server/index.js` → `/api/my-apps/*` endpoints
 - **UI:** `client/app.js` → Products page rendering
+
+---
+
+## GitHub Integration `baseline`
+
+### Обзор
+
+GitHub Client — первая имплементация Source Storage контракта (v0.4).
+После успешного деплоя оркестратор пушит код в GitHub-репо пользователя.
+
+### OAuth App
+
+- Тип: OAuth App (не PAT, не GitHub App)
+- Scope: `repo delete_repo`
+- Callback: `/auth/github/callback`
+- Токены: `state/github-tokens.json` (в `.gitignore`)
+
+### Именование репозиториев
+
+`df-<slug>-<number>` — унифицированное с именем деплоя.
+При конфликте имён: суффикс `-2`, `-3`.
+
+### Содержимое репозитория
+
+```
+README.md       — название, описание, features, running, бэдж DF
+SPEC.md         — human-readable spec + raw JSON в <details>
+app.js          — код от Developer
+package.json
+public/         — если есть frontend
+```
+
+### Topics (автоматически)
+
+`dark-factory`, `ai-generated`, `nodejs`
+
+### Настройки
+
+- Приватные по умолчанию
+- Owner: аккаунт пользователя (не DF)
+- Коммит происходит после успешного деплоя
+
+### GITHUB_PUSH — non-blocking
+
+GitHub-push не блокирует заказ. При любой ошибке (недоступен,
+не подключён, token expired) — `sourceUrl = null`, заказ завершается.
+
+### Источники истины
+- **GitHub Client:** `server/github-client.js`
+- **Token storage:** `server/github-tokens.js`
+- **OAuth routes:** `server/routes/github-auth.js`
+- **README/SPEC:** `server/readme-generator.js`
+- **Orchestrator integration:** `server/orchestrator.js` → `executeGithubPush()`
+- **Delete integration:** `server/index.js` → `DELETE /api/my-apps/:id`
 
 ---

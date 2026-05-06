@@ -8,7 +8,7 @@
 | v0.2 | 2026-05-01 | Утверждено | Deploy to Cloud: Fly.io |
 | v0.2.1 | 2026-05-02 | Утверждено | My Apps page, архив приложений |
 | v0.3 | 2026-05-03 | Утверждено | NEGOTIATE: architect clarifying questions, spec review |
-| v0.4 | 2026-05-06 | В работе | GitHub Integration, миграция на Hyperspace LiteLLM |
+| v0.4 | 2026-05-06 | Утверждено | GitHub Integration, миграция на Hyperspace LiteLLM |
 
 ## 1. Что такое Dark Factory
 
@@ -78,7 +78,7 @@ Dark Factory (DF) — веб-приложение, реализующее кон
   |  |  IDLE → ORDERING → ARCH_WORKING →            |  |
   |  |  [CLARIFYING →] ARCH_REVIEW →                |  |
   |  |  DEV_WORKING → DEV_CHECK → TEST_RUNNING →    |  |
-  |  |  DELIVERING → DEPLOYING → DONE               |  |
+  |  |  DELIVERING → DEPLOYING → GITHUB_PUSH → DONE |  |
   |  +-------|----------------|---------------------+  |
   |          |                |                        |
   |    +-----v-----+   +------v-----+   +-----------+  |

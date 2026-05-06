@@ -31,7 +31,10 @@
 Спрашивают, предупреждают, проверяют, помнят.
 
 Переход происходит в три стадии:
-NEGOTIATE → VERIFY → REMEMBER v0.3 v0.4 v0.5
+NEGOTIATE → REMEMBER → VERIFY
+  v0.3        v0.5       v0.6
+
+(v0.4 GitHub Integration — инфраструктурный шаг, открывает путь к REMEMBER)
 
 
 Каждая стадия делает следующую мощнее:
@@ -65,29 +68,21 @@ App slug из текста заказа (первый микро-шаг agency).
 - Ясный заказ (Pomodoro): $0.12, 1 мин, 0 раундов вопросов
 - Неоднозначный заказ (Habits): $0.18, 1:28, 1 раунд вопросов
 
----
+### v0.4 — GitHub Integration ✅
+Код сгенерированных приложений автоматически пушится в GitHub-репо пользователя.
+README.md и SPEC.md генерируются и коммитятся вместе с кодом. При удалении
+приложения репо удаляется. Открывается путь к REMEMBER (v0.5).
 
-## Текущая задача — см. docs/work
+Ключевые решения:
+- GitHub Client — первая имплементация Source Storage контракта
+- Поле `sourceUrl` (не `githubUrl`) — абстракция от конкретного бэкенда
+- GITHUB_PUSH — non-blocking: если GitHub недоступен, заказ завершается с `sourceUrl: null`
+- Delete non-blocking: Fly и GitHub чистятся best-effort, запись удаляется всегда
+- Hyperspace LiteLLM (SAP internal proxy) вместо OpenRouter
 
 ---
 
 ## Следующие версии
-
----
-
-### v0.4 — GitHub Integration (в работе)
-
-**Тема:** код сгенерированных приложений сохраняется в GitHub.
-
-Phase 1 (OAuth) ✅, Phase 2 (GitHub Client) ✅.
-Phases 3-8 — интеграция с оркестратором, UI, тестирование, релиз.
-
-**Ключевые решения:**
-- GitHub Client — первая имплементация Source Storage контракта
-- Поле `sourceUrl` (не `githubUrl`) — абстракция от конкретного бэкенда
-- GITHUB_PUSH — non-blocking: если GitHub недоступен, заказ завершается
-
-Подробности: `docs/work/v0.4-github.md`
 
 ---
 

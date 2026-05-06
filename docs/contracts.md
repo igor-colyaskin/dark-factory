@@ -3,7 +3,7 @@
 Контракты между компонентами DF: что принимают, что возвращают,
 какие инварианты соблюдают.
 
-**Текущее состояние:** v0.2.1
+**Текущее состояние:** v0.4
 
 **Статус документа:** draft — конспективное содержание со ссылками
 на источники. Детали достаются из source по запросу, когда становятся
@@ -101,7 +101,7 @@ Code review после успешного AC check. Рекомендации, н
 
 ### States
 `IDLE → ORDERING → ARCH_WORKING → [CLARIFYING →] SPEC_REVIEW →
-DEV_WORKING → DEV_CHECK → TEST_RUNNING → DELIVERING → DEPLOYING → DONE`
+DEV_WORKING → DEV_CHECK → TEST_RUNNING → DELIVERING → DEPLOYING → GITHUB_PUSH → DONE`
 
 При ошибках → `ERROR`
 
@@ -110,19 +110,47 @@ DEV_WORKING → DEV_CHECK → TEST_RUNNING → DELIVERING → DEPLOYING → DONE
 - **AC retry:** до 3 раз на Developer при fail AC check
 - **Deploy retry:** до 2 раз, только для транзиентных ошибок
 - **Deploy timeout:** 300 секунд
-- **App name generation:** из `appSlug` Architect'а, fallback на UUID
+- **App name generation:** `df-<slug>-<number>` — унифицировано для Deployer и GitHub
 - **Archive:** перед DONE вызывает `appsStore.addApp()`, не блокирует DONE при ошибке
+- **GITHUB_PUSH:** non-blocking — если GitHub недоступен, `sourceUrl = null`, заказ завершается
 
 ### Поля state
 Полный список полей — в конструкторе класса `Orchestrator`.
 Для UI/SSE важны: `state`, `userStories`, `questions`, `publicUrl`,
-`appName`, `error`, `isFakeDeploy` (computed), `runMode`, `clarifyHistory`, `clarifyRound`, `currentSpec`
+`appName`, `sourceUrl`, `error`, `isFakeDeploy` (computed), `runMode`,
+`clarifyHistory`, `clarifyRound`, `currentSpec`
 
 ### Источники истины
 - **State machine, переходы, поля:** `server/orchestrator.js`
 - **Deploy механика:** `server/orchestrator.js` → `executeDeploy` / `executeFakeDeploy`
 - **SSE broadcasting:** `server/index.js` → `broadcastState`, plus
   `orchestrator.broadcastEvent` для deploy_progress events
+
+---
+
+## Source Storage `baseline`
+
+### Роль
+Сохраняет исходный код сгенерированного приложения во внешнем хранилище.
+GitHub Client — первая и единственная имплементация (v0.4).
+
+### Контракт
+- `saveApp(appName, files, meta) → sourceUrl` — создать репо, закоммитить файлы
+- `deleteApp(appId) → void` — удалить репо
+- `readApp(appId)`, `updateApp(appId, files)` — зарезервировано для v0.5 REMEMBER
+
+> Facade-модуль `storage.js` не создаётся до появления второй имплементации.
+> Принцип: "контракт выводится из двух реализаций, не из одной".
+
+### Поле `sourceUrl`
+Поле `sourceUrl`, а не `githubUrl` — абстракция от конкретного бэкенда.
+Хранится в `apps.json` записи. При недоступном GitHub — `null`.
+
+### Источники истины
+- **GitHub Client:** `server/github-client.js`
+- **Token storage:** `server/github-tokens.js` → `state/github-tokens.json`
+- **README/SPEC генерация:** `server/readme-generator.js`
+- **Интеграция:** `server/orchestrator.js` → `executeGithubPush()`
 
 ---
 
