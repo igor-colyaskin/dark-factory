@@ -448,10 +448,11 @@ async function runPipeline() {
 // Run Architect agent
 async function runArchitect() {
   console.log('Running Architect agent...');
-  
+
   const state = orchestrator.getState();
-  const systemPrompt = activeProfile.prompts.architect.systemPrompt;
-  const userPrompt = activeProfile.prompts.architect.generateUserPrompt(
+  const profile = orchestrator.profile;
+  const systemPrompt = profile.prompts.architect.systemPrompt;
+  const userPrompt = profile.prompts.architect.generateUserPrompt(
     state.orderDescription,
     state.clarifyHistory,
     state.clarifyRound,
@@ -498,6 +499,7 @@ async function runDeveloper() {
   console.log('Running Developer agent...');
 
   const state = orchestrator.getState();
+  const profile = orchestrator.profile;
 
   // v0.3: pass spec directly to developer prompt
   const spec = state.currentSpec || state.agentOutputs[1] || null;
@@ -507,8 +509,8 @@ async function runDeveloper() {
     throw new Error('Architecture output not found');
   }
 
-  const systemPrompt = activeProfile.prompts.developer.systemPrompt;
-  const userPrompt = activeProfile.prompts.developer.generateUserPrompt(
+  const systemPrompt = profile.prompts.developer.systemPrompt;
+  const userPrompt = profile.prompts.developer.generateUserPrompt(
     state.orderDescription,
     spec,
     state.retryCount
@@ -549,6 +551,14 @@ async function runDeveloper() {
     if (!writeResult.success) {
       console.error('Some files failed to write:', writeResult.errors);
     }
+    // Write static files directly from templates (IC profile only — skips LLM token overhead)
+    if (typeof profile.prompts.developer.generateStaticFiles === 'function') {
+      const staticFiles = profile.prompts.developer.generateStaticFiles(spec.cardSlug);
+      const staticResult = await fileManager.writeFiles(staticFiles);
+      if (!staticResult.success) {
+        console.error('Some static files failed to write:', staticResult.errors);
+      }
+    }
   }
 
   const developerData = {
@@ -566,7 +576,15 @@ async function runDeveloper() {
 // Run Development AC Check
 async function runDevCheck() {
   console.log('Running Development AC Check...');
-  
+
+  // Integration Card profile has no Node.js app to check — skip nodejs-specific AC
+  if (orchestrator.profile.deployer === 'none') {
+    console.log('[DEV_CHECK] deployer=none — skipping nodejs AC checks');
+    await orchestrator.handleACCheckResult(2, true);
+    await runPipeline();
+    return;
+  }
+
   const checkResult = await acChecker.checkDevelopment();
   
   await orchestrator.handleACCheckResult(2, checkResult.passed);
@@ -585,17 +603,18 @@ async function runDevCheck() {
 // Run Tester agent
 async function runTester() {
   console.log('Running Tester agent...');
-  
+
   const state = orchestrator.getState();
+  const profile = orchestrator.profile;
   const architectOutput = state.agentOutputs[1];
   const developerOutput = state.agentOutputs[2];
-  
+
   if (!architectOutput || !developerOutput) {
     throw new Error('Previous agent outputs not found');
   }
-  
-  const systemPrompt = activeProfile.prompts.tester.systemPrompt;
-  const userPrompt = activeProfile.prompts.tester.generateUserPrompt(
+
+  const systemPrompt = profile.prompts.tester.systemPrompt;
+  const userPrompt = profile.prompts.tester.generateUserPrompt(
     state.orderDescription,
     architectOutput,
     developerOutput
