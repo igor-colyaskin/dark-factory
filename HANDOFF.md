@@ -7,11 +7,11 @@
 
 ## Быстрый статус
 
-**Версия в работе:** v0.7 — VERIFY (следующая)
+**Версия в работе:** v0.7 — VERIFY 🔧 (Phases 0-4 done, Phase 5 UI — следующая)
 **Последняя выпущенная:** v0.6 — Local Runner ✅ (тег `v0.6`)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
-**Рабочий документ:** `docs/work/` (файла для v0.7 ещё нет — нужно создать)
+**Рабочий документ:** `docs/work/v0.7-verify.md`
 
 ## Что сделать в первую очередь
 
@@ -66,18 +66,26 @@ LLM-часть pipeline (Arc + Dev + Tst) работает нормально ч
 - **GITHUB_PUSH non-blocking** — GitHub-push бонус, не блокер
 - **Pattern Library (REMEMBER режим B)** → Area-51
 
-## Архитектура v0.7 VERIFY (зафиксировано)
+## Архитектура v0.7 VERIFY (реализовано)
 
 Верификатор проверяет живое приложение глазами заказчика:
-- **VerifierA** (структурный модуль): HTTP-проверки, роуты, HTML — быстро, бесплатно
-- **VerifierB** (LLM-агент, vision): скриншот через puppeteer-core + vision-модель
-- **Compositor**: запускает A → B, оркестратор вызывает один `verifier.run(url, spec)`
-- **Контракт:** `verify(url, spec) → Report` — форма Report выводится из VerifierA
+- **VerifierA** (`server/verifier-a.js`): HTTP GET / → 200, сканирует HTML + linked JS на ключевые слова из spec.features. Порог: ≥1 слово.
+- **VerifierB** (`server/verifier-b.js`): puppeteer-core скриншот + gemini-2.5-flash vision → структурированный JSON-отчёт
+- **Compositor** (`server/verifier.js`): `verifier.run(url, spec) → Report`. VerifierB failure — graceful degradation (report.visionError).
+- **Контракт Report:** `{ url, timestamp, structural, features[], vision, visionError, verdict }`
+- **Verdict:** PASS / PARTIAL / FAIL — производный из structural + features + vision.overallAssessment
 
-`puppeteer-core` + системный Chrome подтверждены на VDI (проверено в начале v0.6).
+**Оркестратор:**
+- Новое состояние `VERIFYING` между `DEPLOYING` и `GITHUB_PUSH`
+- US4 (Verification, agent: 'Ver') в USER_STORIES — показывается в таблице Manufacturing
+- `executeLocalDeploy()`: после деплоя → `transition(VERIFYING)` → `executeVerify()` → `transition(GITHUB_PUSH)`
+- `executeFakeDeploy()`: VERIFYING проходит мгновенно, `verdict: 'SKIPPED'`
+- `verificationReport` хранится в state, передаётся через SSE
 
-**Открытый вопрос:** поддерживает ли Hyperspace передачу изображений для Gemini/Sonnet?
-Нужно проверить тестом до начала VerifierB.
+**Phase 5 (следующая) — UI:**
+- Строка Verification в таблице Manufacturing (время, статус)
+- Отображение Report в UI (verdict + краткий список features)
+- Stage description для состояния VERIFYING
 
 ## Важные принципы работы
 
