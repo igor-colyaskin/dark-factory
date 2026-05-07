@@ -91,7 +91,7 @@
                 <div class="deploy-spinner"></div>
                 <div class="deploy-status-text" id="deploy-status-text">Starting deployment...</div>
               </div>
-              <div class="deploy-info-message">
+              <div class="deploy-info-message" id="deploy-info-message">
                 ☁️ Your application is being published to the cloud.<br>
                 It will be available via a public link for 24 hours.<br>
                 You can share the link with anyone — no software installation required.
@@ -226,6 +226,9 @@
                 <p>Unable to deploy your application to the cloud. You can still download the source code.</p>
               </div>
             </div>
+
+            <!-- Verification Report (shown after DONE) -->
+            <div id="verification-report" class="verification-report" style="display: none;"></div>
 
             <div class="new-order-section">
               <p>Want to create another application?</p>

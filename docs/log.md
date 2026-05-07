@@ -376,3 +376,40 @@ spec'ом, verification report'ом и другими артефактами age
 - Phase 5: UI — "Открыть" button, hide QR for localhost
 - Phase 6: Integration test (mock-full: full pipeline end-to-end)
 - Phase 7: Documentation & release
+
+---
+
+## v0.7 — VERIFY ✅
+
+### Decisions
+
+| Дата | Решение | Причина |
+|------|---------|---------|
+| 2026-05-07 | Hyperspace поддерживает vision — gemini-2.5-flash и claude-sonnet | Проверено в Phase 0 тестовым скриптом |
+| 2026-05-07 | VerifierA сканирует HTML + linked JS файлы | Фичи реализуются в JS, не в static HTML |
+| 2026-05-07 | Порог VerifierA: ≥1 ключевое слово (не 50%) | Spec и код используют разные слова (task/todo, count/total) |
+| 2026-05-07 | VerifierB: gemini-2.5-flash | Дешевле claude-sonnet, подтверждён на VDI |
+| 2026-05-07 | Compositor: graceful degradation при ошибке VerifierB | VerifierB — бонус, не блокер |
+| 2026-05-07 | VERIFYING между DEPLOYING и GITHUB_PUSH | Приложение уже запущено, можно проверять |
+| 2026-05-07 | US4 Verification (agent: 'Ver') в USER_STORIES | Показывается в таблице Manufacturing |
+| 2026-05-07 | executeFakeDeploy: verdict: 'SKIPPED', блок скрыт в UI | Fake URL — не реальное приложение |
+
+### Insights
+- VerifierA: keyword scan HTML + JS — правильный уровень. Простой, дешёвый, работает на TODO-app 4/4
+- VerifierB pipeline (puppeteer screenshot → base64 → gemini vision) работает на VDI без сюрпризов
+- Порог ≥1 ключевое слово — контринтуитивно низкий, но обоснован: spec пишет "Mark tasks as completed",
+  код содержит "completed" — нашлось 1 из 3 слов. 50%-порог давал false negative
+- Vision GOOD → PASS верно; UI выглядел корректно — gemini согласился
+- Phase-by-phase подход: каждый компонент тестировался отдельным скриптом до интеграции
+- Стратегическое решение сессии: Proto DF → Specialized DFs (v0.8 = PROFILES, anchor = Integration Cards)
+- Deployer Contract: trigger-based (когда появится второй живой деплоер), не version-based
+
+### Phases
+- Phase 0: Проверка Hyperspace image support (тестовый скрипт)
+- Phase 1: VerifierA — HTTP structural + keyword scan HTML+JS
+- Phase 2: VerifierB — puppeteer-core screenshot + gemini-2.5-flash vision
+- Phase 3: Compositor — verifier.run(), A→B, graceful degradation
+- Phase 4: Orchestrator — VERIFYING state, executeVerify(), verificationReport
+- Phase 5: UI — VERIFYING/GITHUB_PUSH в switch, renderVerificationReport в pickup
+- Phase 6: Integration test (mock-fast smoke + mock-full full pipeline, verdict PASS)
+- Phase 7: Documentation & release

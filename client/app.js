@@ -694,6 +694,20 @@ function updateUI(state) {
       }
       break;
 
+    case 'VERIFYING':
+      hideLoading();
+      deployInfo.style.display = 'block';
+      if (deployStatusText) deployStatusText.textContent = 'Верификатор проверяет приложение...';
+      document.getElementById('deploy-info-message').innerHTML =
+        '🔍 Верификатор открывает приложение, делает скриншот и анализирует соответствие spec.';
+      break;
+
+    case 'GITHUB_PUSH':
+      hideLoading();
+      deployInfo.style.display = 'block';
+      if (deployStatusText) deployStatusText.textContent = 'Сохраняю исходный код...';
+      break;
+
     case 'DONE':
       hideLoading();
       showPickupBlock(state);
@@ -1058,6 +1072,9 @@ function showPickupBlock(state) {
   }
   finalFiles.textContent = fileCount;
 
+  // Verification report
+  renderVerificationReport(state);
+
   // Show public URL section if available (v0.2)
   if (state.publicUrl) {
     publicUrlSection.style.display = 'block';
@@ -1094,6 +1111,48 @@ function showPickupBlock(state) {
     publicUrlSection.style.display = 'none';
     deployErrorSection.style.display = 'block';
   }
+}
+
+// Render verification report in the pickup block
+function renderVerificationReport(state) {
+  const container = document.getElementById('verification-report');
+  if (!container) return;
+
+  const r = state.verificationReport;
+  if (!r) {
+    container.style.display = 'none';
+    return;
+  }
+
+  if (r.verdict === 'SKIPPED') {
+    container.style.display = 'none';
+    return;
+  }
+
+  const verdictClass = { PASS: 'verdict-pass', PARTIAL: 'verdict-partial', FAIL: 'verdict-fail', ERROR: 'verdict-error' }[r.verdict] || '';
+  const verdictLabel = { PASS: '✓ PASS', PARTIAL: '~ PARTIAL', FAIL: '✗ FAIL', ERROR: '⚠ ERROR' }[r.verdict] || r.verdict;
+
+  let featuresHtml = '';
+  if (r.features && r.features.length) {
+    featuresHtml = '<ul class="vr-features">' +
+      r.features.map(f => `<li class="${f.found ? 'vr-found' : 'vr-missing'}">${f.found ? '✓' : '✗'} ${f.feature}</li>`).join('') +
+      '</ul>';
+  }
+
+  let visionHtml = '';
+  if (r.vision && r.vision.summary) {
+    visionHtml = `<div class="vr-vision-summary">${r.vision.summary}</div>`;
+  }
+
+  container.innerHTML = `
+    <div class="vr-header">
+      <span class="vr-title">Верификация</span>
+      <span class="vr-verdict ${verdictClass}">${verdictLabel}</span>
+    </div>
+    ${featuresHtml}
+    ${visionHtml}
+  `;
+  container.style.display = 'block';
 }
 
 // Show Status Message

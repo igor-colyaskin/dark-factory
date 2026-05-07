@@ -7,41 +7,41 @@
 
 ## Быстрый статус
 
-**Версия в работе:** v0.7 — VERIFY 🔧 (Phases 0-4 done, Phase 5 UI — следующая)
-**Последняя выпущенная:** v0.6 — Local Runner ✅ (тег `v0.6`)
+**Версия в работе:** v0.8 — PROFILES 🔧 (не начата)
+**Последняя выпущенная:** v0.7 — VERIFY ✅ (тег `v0.7`)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
-**Рабочий документ:** `docs/work/v0.7-verify.md`
+**Рабочий документ:** будет `docs/work/v0.8-profiles.md` (создать при старте)
 
 ## Что сделать в первую очередь
 
 1. Прочитай файлы в таком порядке:
    - `CONCEPT.md` — принципы, философия, архитектура (быстро)
-   - `ROADMAP.md` — вектор и описание v0.7 VERIFY
-   - `docs/log.md` — история фаз и решений, включая v0.6
+   - `ROADMAP.md` — вектор и описание v0.8 PROFILES
+   - `docs/log.md` — история фаз и решений, включая v0.7
    - `docs/contracts.md` — контракты компонентов
 
 2. После прочтения — кратко перескажи:
-   - Что такое VERIFY и его архитектура (VerifierA + VerifierB + compositor)
-   - Что v0.6 оставила для v0.7
-   - Какой первый вопрос нужно решить, чтобы стартовать v0.7
+   - Что такое PROFILES и зачем оно
+   - Что v0.7 оставила для v0.8
+   - Какой первый вопрос нужно решить, чтобы стартовать v0.8
    - Есть ли что-то неясное
 
 3. Жди подтверждения прежде чем предлагать действия.
 
-## Что v0.6 дала проекту
+## Что v0.7 дала проекту
 
-- **`server/local-runner.js`** — запускает сгенерированное приложение локально.
-  `deploy(appName)` → копирует workspace, npm install, npm start, ждёт HTTP, возвращает `{ url, pid, port }`
-- **`server/process-registry.js`** — in-memory реестр запущенных процессов `{ appName → { pid, port } }`
-- **`executeLocalDeploy()`** в оркестраторе — заменяет Fly.io в реальном режиме.
-  После деплоя: GITHUB_PUSH → DONE (тот же путь что и раньше)
-- **`workspaces/{appName}/`** — изолированный workspace для каждого приложения
-- **On-demand UX:** кнопка "Открыть" в Products вместо постоянного URL.
-  `POST /api/my-apps/:id/open` — стартует если не запущен, возвращает localhost URL
-- **`GET /api/my-apps/:id/status`** — проверяет process registry
-- **Delete flow:** при удалении приложения убивает локальный процесс из registry
-- **QR-код** скрыт для localhost URL (бессмысленен на той же машине)
+- **`server/verifier-a.js`** — HTTP-проверка + keyword scan HTML + linked JS файлов по spec.features
+- **`server/verifier-b.js`** — puppeteer-core скриншот + gemini-2.5-flash vision → структурированный JSON
+- **`server/verifier.js`** (compositor) — `verifier.run(url, spec) → Report`. A→B, graceful degradation.
+  Контракт Report: `{ url, timestamp, structural, features[], vision, visionError, verdict }`
+  Verdict: PASS / PARTIAL / FAIL / SKIPPED (в fake deploy) / ERROR
+- **Оркестратор:** состояние `VERIFYING` между `DEPLOYING` и `GITHUB_PUSH`
+  - `executeVerify()` — вызывает compositor, хранит `verificationReport` в state
+  - `executeFakeDeploy`: VERIFYING мгновенно, verdict: SKIPPED
+- **US4 Verification (agent: 'Ver')** — строка в таблице Manufacturing
+- **UI:** renderVerificationReport в pickup block — verdict badge + список features + vision summary
+  Скрыт при SKIPPED. Цветовая схема: PASS=зелёный, PARTIAL=жёлтый, FAIL=красный
 
 ## Известный блокер
 
@@ -65,27 +65,7 @@ LLM-часть pipeline (Arc + Dev + Tst) работает нормально ч
 - **workspaces/ eviction** → Area-51 (критерии неизвестны, диск пока не проблема)
 - **GITHUB_PUSH non-blocking** — GitHub-push бонус, не блокер
 - **Pattern Library (REMEMBER режим B)** → Area-51
-
-## Архитектура v0.7 VERIFY (реализовано)
-
-Верификатор проверяет живое приложение глазами заказчика:
-- **VerifierA** (`server/verifier-a.js`): HTTP GET / → 200, сканирует HTML + linked JS на ключевые слова из spec.features. Порог: ≥1 слово.
-- **VerifierB** (`server/verifier-b.js`): puppeteer-core скриншот + gemini-2.5-flash vision → структурированный JSON-отчёт
-- **Compositor** (`server/verifier.js`): `verifier.run(url, spec) → Report`. VerifierB failure — graceful degradation (report.visionError).
-- **Контракт Report:** `{ url, timestamp, structural, features[], vision, visionError, verdict }`
-- **Verdict:** PASS / PARTIAL / FAIL — производный из structural + features + vision.overallAssessment
-
-**Оркестратор:**
-- Новое состояние `VERIFYING` между `DEPLOYING` и `GITHUB_PUSH`
-- US4 (Verification, agent: 'Ver') в USER_STORIES — показывается в таблице Manufacturing
-- `executeLocalDeploy()`: после деплоя → `transition(VERIFYING)` → `executeVerify()` → `transition(GITHUB_PUSH)`
-- `executeFakeDeploy()`: VERIFYING проходит мгновенно, `verdict: 'SKIPPED'`
-- `verificationReport` хранится в state, передаётся через SSE
-
-**Phase 5 (следующая) — UI:**
-- Строка Verification в таблице Manufacturing (время, статус)
-- Отображение Report в UI (verdict + краткий список features)
-- Stage description для состояния VERIFYING
+- **Deployer Contract** — trigger-based: когда появится второй живой деплоер
 
 ## Важные принципы работы
 

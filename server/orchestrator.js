@@ -873,14 +873,14 @@ class Orchestrator {
         usId: 4,
         status: 'done',
         cost: 0,
-        time: elapsed
+        time: Math.round(elapsed / 1000)
       });
 
       console.log(`[ORCHESTRATOR] Verification complete: verdict=${report.verdict}`);
     } catch (e) {
       console.error(`[ORCHESTRATOR] Verification failed: ${e.message}`);
       this.verificationReport = { error: e.message, verdict: 'ERROR' };
-      await this.transition(STATES.VERIFYING, { usId: 4, status: 'error', cost: 0, time: Date.now() - t0 });
+      await this.transition(STATES.VERIFYING, { usId: 4, status: 'error', cost: 0, time: Math.round((Date.now() - t0) / 1000) });
     }
   }
 
