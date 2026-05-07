@@ -7,9 +7,7 @@ import fileManager from './file-manager.js';
 import acChecker from './ac-checker.js';
 import costTracker from './cost-tracker.js';
 import appsStore from './apps-store.js';
-import architectPrompts from './prompts/architect.js';
-import developerPrompts from './prompts/developer.js';
-import testerPrompts from './prompts/tester.js';
+import { resolveProfile } from './profiles/index.js';
 import { validateEnvOrExit } from './env-validator.js';
 import githubAuthRouter from './routes/github-auth.js';
 import githubClient from './github-client.js';
@@ -22,6 +20,10 @@ const __dirname = path.dirname(__filename);
 // Determine run mode and select appropriate agent manager
 const RUN_MODE = process.env.RUN_MODE || 'production';
 console.log(`🏭 Dark Factory starting in ${RUN_MODE.toUpperCase()} mode`);
+
+// Load active profile
+const activeProfile = resolveProfile();
+console.log(`   Profile: ${activeProfile.id} (${activeProfile.name})`);
 
 // Validate environment variables before proceeding
 validateEnvOrExit(RUN_MODE);
@@ -427,8 +429,8 @@ async function runArchitect() {
   console.log('Running Architect agent...');
   
   const state = orchestrator.getState();
-  const systemPrompt = architectPrompts.systemPrompt;
-  const userPrompt = architectPrompts.generateUserPrompt(
+  const systemPrompt = activeProfile.prompts.architect.systemPrompt;
+  const userPrompt = activeProfile.prompts.architect.generateUserPrompt(
     state.orderDescription,
     state.clarifyHistory,
     state.clarifyRound,
@@ -484,8 +486,8 @@ async function runDeveloper() {
     throw new Error('Architecture output not found');
   }
 
-  const systemPrompt = developerPrompts.systemPrompt;
-  const userPrompt = developerPrompts.generateUserPrompt(
+  const systemPrompt = activeProfile.prompts.developer.systemPrompt;
+  const userPrompt = activeProfile.prompts.developer.generateUserPrompt(
     state.orderDescription,
     spec,
     state.retryCount
@@ -571,8 +573,8 @@ async function runTester() {
     throw new Error('Previous agent outputs not found');
   }
   
-  const systemPrompt = testerPrompts.systemPrompt;
-  const userPrompt = testerPrompts.generateUserPrompt(
+  const systemPrompt = activeProfile.prompts.tester.systemPrompt;
+  const userPrompt = activeProfile.prompts.tester.generateUserPrompt(
     state.orderDescription,
     architectOutput,
     developerOutput

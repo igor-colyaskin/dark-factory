@@ -6,6 +6,7 @@ import flyManager from './fly-manager.js';
 import localRunner from './local-runner.js';
 import processRegistry from './process-registry.js';
 import { resolveRunMode } from './run-modes.js';
+import { resolveProfile } from './profiles/index.js';
 import appsStore from './apps-store.js';
 import githubTokens from './github-tokens.js';
 import githubClient from './github-client.js';
@@ -124,6 +125,7 @@ class Orchestrator {
     this.appName = null;
     this.error = null;
     this.runMode = resolveRunMode();
+    this.profile = resolveProfile();
     this.listeners = [];
     // v0.5: reference spec from past order
     this.referenceSpec = null;
@@ -186,6 +188,7 @@ class Orchestrator {
       totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0),
       isFakeDeploy: this.runMode.fakeDeploy,
       runMode: this.runMode.name,
+      profileId: this.profile.id,
       // v0.3
       clarifyHistory: this.clarifyHistory,
       clarifyRound: this.clarifyRound,
@@ -996,6 +999,7 @@ class Orchestrator {
     this.appName = null;
     this.error = null;
     this.runMode = resolveRunMode(); // Re-read run mode from environment
+    this.profile = resolveProfile();  // Re-read profile from environment
     this.referenceSpec = null;
     this.verificationReport = null;
 
