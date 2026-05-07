@@ -1,7 +1,9 @@
 import nodejsApp from './nodejs-app.js';
+import integrationCard from './integration-card.js';
 
 const PROFILES = {
   'nodejs-app': nodejsApp,
+  'integration-card': integrationCard,
 };
 
 let activeProfileId = process.env.ACTIVE_PROFILE || 'nodejs-app';

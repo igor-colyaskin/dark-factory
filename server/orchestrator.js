@@ -12,6 +12,7 @@ import githubTokens from './github-tokens.js';
 import githubClient from './github-client.js';
 import { generateReadme, generateSpec } from './readme-generator.js';
 import verifier from './verifier.js';
+import verifierC from './verifier-c.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -503,8 +504,10 @@ class Orchestrator {
 
     await this.transition(STATES.DEPLOYING);
 
-    // Branch on run mode
-    if (this.runMode.fakeDeploy) {
+    // deployer:'none' takes priority over run mode (integration cards have no server)
+    if (this.profile.deployer === 'none') {
+      await this.executeNoDeploy();
+    } else if (this.runMode.fakeDeploy) {
       await this.executeFakeDeploy();
     } else {
       await this.executeLocalDeploy();
@@ -594,29 +597,39 @@ class Orchestrator {
 
   /**
    * Read all text files from workspace/ for GitHub commit.
+   * Recursive — includes subdirectories (needed for Integration Card src/ structure).
    * Skips node_modules, .git, .env, and binary-looking files.
    * @returns {Promise<Array<{path: string, content: string}>>}
    */
   async readWorkspaceFiles() {
     const IGNORE = new Set(['node_modules', '.git', '.env', 'fly.toml']);
-    let entries;
-    try {
-      entries = await fs.readdir(WORKSPACE_PATH, { withFileTypes: true });
-    } catch (err) {
-      console.warn('[ORCHESTRATOR] Cannot read workspace:', err.message);
-      return [];
-    }
-
     const files = [];
-    for (const entry of entries) {
-      if (IGNORE.has(entry.name) || !entry.isFile()) continue;
+
+    const readDir = async (dir, prefix) => {
+      let entries;
       try {
-        const content = await fs.readFile(path.join(WORKSPACE_PATH, entry.name), 'utf-8');
-        files.push({ path: entry.name, content });
+        entries = await fs.readdir(dir, { withFileTypes: true });
       } catch (err) {
-        console.warn(`[ORCHESTRATOR] Skipping ${entry.name}: ${err.message}`);
+        console.warn('[ORCHESTRATOR] Cannot read workspace:', err.message);
+        return;
       }
-    }
+      for (const entry of entries) {
+        if (IGNORE.has(entry.name)) continue;
+        const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+          await readDir(path.join(dir, entry.name), relativePath);
+        } else if (entry.isFile()) {
+          try {
+            const content = await fs.readFile(path.join(dir, entry.name), 'utf-8');
+            files.push({ path: relativePath, content });
+          } catch (err) {
+            console.warn(`[ORCHESTRATOR] Skipping ${relativePath}: ${err.message}`);
+          }
+        }
+      }
+    };
+
+    await readDir(WORKSPACE_PATH, '');
     return files;
   }
 
@@ -925,6 +938,60 @@ class Orchestrator {
       console.error(`[ORCHESTRATOR] Local deploy failed: ${e.message}`);
       await this.transition(STATES.ERROR, { error: e.message });
     }
+  }
+
+  /**
+   * No-deploy path for profiles with deployer:'none' (e.g. Integration Card).
+   * Skips local runner, routes verifier by profile.verifier.
+   */
+  async executeNoDeploy() {
+    console.log('[ORCHESTRATOR] deployer=none — skipping deployment');
+
+    const slug = sanitizeSlug(this.agentOutputs[1]?.appSlug);
+    const number = await appsStore.getNextNumber();
+    const appName = slug ? `df-${slug}-${number}` : `df-${crypto.randomUUID().slice(0, 8)}`;
+    this.appName = appName;
+    this.publicUrl = null;
+    this.error = null;
+
+    this.broadcastEvent({ type: 'deploy_progress', step: 'no_deploy', message: 'No deployment needed.' });
+
+    if (this.profile.verifier === 'manifest') {
+      await this.transition(STATES.VERIFYING, { usId: 4, status: 'running' });
+      await this.executeManifestVerify();
+    } else {
+      // verifier: 'none'
+      await this.transition(STATES.VERIFYING, { usId: 4, status: 'done', cost: 0, time: 0 });
+      this.verificationReport = { verdict: 'SKIPPED', reason: 'no verifier configured' };
+    }
+
+    await this.transition(STATES.GITHUB_PUSH);
+    const sourceUrl = await this.executeGithubPush();
+    this.sourceUrl = sourceUrl;
+
+    await this.archiveApp({ sourceUrl });
+    await this.transition(STATES.DONE);
+  }
+
+  /**
+   * Structural manifest.json verification (verifier:'manifest').
+   */
+  async executeManifestVerify() {
+    const t0 = Date.now();
+    this.broadcastEvent({ type: 'deploy_progress', step: 'verifying', message: 'Checking manifest...' });
+
+    try {
+      const report = await verifierC.run(WORKSPACE_PATH, this.currentSpec);
+      this.verificationReport = report;
+      console.log(`[ORCHESTRATOR] Manifest verification complete: verdict=${report.verdict}`);
+    } catch (e) {
+      console.error(`[ORCHESTRATOR] Manifest verification failed: ${e.message}`);
+      this.verificationReport = { verdict: 'ERROR', features: [], vision: null };
+    }
+
+    await this.transition(STATES.VERIFYING, {
+      usId: 4, status: 'done', cost: 0, time: Math.round((Date.now() - t0) / 1000)
+    });
   }
 
   /**
