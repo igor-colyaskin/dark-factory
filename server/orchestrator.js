@@ -1007,6 +1007,11 @@ class Orchestrator {
     this.notifyListeners();
     console.log('[ORCHESTRATOR] Reset complete, new state:', this.state);
   }
+
+  refreshProfile() {
+    this.profile = resolveProfile();
+    console.log(`[ORCHESTRATOR] Profile refreshed: ${this.profile.id}`);
+  }
 }
 
 // Singleton instance

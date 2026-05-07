@@ -4,14 +4,31 @@ const PROFILES = {
   'nodejs-app': nodejsApp,
 };
 
+let activeProfileId = process.env.ACTIVE_PROFILE || 'nodejs-app';
+
 export function resolveProfile() {
-  const profileId = process.env.ACTIVE_PROFILE || 'nodejs-app';
-  const profile = PROFILES[profileId];
+  const profile = PROFILES[activeProfileId];
   if (!profile) {
-    console.warn(`[PROFILE] Unknown profile "${profileId}", falling back to nodejs-app`);
+    console.warn(`[PROFILE] Unknown profile "${activeProfileId}", falling back to nodejs-app`);
     return nodejsApp;
   }
   return profile;
+}
+
+export function setActiveProfile(id) {
+  if (!PROFILES[id]) {
+    throw new Error(`Unknown profile: "${id}"`);
+  }
+  activeProfileId = id;
+  console.log(`[PROFILE] Active profile changed to: ${id}`);
+}
+
+export function getAvailableProfiles() {
+  return Object.values(PROFILES).map(p => ({ id: p.id, name: p.name }));
+}
+
+export function getActiveProfileId() {
+  return activeProfileId;
 }
 
 export default PROFILES;

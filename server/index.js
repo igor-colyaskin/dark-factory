@@ -7,7 +7,7 @@ import fileManager from './file-manager.js';
 import acChecker from './ac-checker.js';
 import costTracker from './cost-tracker.js';
 import appsStore from './apps-store.js';
-import { resolveProfile } from './profiles/index.js';
+import { resolveProfile, setActiveProfile, getAvailableProfiles, getActiveProfileId } from './profiles/index.js';
 import { validateEnvOrExit } from './env-validator.js';
 import githubAuthRouter from './routes/github-auth.js';
 import githubClient from './github-client.js';
@@ -256,6 +256,27 @@ app.get('/api/info', (req, res) => {
     version: '0.1.0',
     port: PORT
   });
+});
+
+// Profile settings endpoints
+app.get('/api/settings/profile', (req, res) => {
+  res.json({
+    activeProfileId: getActiveProfileId(),
+    profiles: getAvailableProfiles(),
+  });
+});
+
+app.post('/api/settings/profile', (req, res) => {
+  const { profileId } = req.body;
+  if (!profileId) return res.status(400).json({ error: 'profileId required' });
+  try {
+    setActiveProfile(profileId);
+    // Update orchestrator's cached profile
+    orchestrator.refreshProfile();
+    res.json({ activeProfileId: getActiveProfileId() });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
 // GitHub OAuth routes

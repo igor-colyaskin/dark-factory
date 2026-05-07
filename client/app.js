@@ -172,6 +172,7 @@ function switchTab(tabName, { updateUrl = true } = {}) {
   // Load GitHub status when switching to Settings
   if (tabName === 'settings') {
     loadGitHubStatus();
+    loadProfileSettings();
   }
 }
 
@@ -1187,6 +1188,59 @@ function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}m ${remainingSeconds}s`;
+}
+
+// ============================================================================
+// Settings: Factory Profile
+// ============================================================================
+
+async function loadProfileSettings() {
+  try {
+    const res = await fetch('/api/settings/profile');
+    const data = await res.json();
+    renderProfileSelector(data.profiles, data.activeProfileId);
+  } catch (err) {
+    console.error('Failed to load profile settings:', err);
+  }
+}
+
+function renderProfileSelector(profiles, activeProfileId) {
+  const container = document.getElementById('profile-selector');
+  if (!container) return;
+
+  container.innerHTML = profiles.map(p => `
+    <label class="profile-option ${p.id === activeProfileId ? 'profile-option-active' : ''}">
+      <input type="radio" name="profile" value="${p.id}" ${p.id === activeProfileId ? 'checked' : ''}>
+      <span class="profile-option-name">${p.name}</span>
+    </label>
+  `).join('');
+
+  container.querySelectorAll('input[name="profile"]').forEach(radio => {
+    radio.addEventListener('change', async () => {
+      await selectProfile(radio.value);
+    });
+  });
+}
+
+async function selectProfile(profileId) {
+  try {
+    const res = await fetch('/api/settings/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileId }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    renderProfileSelector(
+      Array.from(document.querySelectorAll('input[name="profile"]')).map(r => ({
+        id: r.value,
+        name: r.closest('label').querySelector('.profile-option-name').textContent
+      })),
+      data.activeProfileId
+    );
+  } catch (err) {
+    console.error('Failed to set profile:', err);
+  }
 }
 
 // ============================================================================
