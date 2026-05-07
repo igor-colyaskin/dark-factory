@@ -10,6 +10,7 @@ import appsStore from './apps-store.js';
 import githubTokens from './github-tokens.js';
 import githubClient from './github-client.js';
 import { generateReadme, generateSpec } from './readme-generator.js';
+import verifier from './verifier.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,7 @@ export const STATES = {
   TEST_RUNNING: 'TEST_RUNNING',
   DELIVERING: 'DELIVERING',
   DEPLOYING: 'DEPLOYING',
+  VERIFYING: 'VERIFYING',
   GITHUB_PUSH: 'GITHUB_PUSH',
   DONE: 'DONE',
   ERROR: 'ERROR'
@@ -88,6 +90,14 @@ const USER_STORIES = [
     status: 'waiting',
     cost: 0,
     time: 0
+  },
+  {
+    id: 4,
+    name: 'Verification',
+    agent: 'Ver',
+    status: 'waiting',
+    cost: 0,
+    time: 0
   }
 ];
 
@@ -117,6 +127,8 @@ class Orchestrator {
     this.listeners = [];
     // v0.5: reference spec from past order
     this.referenceSpec = null;
+    // v0.7: verification report
+    this.verificationReport = null;
   }
 
   // Subscribe to state changes
@@ -181,6 +193,8 @@ class Orchestrator {
       currentSpec: this.currentSpec,
       // v0.5
       referenceSpec: this.referenceSpec,
+      // v0.7
+      verificationReport: this.verificationReport,
     };
   }
 
@@ -844,6 +858,33 @@ class Orchestrator {
   }
 
   /**
+   * Run verifier against live app. Non-blocking: failure doesn't stop the order.
+   */
+  async executeVerify() {
+    const t0 = Date.now();
+    this.broadcastEvent({ type: 'deploy_progress', step: 'verifying', message: 'Verifying application...' });
+
+    try {
+      const report = await verifier.run(this.publicUrl, this.currentSpec);
+      this.verificationReport = report;
+      const elapsed = Date.now() - t0;
+
+      await this.transition(STATES.VERIFYING, {
+        usId: 4,
+        status: 'done',
+        cost: 0,
+        time: elapsed
+      });
+
+      console.log(`[ORCHESTRATOR] Verification complete: verdict=${report.verdict}`);
+    } catch (e) {
+      console.error(`[ORCHESTRATOR] Verification failed: ${e.message}`);
+      this.verificationReport = { error: e.message, verdict: 'ERROR' };
+      await this.transition(STATES.VERIFYING, { usId: 4, status: 'error', cost: 0, time: Date.now() - t0 });
+    }
+  }
+
+  /**
  * Fake deploy for mock-fast and demo modes.
  * Simulates deploy progress events and sets a plausible-looking fake URL.
  */
@@ -864,6 +905,10 @@ class Orchestrator {
       this.publicUrl = url;
       this.error = null;
       console.log(`[ORCHESTRATOR] Local deploy complete: ${url}`);
+
+      // Verify the deployed app (non-blocking: failure doesn't stop order)
+      await this.transition(STATES.VERIFYING, { usId: 4, status: 'running' });
+      await this.executeVerify();
 
       // GitHub push (non-blocking: failure → sourceUrl null, order still completes)
       await this.transition(STATES.GITHUB_PUSH);
@@ -917,6 +962,10 @@ class Orchestrator {
     // Mark as fake so UI can display a badge
     this.broadcastEvent({ type: 'deploy_fake_url', url: this.publicUrl });
 
+    // Skip real verification — fake URL is not a real app
+    await this.transition(STATES.VERIFYING, { usId: 4, status: 'done', cost: 0, time: 0 });
+    this.verificationReport = { verdict: 'SKIPPED', reason: 'fake deploy mode' };
+
     // GitHub push (non-blocking)
     await this.transition(STATES.GITHUB_PUSH);
     const sourceUrl = await this.executeGithubPush();
@@ -948,6 +997,7 @@ class Orchestrator {
     this.error = null;
     this.runMode = resolveRunMode(); // Re-read run mode from environment
     this.referenceSpec = null;
+    this.verificationReport = null;
 
     await this.saveState();
     this.notifyListeners();
