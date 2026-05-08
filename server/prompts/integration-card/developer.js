@@ -295,26 +295,92 @@ const T_PACKAGE_JSON = `{
   }
 }`;
 
+const T_PACKAGE_JSON_WITH_TESTS = `{
+  "name": "com-sap-partner-wz-SLUG",
+  "version": "1.0.0",
+  "description": "SAP Work Zone Integration Card",
+  "scripts": {
+    "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html",
+    "test": "ui5-test-runner --webapp src --testsuite test/unit/unitTests.qunit.html --coverage true --no-screenshot"
+  },
+  "ui5": {
+    "dependencies": ["@sapitpe/ui5cardssdk", "ui5-middleware-livereload"]
+  },
+  "ui5-test-runner": {
+    "dependencies": ["@sapitpe/ui5cardssdk"]
+  },
+  "dependencies": {
+    "@sapitpe/ui5cardssdk": "^1.0.12"
+  },
+  "devDependencies": {
+    "@ui5/cli": "^4.0.12",
+    "ui5-middleware-livereload": "^3.3.0",
+    "ui5-test-runner": "^5.7.0",
+    "geckodriver": "^6.1.0"
+  }
+}`;
+
 // ── Static file generator ────────────────────────────────────────────────────
 
+const T_ALL_TESTS = `/* istanbul ignore file */
+sap.ui.define(
+\t[
+\t\t"./Component",
+\t\t"./helpers/DataHelper.qunit"
+\t],
+\tfunction () {
+\t\t"use strict";
+\t}
+);`;
+
+const T_NYCRC = `{"include":["src/**/*.js"],"exclude":["src/test/**","src/Component.js"]}`;
+
 /**
- * Returns the 6 static files with SLUG substituted — no LLM needed.
+ * Returns static files with SLUG substituted — no LLM needed.
  * @param {string} cardSlug
+ * @param {object} spec — full architect spec; used for conditional file generation
  * @returns {Array<{path: string, content: string, action: string}>}
  */
-export function generateStaticFiles(cardSlug) {
+export function generateStaticFiles(cardSlug, spec = {}) {
   const slug = cardSlug || 'card';
   const sub = (s) => s.replace(/SLUG/g, slug);
-  return [
+  const pkgJson = spec.generateTests ? sub(T_PACKAGE_JSON_WITH_TESTS) : sub(T_PACKAGE_JSON);
+
+  const files = [
     { path: 'src/Component.js',               content: sub(T_COMPONENT),       action: 'create' },
     { path: 'src/Main.controller.js',          content: sub(T_MAIN_CONTROLLER), action: 'create' },
     { path: 'src/model/formatter.js',          content: T_FORMATTER,            action: 'create' },
     { path: 'src/test/mockserver.js',          content: T_MOCKSERVER,           action: 'create' },
     { path: 'src/test/utils/DataEngine.js',    content: T_DATA_ENGINE,          action: 'create' },
-    { path: 'package.json',                    content: sub(T_PACKAGE_JSON),    action: 'create' },
+    { path: 'package.json',                    content: pkgJson,                action: 'create' },
     { path: 'ui5-local.yaml',                  content: sub(T_UI5_LOCAL_YAML),  action: 'create' },
     { path: 'ui5.yaml',                        content: sub(T_UI5_YAML),        action: 'create' },
   ];
+
+  // README — always
+  const fieldRows = (spec.fields || []).map(f => `| ${f.beField} | ${f.label} |`).join('\n');
+  files.push({
+    path: 'README.md',
+    content: `# ${spec.cardTitle || slug}\n\n> ${spec.cardSubtitle || ''}\n\n## Fields\n\n| Field | Label |\n|-------|-------|\n${fieldRows}\n`,
+    action: 'create'
+  });
+
+  if (spec.generateDocs) {
+    files.push({
+      path: 'confluence.md',
+      content: `# ${spec.cardTitle || slug}\n\n| | |\n|---|---|\n| | |\n| | |\n`,
+      action: 'create'
+    });
+  }
+
+  if (spec.generateTests) {
+    files.push(
+      { path: 'src/test/unit/AllTests.js', content: T_ALL_TESTS, action: 'create' },
+      { path: '.nycrc.json',               content: T_NYCRC,     action: 'create' }
+    );
+  }
+
+  return files;
 }
 
 // ── System prompt ─────────────────────────────────────────────────────────────

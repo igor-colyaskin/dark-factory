@@ -553,7 +553,7 @@ async function runDeveloper() {
     }
     // Write static files directly from templates (IC profile only — skips LLM token overhead)
     if (typeof profile.prompts.developer.generateStaticFiles === 'function') {
-      const staticFiles = profile.prompts.developer.generateStaticFiles(spec.cardSlug);
+      const staticFiles = profile.prompts.developer.generateStaticFiles(spec.cardSlug, spec);
       const staticResult = await fileManager.writeFiles(staticFiles);
       if (!staticResult.success) {
         console.error('Some static files failed to write:', staticResult.errors);
