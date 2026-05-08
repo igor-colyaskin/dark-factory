@@ -54,6 +54,9 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 
 | Файл | Роль |
 |------|------|
+| `HANDOFF.md` | этот файл |
+| `docs/contracts.md` | контракты всех агентов, включая IC-профиль (v0.9) |
+| `docs/log.md` | архив решений и фаз v0.1–v0.9 |
 | `server/index.js:556-565` | writeFiles + generateStaticFiles(slug, spec) + lastACError |
 | `server/index.js:582-625` | runDevCheck — npm test для IC + errorFeedback |
 | `server/prompts/integration-card/architect.js` | protocol/layout/generateTests/generateDocs + output questions round |
