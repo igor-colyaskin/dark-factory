@@ -1,0 +1,27 @@
+{
+  "name": "com-sap-partner-wz-templatetable",
+  "version": "1.0.0",
+  "description": "SAP Work Zone Integration Card template — sap.m.Table + OData v2",
+  "scripts": {
+    "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html",
+    "eslint": "eslint src"
+  },
+  "ui5": {
+    "dependencies": [
+      "@sapitpe/ui5cardssdk",
+      "ui5-middleware-livereload"
+    ]
+  },
+  "dependencies": {
+    "@sapitpe/ui5cardssdk": "^1.0.12"
+  },
+  "devDependencies": {
+    "@openui5/types": "^1.135.0",
+    "@ui5/cli": "^4.0.12",
+    "express": "^5.2.1",
+    "ui5-middleware-livereload": "^3.3.0",
+    "ui5-middleware-servestatic": "^3.4.1"
+  },
+  "author": "SAP SE",
+  "license": "ISC"
+}

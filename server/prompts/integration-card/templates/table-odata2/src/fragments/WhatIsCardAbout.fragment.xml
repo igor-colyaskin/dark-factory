@@ -1,0 +1,26 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+>
+	<Dialog
+		id="whatIsCardAboutDialog"
+		title="{i18n>ABOUT_DIALOG_TITLE}"
+	>
+		<content>
+			<VBox class="sapUiSmallMargin">
+				<FormattedText
+					htmlText="{i18n>ABOUT_DIALOG_TEXT}"
+				/>
+			</VBox>
+		</content>
+		<footer>
+			<Toolbar>
+				<ToolbarSpacer />
+				<Button
+					text="{i18n>ABOUT_DIALOG_CLOSE}"
+					press="onCloseWhatIsCardAboutDialog"
+				/>
+			</Toolbar>
+		</footer>
+	</Dialog>
+</core:FragmentDefinition>

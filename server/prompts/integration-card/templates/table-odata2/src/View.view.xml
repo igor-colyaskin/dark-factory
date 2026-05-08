@@ -1,0 +1,52 @@
+<mvc:View
+	controllerName="com.sap.partner.wz.templatetable.Main"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns="sap.m"
+>
+
+	<VBox class="sapUiSmallMargin">
+
+		<OverflowToolbar design="Transparent">
+			<Title
+				text="{i18n>TABLE_TITLE}"
+				level="H4"
+			/>
+			<ToolbarSpacer />
+			<Button
+				id="menuButton"
+				icon="sap-icon://overflow"
+				type="Transparent"
+				tooltip="{i18n>MENU_BUTTON_TOOLTIP}"
+				press=".onMenuPress"
+			/>
+		</OverflowToolbar>
+
+		<!-- EXTENSION POINT: add/remove columns to match spec.fields -->
+		<Table
+			id="mainTable"
+			growing="true"
+			growingThreshold="10"
+			busyIndicatorDelay="0"
+		>
+			<columns>
+				<Column><Text text="{i18n>COL_FIELD_01}" /></Column>
+				<Column><Text text="{i18n>COL_FIELD_02}" /></Column>
+				<Column><Text text="{i18n>COL_FIELD_03}" /></Column>
+			</columns>
+
+			<!-- Row template — bound programmatically in _bindTable() -->
+			<dependents>
+				<ColumnListItem id="mainTableTemplate">
+					<cells>
+						<!-- EXTENSION POINT: replace Field01/02/03 with real BE field names -->
+						<Text text="{Field01}" />
+						<Text text="{Field02}" />
+						<Text text="{Field03}" />
+					</cells>
+				</ColumnListItem>
+			</dependents>
+		</Table>
+
+	</VBox>
+
+</mvc:View>

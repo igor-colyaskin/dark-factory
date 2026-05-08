@@ -1,0 +1,7 @@
+[
+	{ "Id": "001", "Field01": "Alpha Corp",    "Field02": "John Smith",   "Field03": "Active"   },
+	{ "Id": "002", "Field01": "Beta GmbH",     "Field02": "Anna Müller",  "Field03": "Pending"  },
+	{ "Id": "003", "Field01": "Gamma Ltd",     "Field02": "Li Wei",       "Field03": "Active"   },
+	{ "Id": "004", "Field01": "Delta Inc",     "Field02": "Sara Tanaka",  "Field03": "Inactive" },
+	{ "Id": "005", "Field01": "Epsilon S.A.",  "Field02": "Marc Dupont",  "Field03": "Active"   }
+]

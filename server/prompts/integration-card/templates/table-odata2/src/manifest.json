@@ -1,0 +1,108 @@
+{
+	"_version": "1.15.0",
+	"sap.app": {
+		"id": "com.sap.partner.wz.templatetable",
+		"type": "card",
+		"i18n": "i18n/i18n.properties",
+		"title": "{{TITLE}}",
+		"subTitle": "{{SUBTITLE}}",
+		"applicationVersion": {
+			"version": "1.0.0"
+		},
+		"tags": {
+			"keywords": ["Component", "PartnerBench", "templatetable"]
+		},
+		"dataSources": {
+			"mainService": {
+				"uri": "{{destinations.mydestination}}/sap/opu/odata/sap/TEMPLATETABLE_SRV/",
+				"type": "OData",
+				"settings": {
+					"annotations": [],
+					"odataVersion": "2.0"
+				}
+			}
+		}
+	},
+	"sap.ui": {
+		"technology": "UI5",
+		"deviceTypes": {
+			"desktop": true,
+			"phone": true,
+			"tablet": true
+		},
+		"icons": {
+			"icon": "sap-icon://technical-object"
+		}
+	},
+	"sap.ui5": {
+		"rootView": {
+			"viewName": "com.sap.partner.wz.templatetable.View",
+			"type": "XML",
+			"async": true,
+			"id": "app"
+		},
+		"dependencies": {
+			"minUI5Version": "1.38",
+			"libs": {
+				"sap.m": {},
+				"com.sap.fiorireuselibrary.ui5cardssdk": {}
+			}
+		},
+		"resourceRoots": {
+			"com.sap.fiorireuselibrary.ui5cardssdk": "./resources/com/sap/fiorireuselibrary/ui5cardssdk"
+		},
+		"models": {
+			"i18n": {
+				"type": "sap.ui.model.resource.ResourceModel",
+				"settings": {
+					"bundleName": "com.sap.partner.wz.templatetable.i18n.i18n"
+				}
+			},
+			"": {
+				"dataSource": "mainService",
+				"settings": {
+					"withCredentials": true,
+					"useBatch": false,
+					"defaultBindingMode": "TwoWay"
+				}
+			}
+		},
+		"resources": {
+			"css": [
+				{
+					"uri": "css/style.css",
+					"id": ""
+				}
+			]
+		}
+	},
+	"sap.card": {
+		"type": "Component",
+		"requiredHeight": "20rem",
+		"designtime": "dt/configuration",
+		"configuration": {
+			"destinations": {
+				"mydestination": {
+					"name": "TEMPLATE"
+				}
+			},
+			"parameters": {
+				"showRetryButton": {
+					"value": true
+				},
+				"showNavigateBackButton": {
+					"value": true
+				},
+				"showDownloadLogsButton": {
+					"value": true
+				},
+				"showMaintenanceMode": {
+					"value": false
+				}
+			}
+		}
+	},
+	"sap.platform.mobilecards": {
+		"compatible": true
+	}
+}

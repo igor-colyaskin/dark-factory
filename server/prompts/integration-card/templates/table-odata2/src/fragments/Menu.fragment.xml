@@ -1,0 +1,17 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+>
+	<Menu itemSelected="onMenuAction">
+		<MenuItem
+			text="{i18n>MENU_ABOUT_CARD}"
+			icon="sap-icon://sys-help"
+			press="onWhatIsCardAboutPress"
+		/>
+		<MenuItem
+			text="{i18n>MENU_REQUIRED_AUTH}"
+			icon="sap-icon://key"
+			press="onRequiredAuthorizationPress"
+		/>
+	</Menu>
+</core:FragmentDefinition>
