@@ -35,3 +35,5 @@ Thumbs.db
 upload/
 
 /state/
+# Claude Code local config
+.claude/
