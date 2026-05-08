@@ -568,6 +568,28 @@ async function runDeveloper() {
       // Merge static files into result so Tester agent sees the full workspace
       result.content.files = [...(result.content.files || []), ...staticFiles];
     }
+
+    // Generate DataHelper.qunit.js via separate LLM call (IC profile, generateTests only)
+    // Kept separate to avoid hitting Hyperspace ~8192 token output limit with the main developer call
+    if (spec.generateTests && typeof profile.prompts.developer.testGeneratorSystemPrompt === 'string') {
+      console.log('[IC] Generating DataHelper.qunit.js (separate LLM call)...');
+      const dataHelperFile = result.content.files.find(f => f.path === 'src/helpers/DataHelper.js');
+      const testsUserPrompt = profile.prompts.developer.generateTestsUserPrompt(spec, dataHelperFile?.content || '');
+      const testsResult = await agentManager.callAgentWithRetry(
+        'developer',
+        profile.prompts.developer.testGeneratorSystemPrompt,
+        testsUserPrompt,
+        { max_tokens: 4000 }
+      );
+      if (testsResult.success && testsResult.content.files?.length > 0) {
+        const testFiles = testsResult.content.files;
+        await fileManager.writeFiles(testFiles);
+        result.content.files = [...result.content.files, ...testFiles];
+        console.log('[IC] DataHelper.qunit.js generated successfully');
+      } else {
+        console.error('[IC] DataHelper.qunit.js generation failed — skipping tests');
+      }
+    }
   }
 
   const developerData = {
@@ -592,6 +614,11 @@ async function runDevCheck() {
     if (spec && spec.generateTests) {
       console.log('[DEV_CHECK] IC profile — running npm test in workspace');
       try {
+        console.log('[DEV_CHECK] Running npm install...');
+        await execAsync('npm install', {
+          cwd: fileManager.workspaceDir,
+          timeout: 120000
+        });
         const { stdout, stderr } = await execAsync('npm test', {
           cwd: fileManager.workspaceDir,
           timeout: 120000

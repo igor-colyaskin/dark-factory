@@ -11,6 +11,9 @@
 | v0.4 | 2026-05-06 | Утверждено | GitHub Integration, миграция на Hyperspace LiteLLM |
 | v0.5 | 2026-05-06 | Утверждено | REMEMBER: Order by Reference, readApp, кнопка "Повторить с изменениями" |
 | v0.6 | 2026-05-06 | Утверждено | Local Runner: localhost deploy, workspaces/, on-demand UX, полный pipeline на VDI |
+| v0.7 | 2026-05-07 | Утверждено | VERIFY: VerifierA (HTTP+keyword) + VerifierB (puppeteer+vision), VERIFYING state |
+| v0.8 | 2026-05-07 | Утверждено | PROFILES: profile = кассета, Integration Card профиль (deployer:none, verifier:manifest) |
+| v0.9 | 2026-05-08 | Утверждено | IC Tests+Docs: output questions, unit тесты, DEV_CHECK npm test, README, Confluence placeholder |
 
 ## 1. Что такое Dark Factory
 
@@ -78,9 +81,10 @@ Dark Factory (DF) — веб-приложение, реализующее кон
   |  |              (state machine, JS — not AI)    |  |
   |  |                                              |  |
   |  |  IDLE → ORDERING → ARCH_WORKING →            |  |
-  |  |  [CLARIFYING →] ARCH_REVIEW →                |  |
+  |  |  [CLARIFYING →] SPEC_REVIEW →                |  |
   |  |  DEV_WORKING → DEV_CHECK → TEST_RUNNING →    |  |
-  |  |  DELIVERING → DEPLOYING → GITHUB_PUSH → DONE |  |
+  |  |  DELIVERING → DEPLOYING → VERIFYING →        |  |
+  |  |  GITHUB_PUSH → DONE                          |  |
   |  +-------|----------------|---------------------+  |
   |          |                |                        |
   |    +-----v-----+   +------v-----+   +-----------+  |

@@ -832,6 +832,22 @@ function renderSpecReview(state) {
   parts.push('<p>' + escapeHtml(spec.summary) + '</p>');
   parts.push('</div>');
 
+  // IC profile: show card-specific fields
+  if (spec.cardSlug) {
+    parts.push('<div class="spec-section">');
+    parts.push('<h4>Integration Card</h4>');
+    parts.push('<ul>');
+    parts.push('<li><strong>Card:</strong> ' + escapeHtml(spec.cardTitle || spec.cardSlug) + '</li>');
+    parts.push('<li><strong>Destination:</strong> ' + escapeHtml(spec.destinationName || '—') + '</li>');
+    parts.push('<li><strong>Protocol:</strong> ' + escapeHtml(spec.protocol || '—') + '</li>');
+    parts.push('<li><strong>Layout:</strong> ' + escapeHtml(spec.layout || '—') + '</li>');
+    parts.push('<li><strong>Fields:</strong> ' + (spec.fields ? spec.fields.length : 0) + '</li>');
+    parts.push('<li><strong>Tests:</strong> ' + (spec.generateTests ? 'Yes' : 'No') + '</li>');
+    parts.push('<li><strong>Docs:</strong> ' + (spec.generateDocs ? 'Yes' : 'No') + '</li>');
+    parts.push('</ul>');
+    parts.push('</div>');
+  }
+
   // Clarifications (Q&A history)
   if (state.clarifyHistory && state.clarifyHistory.length > 0) {
     parts.push('<div class="spec-section">');

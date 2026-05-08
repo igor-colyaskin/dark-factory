@@ -7,11 +7,12 @@
 
 ## Быстрый статус
 
-**Последняя выпущенная:** v0.9 — IC с тестами и документацией ✅
+**Последняя выпущенная:** v0.9 — IC с тестами и документацией ✅ + тест-инфраструктура починена (сессия 2026-05-08)
 **Версия в работе:** v0.10 — Smart input (sample JSON → auto field extraction)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
 **Рабочий документ:** `docs/work/v0.10.md` — создать в начале следующей сессии
+**Бэклог:** `docs/backlog.md` — VIZ-001 (sandbox preview, топ-3), UX-001 (кнопка Уточнить)
 
 ## Что сделать в первую очередь
 
@@ -20,12 +21,9 @@ GitHub — личный аккаунт через OAuth App.
    - память `plugin_architecture.md` — proto-F, Square 1/2, plugin contract
    - память `integration_card_template.md` — структура шаблона
 
-2. Проверь, протестировал ли Игорь v0.9 вручную (end-to-end IC с тестами).
-   Если нет — предложи прогнать тест перед началом v0.10.
+2. Создай `docs/work/v0.10.md` и согласуй scope.
 
-3. Создай `docs/work/v0.10.md` и согласуй scope.
-
-4. Не начинай код до подтверждения.
+3. Не начинай код до подтверждения.
 
 ## Технические решения, актуальные для следующей сессии
 
@@ -57,12 +55,35 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 | `HANDOFF.md` | этот файл |
 | `docs/contracts.md` | контракты всех агентов, включая IC-профиль (v0.9) |
 | `docs/log.md` | архив решений и фаз v0.1–v0.9 |
-| `server/index.js:556-565` | writeFiles + generateStaticFiles(slug, spec) + lastACError |
-| `server/index.js:582-625` | runDevCheck — npm test для IC + errorFeedback |
+| `server/index.js` | writeFiles + generateStaticFiles + runDevCheck (npm install + npm test) + testGenerator вызов |
 | `server/prompts/integration-card/architect.js` | protocol/layout/generateTests/generateDocs + output questions round |
-| `server/prompts/integration-card/developer.js` | generateStaticFiles(spec) + LLM prompt с DataHelper.qunit.js |
+| `server/prompts/integration-card/developer.js` | generateStaticFiles(spec) + основной LLM-промпт (5 файлов) + testGeneratorSystemPrompt/generateTestsUserPrompt |
 | `server/prompts/integration-card/tester.js` | видит все файлы после v0.9 fix |
 | `server/prompts/integration-card/templates/form-rest/` | источник шаблона и тест-референсов |
+
+## Что починила сессия 2026-05-08 (тест-инфраструктура IC)
+
+`npm test` падал на всех прогонах после v0.9. Три независимых бага:
+
+**1. @sapitpe/ui5cardssdk в npm dependencies → E404**
+Пакет недоступен в публичном npm (только Work Zone runtime).
+Fix: убран из `dependencies`, `ui5.dependencies`, `ui5-test-runner.dependencies` в `T_PACKAGE_JSON_WITH_TESTS`.
+
+**2. external_libs стабы не генерировались → SDK не загружался**
+`DataHelper.js` импортирует `CustomError` из SDK. Стабы есть в шаблоне, но `generateStaticFiles()` их не копировал.
+Fix: 4 стаб-файла добавлены в `generateStaticFiles()` всегда (нужны и для `npm test` и для `ui5 serve`).
+
+**3. `"./Component"` в `T_ALL_TESTS` → AMD loader зависал**
+`AllTests.js` импортировал `"./Component"` (test/unit/Component.js из шаблона) — файл не генерируется.
+UI5 AMD loader ждал несуществующий модуль, тест-страница не инициализировалась (таймаут 1.5 мин).
+Fix: убран `"./Component"` из `T_ALL_TESTS`, оставлен только `"./helpers/DataHelper.qunit"`.
+
+**4. .nycrc.json игнорировался → coverage включала src/test/**
+`ui5-test-runner` генерирует свой `.nyc_output/settings/.nycrc.json` и передаёт его nyc через `--nycrc-path`.
+Наш `.nycrc.json` в корне workspace не читался. Плюс пути были неверные (relative to workspace, а cwd = src/).
+Fix: пути исправлены (relative to src/), добавлен `--coverage-settings .nycrc.json` в test-команду.
+
+**Результат:** `npm test` → 4/4, coverage только `DataHelper.js`, `src/test/**` исключён.
 
 ## Что v0.9 дала проекту
 
@@ -75,19 +96,24 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 - `generateStaticFiles(cardSlug, spec)` — расширен до spec-параметра
 - `README.md` — всегда, из spec.fields
 - `confluence.md` — placeholder если generateDocs
-- `AllTests.js` + `.nycrc.json` — static boilerplate если generateTests
+- `AllTests.js`, `unitTests.qunit.html`, `unitTests.qunit.js`, `.nycrc.json` — если generateTests
 - `package.json` с test-скриптом и ui5-test-runner — если generateTests
 
-**LLM Developer:**
-- 6-й файл `src/test/unit/helpers/DataHelper.qunit.js` при generateTests:
-  4 QUnit-модуля (field mapping, fallback, null fallback, immutability)
+**LLM Developer — два вызова при generateTests:**
+- Вызов 1: 5 extension-point файлов (основной, всегда)
+- Вызов 2: только `src/test/unit/helpers/DataHelper.qunit.js` (отдельный фокусный вызов)
+- Разделение обязательно: Hyperspace режет output на ~8192 токенах, 6 файлов не влезают
+- 4 QUnit-модуля в DataHelper.qunit.js: field mapping, fallback, null fallback, immutability
 
 **DEV_CHECK для IC:**
-- `npm test` в workspace при generateTests
+- `npm install` + `npm test` в workspace при generateTests
 - Ошибки сохраняются в `lastACError` → передаются в retry-промпт developer'а
 
 **Tester fix:**
 - Статические файлы теперь входят в `developerData.files` → Tester видит все файлы
+
+**Spec Review UI:**
+- IC-блок: Card, Destination, Protocol, Layout, Fields, Tests, Docs — явно отображается
 
 ## Что v0.8 дала проекту
 
@@ -121,6 +147,18 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 
 **Fly.io заблокирован на корп. VDI** — решён через Local Runner (v0.6).
 LLM через Hyperspace. **LLM_API_KEY нужно прописывать вручную в `.env`**.
+
+## Hyperspace constraints
+
+Hyperspace жёстко ограничивает **вывод** LLM (~8192 токенов), игнорируя `max_tokens` в запросе.
+Сигнал: `finish_reason: 'length'` → agent-manager бросает "Response truncated".
+
+**Паттерн fix'а:** каждый LLM-вызов — одна задача с предсказуемо небольшим выводом.
+Если задача большая — несколько вызовов. Примеры: v0.8 (5 LLM + 8 static files),
+v0.9 fix (DataHelper.qunit.js — отдельный вызов).
+
+Именование моделей в Hyperspace отличается от стандартного Anthropic API:
+`anthropic--claude-4.6-sonnet`, `anthropic--claude-4.6-opus`, `gemini-2.5-flash`.
 
 ## Ключевые решения, которые остаются в силе
 
