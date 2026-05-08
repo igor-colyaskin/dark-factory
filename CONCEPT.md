@@ -14,6 +14,7 @@
 | v0.7 | 2026-05-07 | Утверждено | VERIFY: VerifierA (HTTP+keyword) + VerifierB (puppeteer+vision), VERIFYING state |
 | v0.8 | 2026-05-07 | Утверждено | PROFILES: profile = кассета, Integration Card профиль (deployer:none, verifier:manifest) |
 | v0.9 | 2026-05-08 | Утверждено | IC Tests+Docs: output questions, unit тесты, DEV_CHECK npm test, README, Confluence placeholder |
+| UX-001 | 2026-05-08 | Утверждено | Кнопка «Уточнить» на Spec Review: SPEC_REVIEW → ARCH_WORKING без потери истории, лимит 3 раунда |
 
 ## 1. Что такое Dark Factory
 
