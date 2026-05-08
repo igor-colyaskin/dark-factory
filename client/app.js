@@ -26,6 +26,10 @@ const submitAnswersBtn = document.getElementById('submit-answers-btn');
 const specReviewSection = document.getElementById('spec-review-section');
 const specContent = document.getElementById('spec-content');
 const cancelOrderBtn = document.getElementById('cancel-order-btn');
+const refineBtn = document.getElementById('refine-btn');
+const submitRefineBtn = document.getElementById('submit-refine-btn');
+const refineArea = document.getElementById('refine-area');
+const refineInput = document.getElementById('refine-input');
 const startDevBtn = document.getElementById('start-dev-btn');
 const statusMessage = document.getElementById('status-message');
 const loadingOverlay = document.getElementById('loading-overlay');
@@ -113,6 +117,8 @@ function setupEventListeners() {
   orderForm.addEventListener('submit', handleOrderSubmit);
   submitAnswersBtn.addEventListener('click', handleSubmitAnswers);
   cancelOrderBtn.addEventListener('click', handleCancelOrder);
+  refineBtn.addEventListener('click', handleRefineToggle);
+  submitRefineBtn.addEventListener('click', handleSubmitRefine);
   startDevBtn.addEventListener('click', handleStartDev);
   newOrderBtn.addEventListener('click', handleNewOrder);
   openPublicBtn.addEventListener('click', handleOpenPublic);
@@ -667,6 +673,11 @@ function updateUI(state) {
     case 'SPEC_REVIEW':
       hideLoading();
       renderSpecReview(state);
+      refineArea.style.display = 'none';
+      submitRefineBtn.style.display = 'none';
+      startDevBtn.style.display = '';
+      refineInput.value = '';
+      refineBtn.disabled = (state.refineRound >= state.maxRefineRounds);
       specReviewSection.style.display = 'block';
       showStatus('Spec is ready for review', 'info');
       break;
@@ -854,6 +865,10 @@ function renderSpecReview(state) {
     parts.push('<h4>Уточнения</h4>');
     parts.push('<ul class="spec-qa-list">');
     state.clarifyHistory.forEach(function (round) {
+      if (round.refine) {
+        parts.push('<li><em>Уточнение:</em> ' + escapeHtml(round.message) + '</li>');
+        return;
+      }
       round.questions.forEach(function (q) {
         parts.push('<li><strong>' + escapeHtml(q.text) + '</strong> → ' + escapeHtml(q.answer) + '</li>');
       });
@@ -1001,6 +1016,49 @@ async function handleStartDev() {
     console.error('Error starting dev:', error);
     showStatus('Failed to start development', 'error');
     hideLoading();
+  }
+}
+
+// Toggle refine textarea visibility
+function handleRefineToggle() {
+  const isOpen = refineArea.style.display !== 'none';
+  if (isOpen) {
+    refineArea.style.display = 'none';
+    submitRefineBtn.style.display = 'none';
+    startDevBtn.style.display = '';
+    refineInput.value = '';
+  } else {
+    refineArea.style.display = 'block';
+    submitRefineBtn.style.display = '';
+    startDevBtn.style.display = 'none';
+    refineInput.focus();
+  }
+}
+
+// Submit refinement request
+async function handleSubmitRefine() {
+  const message = refineInput.value.trim();
+  if (!message) {
+    showStatus('Введите текст уточнения', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showStatus(result.message || 'Ошибка при отправке уточнения', 'error');
+    }
+    // UI reset happens via SSE state update (ARCH_WORKING)
+  } catch (error) {
+    console.error('Error submitting refine:', error);
+    showStatus('Ошибка при отправке уточнения', 'error');
   }
 }
 

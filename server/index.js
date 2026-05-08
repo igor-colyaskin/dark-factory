@@ -238,6 +238,22 @@ app.post('/api/reset', async (req, res) => {
   res.json({ success: true });
 });
 
+// UX-001: refine spec from SPEC_REVIEW without losing history
+app.post('/api/refine', async (req, res) => {
+  const { message } = req.body;
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    return res.status(400).json({ success: false, message: 'message is required' });
+  }
+  try {
+    await orchestrator.handleRefineRequest(message.trim());
+    res.status(200).json({ success: true });
+    runPipeline().catch(error => console.error('Pipeline error:', error));
+  } catch (error) {
+    console.error('Error handling refine request:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.post('/api/cancel', async (req, res) => {
   try {
     await orchestrator.handleCancel();
@@ -463,7 +479,8 @@ async function runArchitect() {
     state.clarifyHistory,
     state.clarifyRound,
     state.maxClarifyRounds,
-    state.referenceSpec
+    state.referenceSpec,
+    state.currentSpec
   );
   
   const result = await agentManager.callAgentWithRetry(

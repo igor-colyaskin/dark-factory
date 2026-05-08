@@ -120,6 +120,9 @@ class Orchestrator {
     this.clarifyRound = 0;
     this.maxClarifyRounds = 3;
     this.currentSpec = null;
+    // UX-001: spec refinement
+    this.refineRound = 0;
+    this.maxRefineRounds = 3;
     this.agentOutputs = {};
     this.publicUrl = null;
     this.sourceUrl = null;
@@ -195,6 +198,9 @@ class Orchestrator {
       clarifyRound: this.clarifyRound,
       maxClarifyRounds: this.maxClarifyRounds,
       currentSpec: this.currentSpec,
+      // UX-001
+      refineRound: this.refineRound,
+      maxRefineRounds: this.maxRefineRounds,
       // v0.5
       referenceSpec: this.referenceSpec,
       // v0.7
@@ -436,8 +442,25 @@ class Orchestrator {
     return this.getState();
   }
 
+  // UX-001: return to architect from SPEC_REVIEW with a refinement message
+  async handleRefineRequest(message) {
+    if (this.state !== STATES.SPEC_REVIEW) {
+      throw new Error('Cannot refine in state: ' + this.state);
+    }
+    if (this.refineRound >= this.maxRefineRounds) {
+      throw new Error('Refinement limit reached (' + this.maxRefineRounds + ')');
+    }
+
+    this.clarifyHistory.push({ refine: true, message });
+    this.clarifyRound = 0;
+    this.refineRound++;
+    this.questions = [];
+
+    await this.transition(STATES.ARCH_WORKING, { usId: 1, status: 'running' });
+    return this.getState();
+  }
+
   async handleCancel() {
-    // Allowed from SPEC_REVIEW or CLARIFYING
     if (this.state !== STATES.SPEC_REVIEW && this.state !== STATES.CLARIFYING) {
       throw new Error('Cannot cancel in state: ' + this.state);
     }
@@ -1060,6 +1083,7 @@ class Orchestrator {
     this.clarifyHistory = [];
     this.clarifyRound = 0;
     this.currentSpec = null;
+    this.refineRound = 0;
     this.agentOutputs = {};
     this.publicUrl = null;
     this.sourceUrl = null;

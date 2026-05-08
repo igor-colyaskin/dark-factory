@@ -192,12 +192,13 @@ When in doubt — produce a spec with reasonable defaults and note assumptions i
  * @param {number} round
  * @param {number} maxRounds
  * @param {string|null} referenceSpec
+ * @param {object|null} previousSpec — spec produced in a previous round (refinement mode)
  * @returns {string}
  */
-export function generateUserPrompt(orderDescription, clarifyHistory = [], round = 0, maxRounds = 3, referenceSpec = null) {
+export function generateUserPrompt(orderDescription, clarifyHistory = [], round = 0, maxRounds = 3, referenceSpec = null, previousSpec = null) {
   const displayOrder = orderDescription.replace(/^На основе #\d+:\s*/, '').trim() || orderDescription;
 
-  if (round === 0 || clarifyHistory.length === 0) {
+  if (clarifyHistory.length === 0) {
     const lines = ['## Order', '', displayOrder];
 
     if (referenceSpec) {
@@ -216,16 +217,30 @@ export function generateUserPrompt(orderDescription, clarifyHistory = [], round 
     return lines.join('\n');
   }
 
-  const historyText = clarifyHistory.map((entry, i) =>
-    'Round ' + (i + 1) + ':\n' +
-    entry.questions.map(q => '  Q: ' + q.text + '\n  A: ' + q.answer).join('\n')
-  ).join('\n\n');
+  const historyText = clarifyHistory.map((entry, i) => {
+    if (entry.refine) return 'Refinement request:\n  ' + entry.message;
+    return 'Round ' + (i + 1) + ':\n' +
+      entry.questions.map(q => '  Q: ' + q.text + '\n  A: ' + q.answer).join('\n');
+  }).join('\n\n');
 
   const isLastRound = round >= maxRounds - 1;
   const lines = ['## Order', '', displayOrder, '', '## Clarifications So Far', '', historyText, ''];
 
   if (referenceSpec) {
     lines.push('## Reference Card Spec (baseline)', '', referenceSpec, '');
+  }
+
+  if (previousSpec) {
+    lines.push(
+      '## Previously Generated Spec',
+      '',
+      'This is the spec you produced. The user wants to refine it (see Refinement request above).',
+      '',
+      '```json',
+      JSON.stringify(previousSpec, null, 2),
+      '```',
+      ''
+    );
   }
 
   if (isLastRound) {

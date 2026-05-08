@@ -136,9 +136,19 @@
             <!-- Spec Review Section (shown in SPEC_REVIEW state) -->
             <div id="spec-review-section" class="spec-review-section" style="display: none;">
               <div id="spec-content" class="spec-content"></div>
+              <div id="refine-area" class="refine-area" style="display: none;">
+                <textarea id="refine-input" class="refine-input" rows="3"
+                  placeholder="Опишите что изменить (например: добавить поле phone, изменить destination на HR_API)…"></textarea>
+              </div>
               <div class="spec-actions">
                 <button id="cancel-order-btn" class="btn btn-secondary">
                   Cancel
+                </button>
+                <button id="refine-btn" class="btn btn-secondary">
+                  Уточнить
+                </button>
+                <button id="submit-refine-btn" class="btn btn-primary" style="display: none;">
+                  Отправить
                 </button>
                 <button id="start-dev-btn" class="btn btn-success">
                   ▶ Start

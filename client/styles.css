@@ -1387,6 +1387,36 @@ body {
   color: var(--vscode-green);
 }
 
+.refine-area {
+  margin-bottom: 10px;
+}
+
+#refine-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--vscode-editor-bg);
+  border: 1px solid var(--vscode-border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--vscode-text);
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  line-height: 1.5;
+  min-height: 72px;
+  box-sizing: border-box;
+}
+
+#refine-input:focus {
+  outline: none;
+  border-color: var(--vscode-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.1);
+}
+
+#refine-input::placeholder {
+  color: var(--vscode-text-secondary);
+}
+
 .spec-actions {
   display: flex;
   gap: 8px;

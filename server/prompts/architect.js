@@ -135,14 +135,15 @@ All applications you design MUST follow:
  * @param {number} round — current round index (0 = first call)
  * @param {number} maxRounds — maximum allowed rounds (default 3)
  * @param {string|null} referenceSpec — SPEC.md content of a past app to use as baseline
+ * @param {object|null} previousSpec — spec produced in a previous round (refinement mode)
  * @returns {string}
  */
-export function generateUserPrompt(orderDescription, clarifyHistory = [], round = 0, maxRounds = 3, referenceSpec = null) {
+export function generateUserPrompt(orderDescription, clarifyHistory = [], round = 0, maxRounds = 3, referenceSpec = null, previousSpec = null) {
   // Strip "На основе #N:" prefix from display — reference spec provides the context
   const displayOrder = orderDescription.replace(/^На основе #\d+:\s*/, '').trim() || orderDescription;
 
-  // --- First call: just the order ---
-  if (round === 0 || clarifyHistory.length === 0) {
+  // --- First call: no history yet ---
+  if (clarifyHistory.length === 0) {
     const lines = [
       '## Order',
       '',
@@ -174,6 +175,9 @@ export function generateUserPrompt(orderDescription, clarifyHistory = [], round 
 
   // --- Repeat call: order + history ---
   const historyParts = clarifyHistory.map(function (entry, i) {
+    if (entry.refine) {
+      return 'Refinement request:\n  ' + entry.message;
+    }
     const qaPairs = entry.questions.map(function (q) {
       return '  Q: ' + q.text + '\n  A: ' + q.answer;
     }).join('\n');
@@ -199,6 +203,19 @@ export function generateUserPrompt(orderDescription, clarifyHistory = [], round 
       '## Reference Spec (baseline)',
       '',
       referenceSpec,
+      ''
+    );
+  }
+
+  if (previousSpec) {
+    lines.push(
+      '## Previously Generated Spec',
+      '',
+      'This is the spec you produced. The user wants to refine it (see Refinement request above).',
+      '',
+      '```json',
+      JSON.stringify(previousSpec, null, 2),
+      '```',
       ''
     );
   }
