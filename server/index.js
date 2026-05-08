@@ -2,6 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import orchestrator from './orchestrator.js';
 import fileManager from './file-manager.js';
 import acChecker from './ac-checker.js';
@@ -16,6 +18,10 @@ import processRegistry from './process-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const execAsync = promisify(exec);
+
+// AC error from npm test — passed to developer on retry
+let lastACError = null;
 
 // Determine run mode and select appropriate agent manager
 const RUN_MODE = process.env.RUN_MODE || 'production';
@@ -513,7 +519,8 @@ async function runDeveloper() {
   const userPrompt = profile.prompts.developer.generateUserPrompt(
     state.orderDescription,
     spec,
-    state.retryCount
+    state.retryCount,
+    lastACError
   );
 
   const result = await agentManager.callAgentWithRetry(
@@ -579,8 +586,32 @@ async function runDeveloper() {
 async function runDevCheck() {
   console.log('Running Development AC Check...');
 
-  // Integration Card profile has no Node.js app to check — skip nodejs-specific AC
+  // Integration Card profile: skip Node.js AC but run npm test if tests were generated
   if (orchestrator.profile.deployer === 'none') {
+    const spec = orchestrator.currentSpec;
+    if (spec && spec.generateTests) {
+      console.log('[DEV_CHECK] IC profile — running npm test in workspace');
+      try {
+        const { stdout, stderr } = await execAsync('npm test', {
+          cwd: fileManager.workspaceDir,
+          timeout: 120000
+        });
+        console.log('[DEV_CHECK] npm test passed');
+        if (stderr) console.warn('[DEV_CHECK] npm test stderr:', stderr);
+        lastACError = null;
+        await orchestrator.handleACCheckResult(2, true);
+        await runPipeline();
+      } catch (err) {
+        const output = [err.stdout, err.stderr].filter(Boolean).join('\n');
+        console.error('[DEV_CHECK] npm test failed:\n', output);
+        lastACError = output;
+        await orchestrator.handleACCheckResult(2, false);
+        if (orchestrator.retryCount < orchestrator.maxRetries) {
+          await runPipeline();
+        }
+      }
+      return;
+    }
     console.log('[DEV_CHECK] deployer=none — skipping nodejs AC checks');
     await orchestrator.handleACCheckResult(2, true);
     await runPipeline();
@@ -588,9 +619,9 @@ async function runDevCheck() {
   }
 
   const checkResult = await acChecker.checkDevelopment();
-  
+
   await orchestrator.handleACCheckResult(2, checkResult.passed);
-  
+
   if (checkResult.passed) {
     // Continue to testing
     await runPipeline();

@@ -667,9 +667,71 @@ sap.ui.define([], function () {
 
 ---
 
+## Files to Generate (Conditional)
+
+### 6. src/test/unit/helpers/DataHelper.qunit.js — IF spec.generateTests is true
+
+Generate QUnit tests for DataHelper._processData() using spec.fields and spec.mockData.
+Structure: 4 QUnit modules in this exact order.
+
+**Import line:**
+\`com/sap/partner/wz/{cardSlug}/helpers/DataHelper\`
+(substitute cardSlug — NOT the literal word SLUG)
+
+**Module 1 — field mapping:**
+Pass an object built from spec.mockData (all beFields present), assert each viewKey equals its mockData value.
+
+**Module 2 — missing field fallback:**
+Call \`DataHelper._processData({})\` — assert every viewKey equals \`""\`.
+
+**Module 3 — null field fallback:**
+Call \`DataHelper._processData({ FirstBeField: null })\` — assert corresponding viewKey equals \`""\`.
+Pick the first field from spec.fields.
+
+**Module 4 — immutability:**
+Call \`DataHelper._processData\` with a raw object, then assert original keys are unchanged
+and no viewKey was added to the input object.
+
+Example skeleton (adapt to spec.fields):
+\`\`\`javascript
+/* global QUnit */
+/* istanbul ignore file */
+sap.ui.define(["com/sap/partner/wz/CARDSLUG/helpers/DataHelper"], function (DataHelper) {
+\t"use strict";
+
+\tQUnit.module("DataHelper | _processData — field mapping");
+\tQUnit.test("all BE fields are mapped", function (assert) {
+\t\tvar oRaw = { /* beField: "mockValue" for each field */ };
+\t\tvar oResult = DataHelper._processData(oRaw);
+\t\t/* assert.strictEqual(oResult.viewKey, "mockValue", "viewKey") for each field */
+\t});
+
+\tQUnit.module("DataHelper | _processData — missing field fallback");
+\tQUnit.test("missing field defaults to empty string", function (assert) {
+\t\tvar oResult = DataHelper._processData({});
+\t\t/* assert.strictEqual(oResult.viewKey, "", "viewKey defaults to ''") for each field */
+\t});
+
+\tQUnit.test("null value defaults to empty string", function (assert) {
+\t\tvar oResult = DataHelper._processData({ FIRST_BE_FIELD: null });
+\t\tassert.strictEqual(oResult.FIRST_VIEW_KEY, "", "null → ''");
+\t});
+
+\tQUnit.module("DataHelper | _processData — immutability");
+\tQUnit.test("input object is not mutated", function (assert) {
+\t\tvar oRaw = { FIRST_BE_FIELD: "test" };
+\t\tvar sKeysBefore = JSON.stringify(Object.keys(oRaw).sort());
+\t\tDataHelper._processData(oRaw);
+\t\tassert.strictEqual(JSON.stringify(Object.keys(oRaw).sort()), sKeysBefore, "Keys unchanged");
+\t});
+});
+\`\`\`
+
+---
+
 ## Critical Rules
 
-1. EXACTLY 5 files in the response — no more, no less
+1. 5 files normally; 6 files if spec.generateTests is true (add DataHelper.qunit.js)
 2. COMPLETE content only — no truncation, no "// ... rest of file"
 3. SAPUI5 AMD style ONLY — use sap.ui.define(), NOT import/export
 4. loadData() in DataHelper.js must NOT be modified — only _processData()
@@ -690,7 +752,11 @@ sap.ui.define([], function () {
 export function generateUserPrompt(orderDescription, spec, retryCount = 0, errorFeedback = null) {
   const specText = JSON.stringify(spec, null, 2);
 
-  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 5 extension-point source files for this Integration Card.\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields\n- [ ] src/View.view.xml: FormElement for each field with correct i18n label and binding\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns all mockData fields\n\nRespond with valid JSON following the required format.`;
+  const testsCheck = spec.generateTests
+    ? `\n- [ ] src/test/unit/helpers/DataHelper.qunit.js: 4 QUnit modules for _processData()`
+    : '';
+
+  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the ${spec.generateTests ? '6' : '5'} extension-point source files for this Integration Card.\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields\n- [ ] src/View.view.xml: FormElement for each field with correct i18n label and binding\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns all mockData fields${testsCheck}\n\nRespond with valid JSON following the required format.`;
 
   if (retryCount > 0 && errorFeedback) {
     prompt += `\n\n# ⚠️ RETRY ${retryCount}\n\nPrevious attempt had issues:\n\n${errorFeedback}\n\nFix these issues in your response.`;
