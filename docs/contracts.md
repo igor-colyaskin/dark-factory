@@ -3,7 +3,7 @@
 Контракты между компонентами DF: что принимают, что возвращают,
 какие инварианты соблюдают.
 
-**Текущее состояние:** v0.6
+**Текущее состояние:** v0.9
 
 **Статус документа:** draft — конспективное содержание со ссылками
 на источники. Детали достаются из source по запросу, когда становятся
@@ -211,6 +211,139 @@ Deployer-контракта (v0.6). Fly.io-адаптер — Area-51 до ра�
   DEPLOYMENT REQUIREMENTS section в systemPrompt
 - **Dockerfile/fly.toml templates:** `server/templates/`
 - **Historical context:** `CONCEPT.md` §6, §13 (будет удалено после миграции)
+
+---
+
+## IC Profile (Integration Card) `baseline`
+
+Контракты агентов при активном профиле `integration-card`.
+Всё, что ниже, переопределяет базовые контракты Architect/Developer/Tester
+только в рамках IC-профиля. Base pipeline (state machine, SSE, GitHub push) не меняется.
+
+---
+
+### IC Architect
+
+#### Роль
+Собирает spec SAP Work Zone Integration Card (Component / Simple Form pattern).
+Те же два режима, что и base: `clarify` и `spec`.
+
+#### Модель
+Та же, что у base Architect.
+
+#### Вход / выход
+
+- Вход: `orderDescription` + `clarifyHistory[]` + `round / maxRounds`
+- Выход (clarify): `{ mode: "clarify", questions: [{ id, text, options[], allowOther }], progress }`
+- Выход (spec): `{ mode: "spec", appSlug, spec: { ...IC spec fields } }`
+
+#### Spec fields (v0.9)
+
+```json
+{
+  "cardSlug":        "employeecard",
+  "cardTitle":       "Employee Details",
+  "cardSubtitle":    "HR Information",
+  "formTitle":       "Employee Details",
+  "destinationName": "HCM_API",
+  "protocol":        "rest",
+  "layout":          "form",
+  "generateTests":   true,
+  "generateDocs":    false,
+  "fields": [
+    { "beField": "FirstName", "viewKey": "firstName", "i18nKey": "FIRST_NAME", "label": "First Name", "control": "Text" }
+  ],
+  "mockData": { "FirstName": "Adam Taylor" }
+}
+```
+
+`protocol`: `rest` | `odata2` | `odata4` | `other`
+`layout`: `form` | `table` | `other`
+`control`: `Text` | `Link` | `ObjectStatus`
+
+#### Output Questions Round
+
+После сбора spec Architect задаёт ОТДЕЛЬНЫЙ clarify-раунд — только о generateTests и generateDocs.
+НИКОГДА не смешивает output-вопросы с spec-вопросами.
+Если последний раунд и вопросы ещё не заданы — `generateTests: false, generateDocs: false` по умолчанию.
+
+#### Источники истины
+- **System prompt + generateUserPrompt:** `server/prompts/integration-card/architect.js`
+
+---
+
+### IC Developer
+
+#### Роль
+Генерирует **5 extension-point файлов** через LLM и **статические файлы** без LLM.
+
+#### Модель
+Та же, что у base Developer.
+
+#### LLM-файлы (всегда, 5 штук)
+
+| Файл | Суть |
+|------|------|
+| `src/manifest.json` | sap.app.id, destination, keywords |
+| `src/helpers/DataHelper.js` | `_processData()`: BE PascalCase → view camelCase |
+| `src/View.view.xml` | FormElements + bindings + i18n |
+| `src/i18n/i18n.properties` | CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, field labels |
+| `src/test/utils/MockDataGenerator.js` | BE-shaped mock object |
+
+#### LLM-файлы (условно)
+
+| Файл | Условие |
+|------|---------|
+| `src/test/unit/helpers/DataHelper.qunit.js` | `spec.generateTests = true` |
+
+DataHelper.qunit.js — 4 QUnit-модуля: field mapping, missing fallback, null fallback, immutability.
+
+#### Статические файлы — `generateStaticFiles(cardSlug, spec)`
+
+**Всегда:**
+`src/Component.js`, `src/Main.controller.js`, `src/model/formatter.js`,
+`src/test/mockserver.js`, `src/test/utils/DataEngine.js`,
+`package.json`, `ui5-local.yaml`, `ui5.yaml`, `README.md`
+
+**Если `spec.generateDocs`:**
+`confluence.md` (placeholder: title + 2×2 таблица)
+
+**Если `spec.generateTests`:**
+`src/test/unit/AllTests.js`, `.nycrc.json`,
+`package.json` с test-скриптом и ui5-test-runner devDeps
+
+#### Retry / errorFeedback
+При fail DEV_CHECK (`npm test`) ошибка сохраняется в `lastACError` (index.js)
+и передаётся в `generateUserPrompt` как 4-й параметр.
+
+#### Источники истины
+- **System prompt + generateUserPrompt + generateStaticFiles:** `server/prompts/integration-card/developer.js`
+
+---
+
+### IC Tester
+
+#### Роль
+Code review после DEV_CHECK. Не блокирует pipeline. Видит все файлы (LLM + статические) — починено в v0.9.
+
+#### Источники истины
+- **System prompt + generateUserPrompt:** `server/prompts/integration-card/tester.js`
+
+---
+
+### IC Pipeline отличия от base
+
+| Аспект | Base (nodejs-app) | IC (integration-card) |
+|--------|-------------------|----------------------|
+| deployer | `local-runner` | `none` → DEPLOYING мгновенно |
+| verifier | `vision` (puppeteer + gemini) | `manifest` → VerifierC structural check |
+| DEV_CHECK | AC checker (Node.js статика) | `npm test` если generateTests, иначе skip |
+| Workspace | single app.js + express | src/ структура (IC Component pattern) |
+
+#### Источники истины
+- **Profile config:** `server/profiles/integration-card.js`
+- **DEV_CHECK logic:** `server/index.js` → `runDevCheck()`
+- **Manifest verifier:** `server/verifier-c.js`
 
 ---
 
