@@ -284,10 +284,7 @@ const T_PACKAGE_JSON = `{
     "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html"
   },
   "ui5": {
-    "dependencies": ["@sapitpe/ui5cardssdk", "ui5-middleware-livereload"]
-  },
-  "dependencies": {
-    "@sapitpe/ui5cardssdk": "^1.0.12"
+    "dependencies": ["ui5-middleware-livereload"]
   },
   "devDependencies": {
     "@ui5/cli": "^4.0.12",
@@ -301,16 +298,10 @@ const T_PACKAGE_JSON_WITH_TESTS = `{
   "description": "SAP Work Zone Integration Card",
   "scripts": {
     "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html",
-    "test": "ui5-test-runner --webapp src --testsuite test/unit/unitTests.qunit.html --coverage true --no-screenshot"
+    "test": "ui5-test-runner --webapp src --testsuite test/unit/unitTests.qunit.html --coverage true --no-screenshot --coverage-settings .nycrc.json"
   },
   "ui5": {
-    "dependencies": ["@sapitpe/ui5cardssdk", "ui5-middleware-livereload"]
-  },
-  "ui5-test-runner": {
-    "dependencies": ["@sapitpe/ui5cardssdk"]
-  },
-  "dependencies": {
-    "@sapitpe/ui5cardssdk": "^1.0.12"
+    "dependencies": ["ui5-middleware-livereload"]
   },
   "devDependencies": {
     "@ui5/cli": "^4.0.12",
@@ -325,7 +316,6 @@ const T_PACKAGE_JSON_WITH_TESTS = `{
 const T_ALL_TESTS = `/* istanbul ignore file */
 sap.ui.define(
 \t[
-\t\t"./Component",
 \t\t"./helpers/DataHelper.qunit"
 \t],
 \tfunction () {
@@ -333,7 +323,112 @@ sap.ui.define(
 \t}
 );`;
 
-const T_NYCRC = `{"include":["src/**/*.js"],"exclude":["src/test/**","src/Component.js"]}`;
+// cwd is set to webapp root (src/) by ui5-test-runner, so exclude paths are relative to src/
+const T_NYCRC = `{"exclude":["test/**","Component.js"]}`;
+
+const T_UNIT_TESTS_HTML = `<!DOCTYPE html>
+<html>
+<head>
+\t<title>Unit tests</title>
+\t<meta charset="UTF-8">
+\t<script id="sap-ui-bootstrap"
+\t\t\tsrc="https://ui5.sap.com/resources/sap-ui-core.js"
+\t\t\tdata-sap-ui-resource-roots='{ "com.sap.partner.wz.SLUG": "../../" }'
+\t\t\tdata-sap-ui-bindingSyntax="complex"
+\t\t\tdata-sap-ui-compatVersion="edge">
+\t</script>
+\t<link rel="stylesheet" type="text/css"
+\t\thref="https://ui5.sap.com/resources/sap/ui/thirdparty/qunit-2.css"/>
+\t<script src="https://ui5.sap.com/resources/sap/ui/thirdparty/qunit-2.js"></script>
+\t<script src="https://ui5.sap.com/resources/sap/ui/qunit/qunit-junit.js"></script>
+\t<script src="https://ui5.sap.com/resources/sap/ui/qunit/qunit-coverage.js"
+\t\tdata-sap-ui-cover-never="[sap/m/, sap/ui/thirdparty ,test/]"></script>
+\t<script src="https://ui5.sap.com/resources/sap/ui/thirdparty/sinon.js"></script>
+\t<script src="https://ui5.sap.com/resources/sap/ui/thirdparty/sinon-qunit.js"></script>
+\t<script src="unitTests.qunit.js"></script>
+</head>
+<body>
+\t<div id="qunit"></div>
+\t<div id="qunit-fixture"></div>
+</body>
+</html>`;
+
+const T_UNIT_TESTS_JS = `/* global QUnit */
+/* istanbul ignore file */
+QUnit.config.autostart = false;
+
+sap.ui.getCore().attachInit(function () {
+\t"use strict";
+
+\tsap.ui.loader.config({
+\t\tpaths: {
+\t\t\t"com/sap/fiorireuselibrary/ui5cardssdk": "../../test/external_libs/com/sap/fiorireuselibrary/ui5cardssdk"
+\t\t}
+\t});
+
+\tsap.ui.require(["com/sap/partner/wz/SLUG/test/unit/AllTests"], function () {
+\t\tQUnit.start();
+\t});
+});`;
+
+// ── SDK stubs for local dev and unit tests ───────────────────────────────────
+// @sapitpe/ui5cardssdk is not on public npm; it's a Work Zone runtime library.
+// These stubs are served via ui5-local.yaml (ui5-middleware-servestatic) and
+// remapped in unitTests.qunit.js so both `ui5 serve` and `npm test` work offline.
+
+const SDK_BASE_PATH = 'src/test/external_libs/com/sap/fiorireuselibrary/ui5cardssdk';
+
+const T_STUB_CUSTOM_ERROR = `/* istanbul ignore file */
+sap.ui.define(["sap/ui/base/Object"], function (BaseObject) {
+\t"use strict";
+
+\tvar GenericError = BaseObject.extend("com.sap.fiorireuselibrary.ui5cardssdk.CustomError.GenericError", {
+\t\tconstructor: function (sTitle, sMessage) {
+\t\t\tBaseObject.call(this);
+\t\t\tthis._sTitle = sTitle;
+\t\t\tthis._sMessage = sMessage;
+\t\t},
+\t\tgetParameters: function () {
+\t\t\treturn { title: this._sTitle, message: this._sMessage };
+\t\t}
+\t});
+
+\treturn { GenericError: GenericError };
+});`;
+
+const T_STUB_BASE_CONTROLLER = `/* istanbul ignore file */
+sap.ui.define(["sap/ui/core/mvc/Controller"], function (Controller) {
+\t"use strict";
+
+\treturn Controller.extend("com.sap.fiorireuselibrary.ui5cardssdk.Base", {
+\t\tgetResourceBundle: function () {
+\t\t\treturn this.getOwnerComponent().getModel("i18n").getResourceBundle();
+\t\t},
+\t\tgetCard: function () { return this.oCard; }
+\t});
+});`;
+
+const T_STUB_ERROR_HANDLER = `/* istanbul ignore file */
+sap.ui.define(["sap/ui/base/Object"], function (BaseObject) {
+\t"use strict";
+
+\treturn BaseObject.extend("com.sap.fiorireuselibrary.ui5cardssdk.ErrorHandler", {
+\t\tconstructor: function () {},
+\t\tcheckMaintenanceMode: function () {}
+\t});
+});`;
+
+const T_STUB_STORAGE_UTILS = `/* istanbul ignore file */
+sap.ui.define(["sap/ui/util/Storage"], function (Storage) {
+\t"use strict";
+
+\treturn {
+\t\tcreateStorage: function (sKey) { this.oStorage = new Storage(Storage.Type.local, sKey); },
+\t\tsetItem: function (key, value) { return this.oStorage.put(key, value); },
+\t\treadItem: function (key) { return this.oStorage.get(key); },
+\t\tremoveItem: function (key) { return this.oStorage.remove(key); }
+\t};
+});`;
 
 /**
  * Returns static files with SLUG substituted — no LLM needed.
@@ -355,6 +450,11 @@ export function generateStaticFiles(cardSlug, spec = {}) {
     { path: 'package.json',                    content: pkgJson,                action: 'create' },
     { path: 'ui5-local.yaml',                  content: sub(T_UI5_LOCAL_YAML),  action: 'create' },
     { path: 'ui5.yaml',                        content: sub(T_UI5_YAML),        action: 'create' },
+    // SDK stubs — always needed: ui5 serve uses them via ui5-middleware-servestatic
+    { path: `${SDK_BASE_PATH}/CustomError.js`,       content: T_STUB_CUSTOM_ERROR,       action: 'create' },
+    { path: `${SDK_BASE_PATH}/Base.controller.js`,   content: T_STUB_BASE_CONTROLLER,    action: 'create' },
+    { path: `${SDK_BASE_PATH}/ErrorHandler.js`,      content: T_STUB_ERROR_HANDLER,      action: 'create' },
+    { path: `${SDK_BASE_PATH}/StorageUtils.js`,      content: T_STUB_STORAGE_UTILS,      action: 'create' },
   ];
 
   // README — always
@@ -375,8 +475,10 @@ export function generateStaticFiles(cardSlug, spec = {}) {
 
   if (spec.generateTests) {
     files.push(
-      { path: 'src/test/unit/AllTests.js', content: T_ALL_TESTS, action: 'create' },
-      { path: '.nycrc.json',               content: T_NYCRC,     action: 'create' }
+      { path: 'src/test/unit/AllTests.js',           content: T_ALL_TESTS,                    action: 'create' },
+      { path: 'src/test/unit/unitTests.qunit.html',  content: sub(T_UNIT_TESTS_HTML),          action: 'create' },
+      { path: 'src/test/unit/unitTests.qunit.js',    content: sub(T_UNIT_TESTS_JS),            action: 'create' },
+      { path: '.nycrc.json',                         content: T_NYCRC,                         action: 'create' }
     );
   }
 
@@ -667,71 +769,9 @@ sap.ui.define([], function () {
 
 ---
 
-## Files to Generate (Conditional)
-
-### 6. src/test/unit/helpers/DataHelper.qunit.js — IF spec.generateTests is true
-
-Generate QUnit tests for DataHelper._processData() using spec.fields and spec.mockData.
-Structure: 4 QUnit modules in this exact order.
-
-**Import line:**
-\`com/sap/partner/wz/{cardSlug}/helpers/DataHelper\`
-(substitute cardSlug — NOT the literal word SLUG)
-
-**Module 1 — field mapping:**
-Pass an object built from spec.mockData (all beFields present), assert each viewKey equals its mockData value.
-
-**Module 2 — missing field fallback:**
-Call \`DataHelper._processData({})\` — assert every viewKey equals \`""\`.
-
-**Module 3 — null field fallback:**
-Call \`DataHelper._processData({ FirstBeField: null })\` — assert corresponding viewKey equals \`""\`.
-Pick the first field from spec.fields.
-
-**Module 4 — immutability:**
-Call \`DataHelper._processData\` with a raw object, then assert original keys are unchanged
-and no viewKey was added to the input object.
-
-Example skeleton (adapt to spec.fields):
-\`\`\`javascript
-/* global QUnit */
-/* istanbul ignore file */
-sap.ui.define(["com/sap/partner/wz/CARDSLUG/helpers/DataHelper"], function (DataHelper) {
-\t"use strict";
-
-\tQUnit.module("DataHelper | _processData — field mapping");
-\tQUnit.test("all BE fields are mapped", function (assert) {
-\t\tvar oRaw = { /* beField: "mockValue" for each field */ };
-\t\tvar oResult = DataHelper._processData(oRaw);
-\t\t/* assert.strictEqual(oResult.viewKey, "mockValue", "viewKey") for each field */
-\t});
-
-\tQUnit.module("DataHelper | _processData — missing field fallback");
-\tQUnit.test("missing field defaults to empty string", function (assert) {
-\t\tvar oResult = DataHelper._processData({});
-\t\t/* assert.strictEqual(oResult.viewKey, "", "viewKey defaults to ''") for each field */
-\t});
-
-\tQUnit.test("null value defaults to empty string", function (assert) {
-\t\tvar oResult = DataHelper._processData({ FIRST_BE_FIELD: null });
-\t\tassert.strictEqual(oResult.FIRST_VIEW_KEY, "", "null → ''");
-\t});
-
-\tQUnit.module("DataHelper | _processData — immutability");
-\tQUnit.test("input object is not mutated", function (assert) {
-\t\tvar oRaw = { FIRST_BE_FIELD: "test" };
-\t\tvar sKeysBefore = JSON.stringify(Object.keys(oRaw).sort());
-\t\tDataHelper._processData(oRaw);
-\t\tassert.strictEqual(JSON.stringify(Object.keys(oRaw).sort()), sKeysBefore, "Keys unchanged");
-\t});
-});
-\`\`\`
-
----
-
 ## Critical Rules
 
-1. 5 files normally; 6 files if spec.generateTests is true (add DataHelper.qunit.js)
+1. Always exactly 5 files — no more, no less
 2. COMPLETE content only — no truncation, no "// ... rest of file"
 3. SAPUI5 AMD style ONLY — use sap.ui.define(), NOT import/export
 4. loadData() in DataHelper.js must NOT be modified — only _processData()
@@ -752,11 +792,7 @@ sap.ui.define(["com/sap/partner/wz/CARDSLUG/helpers/DataHelper"], function (Data
 export function generateUserPrompt(orderDescription, spec, retryCount = 0, errorFeedback = null) {
   const specText = JSON.stringify(spec, null, 2);
 
-  const testsCheck = spec.generateTests
-    ? `\n- [ ] src/test/unit/helpers/DataHelper.qunit.js: 4 QUnit modules for _processData()`
-    : '';
-
-  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the ${spec.generateTests ? '6' : '5'} extension-point source files for this Integration Card.\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields\n- [ ] src/View.view.xml: FormElement for each field with correct i18n label and binding\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns all mockData fields${testsCheck}\n\nRespond with valid JSON following the required format.`;
+  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 5 extension-point source files for this Integration Card.\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields\n- [ ] src/View.view.xml: FormElement for each field with correct i18n label and binding\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns all mockData fields\n\nRespond with valid JSON following the required format.`;
 
   if (retryCount > 0 && errorFeedback) {
     prompt += `\n\n# ⚠️ RETRY ${retryCount}\n\nPrevious attempt had issues:\n\n${errorFeedback}\n\nFix these issues in your response.`;
@@ -765,4 +801,70 @@ export function generateUserPrompt(orderDescription, spec, retryCount = 0, error
   return prompt;
 }
 
-export default { systemPrompt, generateStaticFiles, generateUserPrompt };
+
+// ── Test generator (separate LLM call to stay within Hyperspace token limits) ──
+
+export const testGeneratorSystemPrompt = `You are a QUnit test writer for SAP UI5 Integration Cards.
+
+Given a DataHelper.js implementation and a card spec, generate DataHelper.qunit.js with exactly 4 QUnit modules.
+
+## Required Output Format
+
+\`\`\`json
+{
+  "files": [
+    { "path": "src/test/unit/helpers/DataHelper.qunit.js", "content": "COMPLETE file content", "action": "create" }
+  ]
+}
+\`\`\`
+
+## File Structure
+
+4 QUnit modules in this exact order:
+
+**Module 1 — field mapping:**
+Pass an object built from spec.mockData (all beFields present), assert each viewKey equals its mockData value.
+
+**Module 2 — missing field fallback:**
+Call \`DataHelper._processData({})\` — assert every viewKey equals \`""\`.
+
+**Module 3 — null field fallback:**
+Call \`DataHelper._processData({ FirstBeField: null })\` — assert corresponding viewKey equals \`""\`.
+Use the first field from spec.fields.
+
+**Module 4 — immutability:**
+Call \`DataHelper._processData\` with a raw object, assert original keys are unchanged.
+
+## Import line
+
+\`com/sap/partner/wz/{cardSlug}/helpers/DataHelper\`
+(substitute actual cardSlug value)
+
+## Rules
+
+- SAPUI5 AMD style: sap.ui.define(), NOT import/export
+- /* global QUnit */ and /* istanbul ignore file */ at the top
+- Complete file only — no truncation`;
+
+/**
+ * @param {object} spec — full architect spec
+ * @param {string} dataHelperContent — content of DataHelper.js generated by developer
+ * @returns {string}
+ */
+export function generateTestsUserPrompt(spec, dataHelperContent) {
+  return `# Card Spec
+
+\`\`\`json
+${JSON.stringify({ cardSlug: spec.cardSlug, fields: spec.fields, mockData: spec.mockData }, null, 2)}
+\`\`\`
+
+# DataHelper.js Implementation
+
+\`\`\`javascript
+${dataHelperContent}
+\`\`\`
+
+Generate DataHelper.qunit.js with 4 QUnit modules as specified. Respond with valid JSON.`;
+}
+
+export default { systemPrompt, generateStaticFiles, generateUserPrompt, testGeneratorSystemPrompt, generateTestsUserPrompt };
