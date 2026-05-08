@@ -1,0 +1,24 @@
+sap.ui.define([], function () {
+	"use strict";
+
+	const datasf = {
+		FirstName: "Adam Taylor",
+		LastName: "Smith",
+		Certification: "AWS Certified",
+		HRContact: "Jane Doe",
+		EmployeeID: "EMP-00421",
+		Department: "Engineering",
+		ExpDate: "12/31/2025",
+		Area: "North America",
+		Position: "Senior Developer",
+		Role: "Tech Lead",
+		Status: "In Progress",
+		Email: "adam.taylor@company.com"
+	};
+
+	return {
+		getData: function () {
+			return datasf;
+		}
+	};
+});

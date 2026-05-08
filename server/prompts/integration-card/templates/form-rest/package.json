@@ -1,0 +1,48 @@
+{
+    "name": "com-sap-partner-wz-templatesf",
+    "version": "1.1.0",
+    "description": "Sample project structure for a card artifact that will be included into a content package",
+    "scripts": {
+        "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html",
+        "test:integration": "ui5 serve --open test/integration/opaTests.qunit.html",
+        "test:unit": "ui5 serve --config ui5-local.yaml -o test/unit/unitTests.qunit.html",
+        "test:suite": "ui5 serve --config ui5-local.yaml -o test/testsuite.qunit.html",
+        "test:full": "clear && rm -rf .nyc_output coverage report && npm run test:coverage",
+        "test:coverage": "ui5-test-runner --webapp \"src\" --testsuite \"test/unit/unitTests.qunit.html\" --coverage true --no-screenshot --browser $/webdriverio.js -- --browser firefox",
+        "eslint": "eslint src",
+        "build": "node scripts/build.js",
+        "copy-ui5cardssdk": "cpx \"../../../node_modules/@sapitpe/ui5cardssdk/src/com/sap/fiorireuselibrary/ui5cardssdk/**/*\" node_modules/@sapitpe/ui5cardssdk/src/com/sap/fiorireuselibrary/ui5cardssdk --verbose"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/SAP-samples/workzone-content-package-templates.git",
+        "directory": "card"
+    },
+    "ui5": {
+        "dependencies": [
+            "@sapitpe/ui5cardssdk",
+            "ui5-middleware-livereload"
+        ],
+        "buildParams": " --include-dependency=ui5cardssdk"
+    },
+    "ui5-test-runner": {
+        "dependencies": [
+            "@sapitpe/ui5cardssdk"
+        ]
+    },
+    "dependencies": {
+        "@sapitpe/ui5cardssdk": "^1.0.12"
+    },
+    "devDependencies": {
+        "@openui5/types": "^1.135.0",
+        "@ui5/cli": "^4.0.12",
+        "express": "^5.2.1",
+        "geckodriver": "^6.1.0",
+        "nyc": "^18.0.0",
+        "ui5-middleware-livereload": "^3.3.0",
+        "ui5-middleware-servestatic": "^3.4.1",
+        "ui5-test-runner": "^5.7.0"
+    },
+    "author": "SAP SE",
+    "license": "ISC"
+}

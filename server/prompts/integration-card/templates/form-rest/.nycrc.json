@@ -1,0 +1,11 @@
+{
+	"all": true,
+	"sourceMap": false,
+	"cwd": "/home/user/projects/partner-work-zone-content-template/content/PRM/partner-prm-certification-table/src",
+	"exclude": [
+		"/home/user/projects/partner-work-zone-content-template/content/template/.nyc_output/**",
+		"/home/user/projects/partner-work-zone-content-template/content/template/report/**",
+		"/home/user/projects/partner-work-zone-content-template/content/template/coverage/**",
+		"/home/user/projects/partner-work-zone-content-template/content/template/src/test/**"
+	]
+}

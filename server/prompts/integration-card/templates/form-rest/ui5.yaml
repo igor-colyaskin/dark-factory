@@ -1,0 +1,27 @@
+specVersion: "4.0"
+metadata:
+  name: com-sap-partner-wz-templatesf
+  copyright: |-
+    * (c) Copyright 2009-${currentYear}
+type: application
+# start of FIX
+# workaround to fix error while building package.zip:
+# info ui5cardssdk › Running task buildThemes...
+# ████████████░░░░░░░░ ❯ Building library project ui5cardssdk...File not found: /resources/sap/ui/core/themes/base/base.less 
+framework:
+  name: SAPUI5
+  # Long-term Maintenance, Q4/2032
+  version: 1.136.8
+  libraries:
+    - name: sap.ui.core
+    - name: themelib_sap_fiori_3
+  # end of FIX
+resources:
+  configuration:
+    paths:
+      webapp: src
+builder:
+  resources:
+    excludes:
+     - "test/**"
+     - ".card/**"

@@ -1,0 +1,142 @@
+<mvc:View
+	controllerName="com.sap.partner.wz.templatesf.Main"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns="sap.m"
+	xmlns:f="sap.ui.layout.form"
+	xmlns:core="sap.ui.core"
+>
+
+	<VBox class="sapUiSmallMargin">
+
+		<OverflowToolbar design="Transparent">
+			<Title
+				text="{i18n>FORM_TITLE}"
+				level="H4"
+			/>
+			<ToolbarSpacer />
+			<Button
+				id="menuButton"
+				icon="sap-icon://overflow"
+				type="Transparent"
+				tooltip="{i18n>MENU_BUTTON_TOOLTIP}"
+				press=".onMenuPress"
+			/>
+		</OverflowToolbar>
+
+		<f:Form
+			id="employeeForm"
+			editable="false"
+		>
+			<f:layout>
+				<f:ResponsiveGridLayout
+					columnsXL="4"
+					columnsL="4"
+					columnsM="2"
+					labelSpanXL="12"
+					labelSpanL="12"
+					labelSpanM="12"
+					labelSpanS="12"
+					emptySpanXL="0"
+					emptySpanL="0"
+					emptySpanM="0"
+				/>
+			</f:layout>
+
+			<f:formContainers>
+
+				<!-- Column 1 -->
+				<f:FormContainer>
+					<f:formElements>
+						<f:FormElement label="{i18n>LABEL_FIELD_01}">
+							<f:fields>
+								<Text text="{/firstName}" />
+							</f:fields>
+						</f:FormElement>
+						<f:FormElement label="{i18n>LABEL_FIELD_02}">
+							<f:fields>
+								<Text text="{/employeeId}" />
+							</f:fields>
+						</f:FormElement>
+						<f:FormElement label="{i18n>LABEL_FIELD_03}">
+							<f:fields>
+								<Text text="{/position}" />
+							</f:fields>
+						</f:FormElement>
+					</f:formElements>
+				</f:FormContainer>
+
+				<!-- Column 2 -->
+				<f:FormContainer>
+					<f:formElements>
+						<f:FormElement label="{i18n>LABEL_FIELD_04}">
+							<f:fields>
+								<Text text="{/lastName}" />
+							</f:fields>
+						</f:FormElement>
+						<f:FormElement label="{i18n>LABEL_FIELD_05}">
+							<f:fields>
+								<Text text="{/department}" />
+							</f:fields>
+						</f:FormElement>
+						<f:FormElement label="{i18n>LABEL_FIELD_06}">
+							<f:fields>
+								<Text text="{/role}" />
+							</f:fields>
+						</f:FormElement>
+					</f:formElements>
+				</f:FormContainer>
+
+				<!-- Column 3 -->
+				<f:FormContainer>
+					<f:formElements>
+						<f:FormElement label="{i18n>LABEL_FIELD_07}">
+							<f:fields>
+								<Text text="{/certification}" />
+							</f:fields>
+						</f:FormElement>
+						<f:FormElement label="{i18n>LABEL_FIELD_08}">
+							<f:fields>
+								<Text text="{
+									path: '/expDate',
+									formatter: '.formatter.formatDate'
+								}" />
+							</f:fields>
+						</f:FormElement>
+						<f:FormElement label="{i18n>LABEL_FIELD_09}">
+							<f:fields>
+								<Link
+									text="{/status}"
+									press=".onStatusPress"
+								/>
+							</f:fields>
+						</f:FormElement>
+					</f:formElements>
+				</f:FormContainer>
+
+				<!-- Column 4 -->
+				<f:FormContainer>
+					<f:formElements>
+						<f:FormElement label="{i18n>LABEL_FIELD_10}">
+							<f:fields>
+								<Text text="{/hrContact}" />
+							</f:fields>
+						</f:FormElement>
+						<f:FormElement label="{i18n>LABEL_FIELD_11}">
+							<f:fields>
+								<Text text="{/area}" />
+							</f:fields>
+						</f:FormElement>
+						<f:FormElement label="{i18n>LABEL_FIELD_12}">
+							<f:fields>
+								<Link text="{/email}" />
+							</f:fields>
+						</f:FormElement>
+					</f:formElements>
+				</f:FormContainer>
+
+			</f:formContainers>
+		</f:Form>
+
+	</VBox>
+
+</mvc:View>

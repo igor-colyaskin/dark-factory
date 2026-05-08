@@ -1,0 +1,25 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Testsuite for Certification Table</title>
+	<script src="../resources/sap/ui/qunit/qunit-redirect.js"></script>
+	<script>
+		window.suite = function () {
+			var oSuite = new parent.jsUnitTestSuite();
+			var sContextPath = location.pathname.substring(0, location.pathname.lastIndexOf("/") + 1);
+
+			oSuite.addTestPage(sContextPath + "unit/unitTests.qunit.html");
+
+			oSuite.addTestPage(sContextPath + "integration/opaTests.qunit.html");
+
+			return oSuite;
+		};
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>

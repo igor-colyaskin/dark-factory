@@ -1,0 +1,5 @@
+{
+	"libs": [
+		"com.sap.fiorireuselibrary.ui5cardssdk=./node_modules/@sapitpe/ui5cardssdk/src/com/sap/fiorireuselibrary/ui5cardssdk"
+	]
+}
