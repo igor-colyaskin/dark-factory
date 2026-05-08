@@ -413,3 +413,64 @@ spec'ом, verification report'ом и другими артефактами age
 - Phase 5: UI — VERIFYING/GITHUB_PUSH в switch, renderVerificationReport в pickup
 - Phase 6: Integration test (mock-fast smoke + mock-full full pipeline, verdict PASS)
 - Phase 7: Documentation & release
+
+---
+
+## v0.8 — PROFILES ✅
+
+### Decisions
+
+| Дата | Решение | Причина |
+|------|---------|---------|
+| 2026-05-07 | Профиль = кассета (промпты + deployer + verifier) | Три точки подключения уже есть, нужно сделать явными |
+| 2026-05-07 | Выбор профиля per-order, не per-instance | Proto DF должен обслуживать разные домены в одном экземпляре |
+| 2026-05-07 | deployer:'none' → DEPLOYING мгновенно, state machine не меняется | Консистентность pipeline, не ломаем UI |
+| 2026-05-07 | IC verifier = проверка manifest.json | Без running server — только структурные проверки |
+| 2026-05-07 | Component-тип не имеет header/content в манифесте | VerifierC пропускает эти поля для type=Component |
+| 2026-05-07 | LLM генерирует только 5 extension-point файлов | Hyperspace ограничивает вывод ~8192 токенами; статику пишет сервер |
+
+### Insights
+
+- Dogfooding: Hyperspace LiteLLM режет вывод на ~8192 токенах — 11 файлов не помещались.
+  Решение: 5 extension-point файлов от LLM + 8 статических от сервера через `generateStaticFiles(cardSlug)`.
+- VerifierC ложно давал PARTIAL для Component-карточек — `sap.card.header/content` не нужны в манифесте Component-типа. Исправлено в Phase 4.
+- Первый живой прогон: заказ "Карточка сотрудника", pipeline ARCH→DEV→TEST→DONE ✅, верификация PASS, GitHub push успешен.
+- Стратегическое решение: proto-F → specialized DFs (DF-IC, DF-Android etc.), plugin = cherry-pick combo-commit.
+
+### Phases
+
+- Phase 0: Profile infrastructure — `server/profiles/nodejs-app.js`, рефактор index.js и orchestrator.js
+- Phase 1: Profile selector UI — выбор перед заказом, хранение в state
+- Phase 2: Integration Card profile — промпты architect/developer/tester для карточки
+- Phase 3: Pipeline адаптация — deployer:'none', verifier:'manifest', executeNoDeploy, executeManifestVerify
+- Phase 4: VerifierC — структурная проверка manifest.json (6 полей, Component-тип пропускает header/content)
+- Phase 5: Интеграционный тест + dogfooding (найдены и исправлены 3 проблемы)
+- Phase 6: Документация и релиз
+
+---
+
+## v0.9 — IC TESTS+DOCS ✅
+
+### Decisions
+
+| Дата | Решение | Причина |
+|------|---------|---------|
+| 2026-05-08 | Output questions вместо Draft/Release toggle | Toggle = UI-сложность; output-config не spec, Architect задаёт вопросы сам |
+| 2026-05-08 | spec.protocol и spec.layout — clarify-вопросы, не UI | Новые значения не требуют UI-изменений; Architect просто задаёт новый вопрос |
+| 2026-05-08 | AllTests.js + .nycrc.json — inline-строки в developer.js | Не читаем с диска при каждом вызове; шаблон зафиксирован, не должен дрейфовать |
+| 2026-05-08 | lastACError — module-level переменная в index.js | Минимальный механизм без изменений orchestrator; передаётся в retry-промпт |
+| 2026-05-08 | README.md — всегда, confluence.md — только при generateDocs | README нужен любой карточке; Confluence — только для release-артефакта |
+
+### Insights
+
+- Архитект с output questions требует дополнительного clarify-раунда после сбора spec. Добавлен last-round fallback: если maxRounds исчерпан — generateTests/generateDocs = false.
+- DataHelper.qunit.js: 4 секции (field mapping, missing fallback, null fallback, immutability) — достаточно для валидации _processData без мокирования всего стека.
+- Tester fix (1 строка): статические файлы не попадали в developerData → Tester видел только 5 LLM-файлов. Решение: мёрдж staticFiles в result.content.files перед handleAgentComplete.
+
+### Phases
+
+- Fix: merge static IC files into developerData so Tester sees full workspace
+- Architect: spec.protocol, spec.layout, spec.generateTests, spec.generateDocs + output questions round
+- Developer static: generateStaticFiles(slug, spec) — README, confluence, AllTests.js, .nycrc.json, package.json с test-скриптом
+- Developer LLM: 6-й файл DataHelper.qunit.js при generateTests (4 QUnit-модуля)
+- DEV_CHECK: npm test via execAsync в workspace при generateTests, lastACError → retry
