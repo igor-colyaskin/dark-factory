@@ -7,90 +7,84 @@
 
 ## Быстрый статус
 
-**Последняя выпущенная:** v0.8 — PROFILES ✅ (тег `v0.8`)
-**Версия в работе:** v0.9 — IC с тестами и документацией
+**Последняя выпущенная:** v0.9 — IC с тестами и документацией ✅
+**Версия в работе:** v0.10 — Smart input (sample JSON → auto field extraction)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
-**Рабочий документ:** создать `docs/work/v0.9.md` в начале сессии
+**Рабочий документ:** `docs/work/v0.10.md` — создать в начале следующей сессии
 
 ## Что сделать в первую очередь
 
 1. Прочитай файлы в таком порядке:
-   - память `ic_roadmap.md` — scope v0.9, протокол, layout, шаблоны
-   - память `plugin_architecture.md` — proto-F концепция, Square 1/2, plugin contract
+   - память `ic_roadmap.md` — scope v0.9 done, v0.10 план, future
+   - память `plugin_architecture.md` — proto-F, Square 1/2, plugin contract
    - память `integration_card_template.md` — структура шаблона
 
-2. После прочтения — кратко перескажи план v0.9 и жди подтверждения.
+2. Проверь, протестировал ли Игорь v0.9 вручную (end-to-end IC с тестами).
+   Если нет — предложи прогнать тест перед началом v0.10.
 
-3. Не начинай код до подтверждения.
+3. Создай `docs/work/v0.10.md` и согласуй scope.
 
-## Что сделано с момента v0.8
+4. Не начинай код до подтверждения.
 
-**Шаблоны IC (2026-05-08):**
-- `templateSF/` перемещён → `server/prompts/integration-card/templates/form-rest/`
-- Создан `server/prompts/integration-card/templates/table-odata2/` —
-  sap.m.Table + OData v2, MockServer.simulate() с metadata.xml, без тестов,
-  без DataHelper, без test-скриптов в package.json
-- `docs/CARDS.md` — анализ 37 карточек команды
+## Технические решения, актуальные для следующей сессии
 
-**Архитектурные решения (2026-05-08):**
-- Plugin architecture: Path 2 — factory выпускает single-plugin продукты
-  (DF-IC, DF-Telegram), не комбинации. Детали → `plugin_architecture.md`
-- Square 1 (= DF-base с JS+Node) → Square 2 (= после v0.9 + plugin contract рефактор)
-- Combo-commit механизм: все IC-коммиты сгоняются в один cherry-pick-able коммит
-- Draft/Release toggle из UI убран → Архитектор задаёт output-вопросы
-  отдельным блоком в конце clarify-раунда
-- Протокол (REST/OData2/OData4/REST/Другое) — radio в clarify-раунде Архитектора
-- Layout (m.Table/Form/Другое) — radio в clarify-раунде Архитектора
+**Confluence page:**
+Placeholder реализован (title + пустая 2×2 таблица). Полный шаблон — отдельная задача.
+Блокер снят, но настоящего шаблона от команды нет.
 
-## v0.9 — что планируем
+**Template analysis (pending):**
+Игорь ещё не завершил анализ ~30 карточек команды на предмет второго шаблона (Table).
+Решение по table-шаблону до v0.10 не нужно — только если v0.10 откроет этот вопрос.
 
-Подробности в памяти `ic_roadmap.md`. Кратко:
+**lastACError mechanism:**
+`let lastACError` в `index.js` хранит вывод npm test при неудаче.
+Передаётся в `generateUserPrompt` как 4-й параметр → попадает в retry-промпт девелопера.
 
-1. **Architect output questions** — вместо Draft/Release toggle:
-   "Нужны unit-тесты? Нужна документация?" в конце clarify-раунда
-2. **Protocol question** — REST/OData2/OData4/Другое в clarify,
-   `generateStaticFiles()` выбирает вариант mockserver (REST или OData)
-3. **Layout question** — m.Table/Form/Другое, developer выбирает шаблон
-4. **Unit тесты (если запрошены):**
-   - `DataHelper.qunit.js` (только для form-rest, LLM по spec.fields)
-   - `AllTests.js`, `.nycrc.json` — static, inline в generateStaticFiles
-   - `npm test` скрипт в package.json — только если тесты запрошены
-   - DEV_CHECK для IC: запускает `npm test`, ошибки → DEV agent
-5. **README.md** — статический шаблон + подстановка из spec
-6. **Confluence page** — markdown/wiki рядом с README (нужен шаблон от Игоря)
-7. **Fix:** Tester agent видит только 5 LLM-файлов — исправить
+## v0.10 — краткий план (согласовать)
 
-**Перед стартом кода:**
-- Получить от Игоря шаблон Confluence-страницы
+**Focus:** Smart input — пользователь даёт sample JSON от BE → Архитектор парсит поля автоматически, clarify-раунд сокращается до минимума.
 
-## Ключевые знания
+Форматы для обсуждения:
+- Вставить JSON прямо в заказ → архитектор распознаёт и обрабатывает
+- Отдельное поле UI для "Sample BE response"
+- Комбо: сначала описание, потом архитектор запрашивает sample JSON
 
-**Два шаблона карточки:**
-- `templates/form-rest/` — SimpleForm + REST + полные тесты (8% карточек команды)
-- `templates/table-odata2/` — sap.m.Table + OData2, без тестов (55% карточек)
+## Ключевые файлы (актуально для v0.9+)
 
-**table-odata2 extension points (5):**
-1. `manifest.json` — namespace, destination, OData service path (`TEMPLATETABLE_SRV`)
-2. `View.view.xml` — Table columns + ColumnListItem cells
-3. `i18n/i18n.properties` — column headers (COL_FIELD_*)
-4. `test/data/metadata.xml` — OData entity type + properties
-5. `test/data/TemplateEntitySet.json` — mock array
+| Файл | Роль |
+|------|------|
+| `server/index.js:556-565` | writeFiles + generateStaticFiles(slug, spec) + lastACError |
+| `server/index.js:582-625` | runDevCheck — npm test для IC + errorFeedback |
+| `server/prompts/integration-card/architect.js` | protocol/layout/generateTests/generateDocs + output questions round |
+| `server/prompts/integration-card/developer.js` | generateStaticFiles(spec) + LLM prompt с DataHelper.qunit.js |
+| `server/prompts/integration-card/tester.js` | видит все файлы после v0.9 fix |
+| `server/prompts/integration-card/templates/form-rest/` | источник шаблона и тест-референсов |
 
-**form-rest extension points (5):**
-1. `DataHelper._processData()` — BE (PascalCase) → viewmodel (camelCase)
-2. `View.view.xml` — FormElements с bindings
-3. `i18n/i18n.properties` — лейблы
-4. `manifest.json` — namespace, destination, keywords
-5. `MockDataGenerator.getData()` — BE-shaped mock object
+## Что v0.9 дала проекту
 
-**Токены:** Hyperspace LiteLLM режет вывод на ~8192 токенах.
-Developer agent не должен выдавать >4000 токенов — держать extension points маленькими.
+**Architect output questions:**
+- `spec.protocol` (rest|odata2|odata4|other) и `spec.layout` (form|table|other) — spec-поля
+- `spec.generateTests` и `spec.generateDocs` — отдельный clarify-раунд в конце, после "Spec готов"
+- Новые опции (GraphQL, Table) не требуют новых кнопок в UI
 
-**Plugin contract (текущее состояние):**
-Сейчас `generateStaticFiles`, `runDevCheck`, `executeManifestVerify` живут вне профиля.
-После v0.9 — plugin contract рефактор: всё переезжает внутрь профиля,
-combo-commit IC станет чистым. Детали → `plugin_architecture.md`.
+**Static file generation (spec-aware):**
+- `generateStaticFiles(cardSlug, spec)` — расширен до spec-параметра
+- `README.md` — всегда, из spec.fields
+- `confluence.md` — placeholder если generateDocs
+- `AllTests.js` + `.nycrc.json` — static boilerplate если generateTests
+- `package.json` с test-скриптом и ui5-test-runner — если generateTests
+
+**LLM Developer:**
+- 6-й файл `src/test/unit/helpers/DataHelper.qunit.js` при generateTests:
+  4 QUnit-модуля (field mapping, fallback, null fallback, immutability)
+
+**DEV_CHECK для IC:**
+- `npm test` в workspace при generateTests
+- Ошибки сохраняются в `lastACError` → передаются в retry-промпт developer'а
+
+**Tester fix:**
+- Статические файлы теперь входят в `developerData.files` → Tester видит все файлы
 
 ## Что v0.8 дала проекту
 
@@ -135,6 +129,9 @@ LLM через Hyperspace. **LLM_API_KEY нужно прописывать вр�
 - **Plugin Path 2** — factory выпускает single-plugin продукты, не комбинации
 - **Cherry-pick combo-commit** — механизм дистрибуции плагинов через git
 - **Square 2 goal** — plugin contract complete, IC combo-commit чистый
+- **Output questions, не UI-тоггл** — generateTests/generateDocs через Architect clarify-раунд
+- **Confluence page** — placeholder (title + 2×2 таблица), полный шаблон позже
+- **Нет HANDOFF hook** — Игорь смотрит глазами перед коммитом
 
 ## Технические детали среды
 
