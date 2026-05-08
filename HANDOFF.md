@@ -7,11 +7,14 @@
 
 ## Быстрый статус
 
-**Последняя выпущенная:** v0.9 — IC с тестами и документацией ✅ + тест-инфраструктура починена (сессия 2026-05-08)
-**Версия в работе:** v0.10 — Smart input (sample JSON → auto field extraction)
+**Последняя выпущенная:** UX-001 — кнопка «Уточнить» на экране Spec Review ✅ (сессия 2026-05-08)
+**Согласованный порядок фаз:**
+1. ~~**UX-001**~~ — выпущено ✅
+2. **VIZ-001** — sandbox preview (первая сессия = дизайн/архитектура) ← следующее
+3. **v0.10** — Smart input (sample JSON → auto field extraction)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
-**Рабочий документ:** `docs/work/v0.10.md` — создать в начале следующей сессии
+**Рабочий документ:** `docs/work/viz-001.md` — создать в начале следующей сессии
 **Бэклог:** `docs/backlog.md` — VIZ-001 (sandbox preview, топ-3), UX-001 (кнопка Уточнить)
 
 ## Что сделать в первую очередь
@@ -21,7 +24,7 @@ GitHub — личный аккаунт через OAuth App.
    - память `plugin_architecture.md` — proto-F, Square 1/2, plugin contract
    - память `integration_card_template.md` — структура шаблона
 
-2. Создай `docs/work/v0.10.md` и согласуй scope.
+2. Создай `docs/work/viz-001.md` и согласуй scope (первая сессия = только дизайн).
 
 3. Не начинай код до подтверждения.
 
@@ -39,7 +42,18 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 `let lastACError` в `index.js` хранит вывод npm test при неудаче.
 Передаётся в `generateUserPrompt` как 4-й параметр → попадает в retry-промпт девелопера.
 
-## v0.10 — краткий план (согласовать)
+## Что сделала сессия 2026-05-08 (UX-001)
+
+**Кнопка «Уточнить» на экране Spec Review:**
+- Новый переход: `SPEC_REVIEW → ARCH_WORKING → ... → SPEC_REVIEW` без потери истории
+- `orchestrator.handleRefineRequest(message)` — добавляет `{ refine: true, message }` в `clarifyHistory`, сбрасывает `clarifyRound = 0`, инкрементирует `refineRound`
+- Лимит: `maxRefineRounds = 3` (кнопка disabled после третьего уточнения)
+- `POST /api/refine` — новый endpoint
+- Оба архитектора (generic + IC) получили параметр `previousSpec` — видят старый spec при уточнении
+- Ветвление `clarifyHistory.length === 0` вместо `round === 0` — корректно работает после сброса `clarifyRound`
+- UI: textarea стилизована под поле заказа, toggle показывает/скрывает, `Start` скрывается пока textarea открыта
+
+## Что v0.10 — Smart Input (v0.10 план)
 
 **Focus:** Smart input — пользователь даёт sample JSON от BE → Архитектор парсит поля автоматически, clarify-раунд сокращается до минимума.
 
