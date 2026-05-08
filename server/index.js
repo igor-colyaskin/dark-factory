@@ -558,6 +558,8 @@ async function runDeveloper() {
       if (!staticResult.success) {
         console.error('Some static files failed to write:', staticResult.errors);
       }
+      // Merge static files into result so Tester agent sees the full workspace
+      result.content.files = [...(result.content.files || []), ...staticFiles];
     }
   }
 
