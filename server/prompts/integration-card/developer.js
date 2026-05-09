@@ -6,6 +6,16 @@
  * directly from templates, without LLM involvement — keeps output well within token limits.
  */
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function readStub(name) {
+	return readFileSync(join(__dirname, 'sdk-stubs', name), 'utf8');
+}
+
 // ── Static file templates ────────────────────────────────────────────────────
 
 const T_COMPONENT = `sap.ui.define(
@@ -384,74 +394,12 @@ const SDK_BASE_PATH = 'src/test/unit/sdk-stubs/resources/com/sap/fiorireuselibra
 // AMD path must NOT contain /resources/ — ui5-test-runner CDN regex intercepts it
 const SDK_AMD_PATH = 'src/test/unit/sdk-stubs/com/sap/fiorireuselibrary/ui5cardssdk';
 
-const T_STUB_CUSTOM_ERROR = `/* istanbul ignore file */
-sap.ui.define(["sap/ui/base/Object"], function (BaseObject) {
-\t"use strict";
-
-\tvar GenericError = BaseObject.extend("com.sap.fiorireuselibrary.ui5cardssdk.CustomError.GenericError", {
-\t\tconstructor: function (sTitle, sMessage) {
-\t\t\tBaseObject.call(this);
-\t\t\tthis._sTitle = sTitle;
-\t\t\tthis._sMessage = sMessage;
-\t\t},
-\t\tgetParameters: function () {
-\t\t\treturn { title: this._sTitle, message: this._sMessage };
-\t\t}
-\t});
-
-\treturn { GenericError: GenericError };
-});`;
-
-const T_STUB_BASE_CONTROLLER = `/* istanbul ignore file */
-sap.ui.define(["sap/ui/core/mvc/Controller"], function (Controller) {
-\t"use strict";
-
-\treturn Controller.extend("com.sap.fiorireuselibrary.ui5cardssdk.Base", {
-\t\tgetResourceBundle: function () {
-\t\t\treturn this.getOwnerComponent().getModel("i18n").getResourceBundle();
-\t\t},
-\t\tgetCard: function () { return this.oCard; }
-\t});
-});`;
-
-const T_STUB_ERROR_HANDLER = `/* istanbul ignore file */
-sap.ui.define(["sap/ui/base/Object"], function (BaseObject) {
-\t"use strict";
-
-\treturn BaseObject.extend("com.sap.fiorireuselibrary.ui5cardssdk.ErrorHandler", {
-\t\tconstructor: function () {},
-\t\tcheckMaintenanceMode: function () {}
-\t});
-});`;
-
-const T_STUB_STORAGE_UTILS = `/* istanbul ignore file */
-sap.ui.define(["sap/ui/util/Storage"], function (Storage) {
-\t"use strict";
-
-\treturn {
-\t\tcreateStorage: function (sKey) { this.oStorage = new Storage(Storage.Type.local, sKey); },
-\t\tsetItem: function (key, value) { return this.oStorage.put(key, value); },
-\t\treadItem: function (key) { return this.oStorage.get(key); },
-\t\tremoveItem: function (key) { return this.oStorage.remove(key); }
-\t};
-});`;
-
-// UI5 requires library.js when a library is listed in sap.ui5.dependencies.libs in manifest.json.
-// Without it the card Component fails to load ("Card content failed to create component").
-const T_STUB_LIBRARY = `/* istanbul ignore file */
-sap.ui.define(["sap/ui/core/Lib"], function (Lib) {
-\t"use strict";
-\treturn Lib.init({
-\t\tname: "com.sap.fiorireuselibrary.ui5cardssdk",
-\t\tversion: "1.0.0"
-\t});
-});`;
-
-const T_STUB_AUTHORIZATION_DIALOG = `/* istanbul ignore file */
-sap.ui.define([], function () {
-\t"use strict";
-\treturn {};
-});`;
+const T_STUB_CUSTOM_ERROR          = readStub('CustomError.js');
+const T_STUB_BASE_CONTROLLER       = readStub('Base.controller.js');
+const T_STUB_ERROR_HANDLER         = readStub('ErrorHandler.js');
+const T_STUB_STORAGE_UTILS         = readStub('StorageUtils.js');
+const T_STUB_LIBRARY               = readStub('library.js');
+const T_STUB_AUTHORIZATION_DIALOG  = readStub('AuthorizationDialog.controller.js');
 
 /**
  * Returns static files with SLUG substituted — no LLM needed.
