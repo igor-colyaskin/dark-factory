@@ -239,7 +239,7 @@ server:
       configuration:
         watchPath: "./src"
     - name: ui5-middleware-servestatic
-      afterMiddleware: compression
+      beforeMiddleware: serveResources
       configuration:
         rootPath: "./src/test/external_libs"
         mountPath: "/resources"
@@ -281,14 +281,16 @@ const T_PACKAGE_JSON = `{
   "version": "1.0.0",
   "description": "SAP Work Zone Integration Card",
   "scripts": {
-    "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html"
+    "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html",
+    "sandbox": "ui5 serve --config ui5-local.yaml"
   },
   "ui5": {
-    "dependencies": ["ui5-middleware-livereload"]
+    "dependencies": ["ui5-middleware-livereload", "ui5-middleware-servestatic"]
   },
   "devDependencies": {
     "@ui5/cli": "^4.0.12",
-    "ui5-middleware-livereload": "^3.3.0"
+    "ui5-middleware-livereload": "^3.3.0",
+    "ui5-middleware-servestatic": "^3.4.1"
   }
 }`;
 
@@ -298,14 +300,16 @@ const T_PACKAGE_JSON_WITH_TESTS = `{
   "description": "SAP Work Zone Integration Card",
   "scripts": {
     "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html",
+    "sandbox": "ui5 serve --config ui5-local.yaml",
     "test": "ui5-test-runner --webapp src --testsuite test/unit/unitTests.qunit.html --coverage true --no-screenshot --coverage-settings .nycrc.json"
   },
   "ui5": {
-    "dependencies": ["ui5-middleware-livereload"]
+    "dependencies": ["ui5-middleware-livereload", "ui5-middleware-servestatic"]
   },
   "devDependencies": {
     "@ui5/cli": "^4.0.12",
     "ui5-middleware-livereload": "^3.3.0",
+    "ui5-middleware-servestatic": "^3.4.1",
     "ui5-test-runner": "^5.7.0",
     "geckodriver": "^6.1.0"
   }
@@ -362,7 +366,7 @@ sap.ui.getCore().attachInit(function () {
 
 \tsap.ui.loader.config({
 \t\tpaths: {
-\t\t\t"com/sap/fiorireuselibrary/ui5cardssdk": "../../test/external_libs/com/sap/fiorireuselibrary/ui5cardssdk"
+\t\t\t"com/sap/fiorireuselibrary/ui5cardssdk": "../../test/external_libs/resources/com/sap/fiorireuselibrary/ui5cardssdk"
 \t\t}
 \t});
 
@@ -376,7 +380,7 @@ sap.ui.getCore().attachInit(function () {
 // These stubs are served via ui5-local.yaml (ui5-middleware-servestatic) and
 // remapped in unitTests.qunit.js so both `ui5 serve` and `npm test` work offline.
 
-const SDK_BASE_PATH = 'src/test/external_libs/com/sap/fiorireuselibrary/ui5cardssdk';
+const SDK_BASE_PATH = 'src/test/external_libs/resources/com/sap/fiorireuselibrary/ui5cardssdk';
 
 const T_STUB_CUSTOM_ERROR = `/* istanbul ignore file */
 sap.ui.define(["sap/ui/base/Object"], function (BaseObject) {
@@ -430,12 +434,101 @@ sap.ui.define(["sap/ui/util/Storage"], function (Storage) {
 \t};
 });`;
 
+// UI5 requires library.js when a library is listed in sap.ui5.dependencies.libs in manifest.json.
+// Without it the card Component fails to load ("Card content failed to create component").
+const T_STUB_LIBRARY = `/* istanbul ignore file */
+sap.ui.define(["sap/ui/core/Lib"], function (Lib) {
+\t"use strict";
+\treturn Lib.init({
+\t\tname: "com.sap.fiorireuselibrary.ui5cardssdk",
+\t\tversion: "1.0.0"
+\t});
+});`;
+
+const T_STUB_AUTHORIZATION_DIALOG = `/* istanbul ignore file */
+sap.ui.define([], function () {
+\t"use strict";
+\treturn {};
+});`;
+
 /**
  * Returns static files with SLUG substituted — no LLM needed.
  * @param {string} cardSlug
  * @param {object} spec — full architect spec; used for conditional file generation
  * @returns {Array<{path: string, content: string, action: string}>}
  */
+// ── Sandbox files (for VIZ-001 preview) ─────────────────────────────────────
+
+const T_SANDBOX_SETUP = `/* istanbul ignore file */
+sap.ui.define([], function () {
+\t"use strict";
+\tvar WZHostId = "wz-host";
+\tvar DefaultCardHost;
+\treturn {
+\t\tcreateDefaultHostCard: function () {
+\t\t\tDefaultCardHost = new window.sap.ui.integration.Host(WZHostId, {
+\t\t\t\tresolveDestination: function () {
+\t\t\t\t\treturn "";
+\t\t\t\t}
+\t\t\t});
+\t\t},
+\t\taddContextAwarnessAndHostToCard: function (oCard) {
+\t\t\tif (!DefaultCardHost) {
+\t\t\t\tthis.createDefaultHostCard();
+\t\t\t}
+\t\t\toCard.setHost(DefaultCardHost);
+\t\t}
+\t};
+});`;
+
+const T_MANUAL_INDEX_HTML = `<!DOCTYPE html>
+<html>
+<head>
+\t<meta charset="utf-8">
+\t<meta name="viewport" content="width=device-width, initial-scale=1.0">
+\t<title>com.sap.partner.wz.SLUG</title>
+\t<script id="sap-ui-bootstrap"
+\t\tsrc="https://ui5.sap.com/resources/sap-ui-integration.js"
+\t\tdata-sap-ui-xx-waitForTheme="true"
+\t\tdata-sap-ui-theme="sap_horizon"
+\t\tdata-sap-ui-compatVersion="edge"
+\t\tdata-sap-ui-language="en_US"
+\t\tdata-sap-ui-libs="sap.ui.core"
+\t\tdata-sap-ui-async="true"
+\t\tdata-sap-ui-resource-roots='{ "com.sap.partner.wz.SLUG": "../../", "com.sap.fiorireuselibrary.ui5cardssdk": "../external_libs/resources/com/sap/fiorireuselibrary/ui5cardssdk" }'
+\t\tdata-sap-ui-on-init="module:com/sap/partner/wz/SLUG/test/manual/init">
+\t</script>
+</head>
+<body class="sapUiBody sapUiSizeCompact" style="margin:1rem">
+\t<div id="content" style="margin:1rem"></div>
+</body>
+</html>`;
+
+const T_MANUAL_INIT_JS = `/* istanbul ignore file */
+sap.ui.define(
+\t[
+\t\t"../sandboxSetup",
+\t\t"../mockserver",
+\t\t"sap/ui/integration/widgets/Card"
+\t],
+\tfunction (sandbox, mockserver, Card) {
+\t\t"use strict";
+\t\tmockserver.init()
+\t\t\t.then(function () {
+\t\t\t\tvar oCard = new Card({
+\t\t\t\t\tmanifest: "../../manifest.json",
+\t\t\t\t\twidth: "80rem",
+\t\t\t\t\theight: "auto"
+\t\t\t\t});
+\t\t\t\toCard.placeAt("content");
+\t\t\t\tsandbox.addContextAwarnessAndHostToCard(oCard);
+\t\t\t})
+\t\t\t.catch(function (error) {
+\t\t\t\tconsole.error("Failed to initialize mock server:", error);
+\t\t\t});
+\t}
+);`;
+
 export function generateStaticFiles(cardSlug, spec = {}) {
   const slug = cardSlug || 'card';
   const sub = (s) => s.replace(/SLUG/g, slug);
@@ -454,7 +547,13 @@ export function generateStaticFiles(cardSlug, spec = {}) {
     { path: `${SDK_BASE_PATH}/CustomError.js`,       content: T_STUB_CUSTOM_ERROR,       action: 'create' },
     { path: `${SDK_BASE_PATH}/Base.controller.js`,   content: T_STUB_BASE_CONTROLLER,    action: 'create' },
     { path: `${SDK_BASE_PATH}/ErrorHandler.js`,      content: T_STUB_ERROR_HANDLER,      action: 'create' },
-    { path: `${SDK_BASE_PATH}/StorageUtils.js`,      content: T_STUB_STORAGE_UTILS,      action: 'create' },
+    { path: `${SDK_BASE_PATH}/StorageUtils.js`,               content: T_STUB_STORAGE_UTILS,           action: 'create' },
+    { path: `${SDK_BASE_PATH}/library.js`,                    content: T_STUB_LIBRARY,                 action: 'create' },
+    { path: `${SDK_BASE_PATH}/AuthorizationDialog.controller.js`, content: T_STUB_AUTHORIZATION_DIALOG, action: 'create' },
+    // Sandbox files — needed for VIZ-001 preview via `npm run sandbox`
+    { path: 'src/test/sandboxSetup.js',              content: T_SANDBOX_SETUP,                    action: 'create' },
+    { path: 'src/test/manual/index.html',            content: sub(T_MANUAL_INDEX_HTML),           action: 'create' },
+    { path: 'src/test/manual/init.js',               content: T_MANUAL_INIT_JS,                   action: 'create' },
   ];
 
   // README — always

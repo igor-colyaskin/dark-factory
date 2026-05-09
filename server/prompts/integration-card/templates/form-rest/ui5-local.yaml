@@ -20,7 +20,7 @@ server:
       configuration:
         watchPath: "./src"
     - name: ui5-middleware-servestatic
-      afterMiddleware: compression
+      beforeMiddleware: serveResources
       configuration:
         rootPath: "./src/test/external_libs"
         mountPath: "/resources"
