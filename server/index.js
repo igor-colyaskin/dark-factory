@@ -15,6 +15,7 @@ import githubAuthRouter from './routes/github-auth.js';
 import githubClient from './github-client.js';
 import localRunner from './local-runner.js';
 import processRegistry from './process-registry.js';
+import sandboxManager from './sandbox-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -145,7 +146,7 @@ app.post('/api/order', async (req, res) => {
     // Always reset orchestrator before new order to ensure clean state
     await orchestrator.reset();
     console.log('Current orchestrator state AFTER reset:', orchestrator.state);
-    
+    sandboxManager.stop();
     // Start order processing
     await orchestrator.startOrder(description);
     console.log('Order started successfully, new state:', orchestrator.state);
@@ -252,6 +253,22 @@ app.post('/api/refine', async (req, res) => {
     console.error('Error handling refine request:', error);
     res.status(500).json({ success: false, message: error.message });
   }
+});
+
+// VIZ-001: IC sandbox preview
+app.post('/api/sandbox/start', async (req, res) => {
+  try {
+    const { port } = await sandboxManager.start(fileManager.workspaceDir);
+    res.json({ success: true, url: `http://localhost:${port}/test/manual/index.html` });
+  } catch (e) {
+    console.error('[Sandbox] start error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/sandbox/stop', (req, res) => {
+  sandboxManager.stop();
+  res.json({ success: true });
 });
 
 app.post('/api/cancel', async (req, res) => {
