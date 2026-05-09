@@ -437,9 +437,24 @@ const T_MANUAL_INDEX_HTML = `<!DOCTYPE html>
 \t<meta charset="utf-8">
 \t<meta name="viewport" content="width=device-width, initial-scale=1.0">
 \t<title>com.sap.partner.wz.SLUG</title>
+\t<style>
+\t\t#df-loading {
+\t\t\tposition: fixed; inset: 0;
+\t\t\tdisplay: flex; align-items: center; justify-content: center;
+\t\t\tbackground: #fff; z-index: 9999;
+\t\t}
+\t\t#df-loading::after {
+\t\t\tcontent: '';
+\t\t\twidth: 40px; height: 40px;
+\t\t\tborder: 3px solid #e0e0e0;
+\t\t\tborder-top-color: #0070f2;
+\t\t\tborder-radius: 50%;
+\t\t\tanimation: df-spin 0.8s linear infinite;
+\t\t}
+\t\t@keyframes df-spin { to { transform: rotate(360deg); } }
+\t</style>
 \t<script id="sap-ui-bootstrap"
 \t\tsrc="https://ui5.sap.com/resources/sap-ui-integration.js"
-\t\tdata-sap-ui-xx-waitForTheme="true"
 \t\tdata-sap-ui-theme="sap_horizon"
 \t\tdata-sap-ui-compatVersion="edge"
 \t\tdata-sap-ui-language="en_US"
@@ -450,6 +465,7 @@ const T_MANUAL_INDEX_HTML = `<!DOCTYPE html>
 \t</script>
 </head>
 <body class="sapUiBody sapUiSizeCompact" style="margin:1rem">
+\t<div id="df-loading"></div>
 \t<div id="content" style="margin:1rem"></div>
 </body>
 </html>`;
@@ -469,6 +485,16 @@ sap.ui.define(
 \t\t\t\t\tmanifest: "../../manifest.json",
 \t\t\t\t\twidth: "80rem",
 \t\t\t\t\theight: "auto"
+\t\t\t\t});
+\t\t\t\tvar bHidden = false;
+\t\t\t\toCard.addEventDelegate({
+\t\t\t\t\tonAfterRendering: function () {
+\t\t\t\t\t\tif (!bHidden) {
+\t\t\t\t\t\t\tbHidden = true;
+\t\t\t\t\t\t\tvar oSpinner = document.getElementById("df-loading");
+\t\t\t\t\t\t\tif (oSpinner) { oSpinner.style.display = "none"; }
+\t\t\t\t\t\t}
+\t\t\t\t\t}
 \t\t\t\t});
 \t\t\t\toCard.placeAt("content");
 \t\t\t\tsandbox.addContextAwarnessAndHostToCard(oCard);
