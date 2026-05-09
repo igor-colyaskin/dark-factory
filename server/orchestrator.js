@@ -511,6 +511,46 @@ class Orchestrator {
     return this.getState();
   }
 
+  async executeNoDeploy() {
+    console.log('[ORCHESTRATOR] deployer=none — skipping deployment');
+
+    const slug = sanitizeSlug(this.editMode ? this.editSlug : this.currentSpec?.cardSlug);
+    this.appName = slug || `df-${crypto.randomUUID().slice(0, 8)}`;
+    this.publicUrl = null;
+    this.error = null;
+
+    this.broadcastEvent({ type: 'deploy_progress', step: 'no_deploy', message: 'No deployment needed.' });
+
+    if (this.profile.verifier === 'manifest') {
+      await this.transition(STATES.VERIFYING, { usId: 4, status: 'running' });
+      await this.executeManifestVerify();
+    } else {
+      await this.transition(STATES.VERIFYING, { usId: 4, status: 'done', cost: 0, time: 0 });
+      this.verificationReport = { verdict: 'SKIPPED', reason: 'no verifier configured' };
+    }
+
+    await this.archiveApp();
+    await this.transition(STATES.DONE);
+  }
+
+  async executeManifestVerify() {
+    const t0 = Date.now();
+    this.broadcastEvent({ type: 'deploy_progress', step: 'verifying', message: 'Checking manifest...' });
+
+    try {
+      const report = await verifierC.run(fileManager.workspaceDir, this.currentSpec);
+      this.verificationReport = report;
+      console.log(`[ORCHESTRATOR] Manifest verification complete: verdict=${report.verdict}`);
+    } catch (e) {
+      console.error(`[ORCHESTRATOR] Manifest verification failed: ${e.message}`);
+      this.verificationReport = { verdict: 'ERROR', features: [], vision: null };
+    }
+
+    await this.transition(STATES.VERIFYING, {
+      usId: 4, status: 'done', cost: 0, time: Math.round((Date.now() - t0) / 1000)
+    });
+  }
+
   // Check if error should trigger retry
   shouldRetryDeploy(errorMessage) {
     const lowerError = errorMessage.toLowerCase();
