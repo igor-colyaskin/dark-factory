@@ -3,7 +3,7 @@
 Контракты между компонентами DF: что принимают, что возвращают,
 какие инварианты соблюдают.
 
-**Текущее состояние:** v0.9
+**Текущее состояние:** v0.10
 
 **Статус документа:** draft — конспективное содержание со ссылками
 на источники. Детали достаются из source по запросу, когда становятся
@@ -129,6 +129,10 @@ DEV_WORKING → DEV_CHECK → TEST_RUNNING → DELIVERING → DEPLOYING → GITH
 ---
 
 ## Source Storage `baseline`
+
+> **IC-профиль:** GitHub/Source Storage убран из scope DF-IC (решение 2026-05-09).
+> Вывод IC-карточки = файлы в `cards/{slug}/`, разработчик деплоит в Work Zone сам.
+> Всё нижеследующее применимо только к Node.js-app профилю.
 
 ### Роль
 Сохраняет исходный код сгенерированного приложения во внешнем хранилище.
@@ -338,7 +342,7 @@ Code review после DEV_CHECK. Не блокирует pipeline. Видит �
 | deployer | `local-runner` | `none` → DEPLOYING мгновенно |
 | verifier | `vision` (puppeteer + gemini) | `manifest` → VerifierC structural check |
 | DEV_CHECK | AC checker (Node.js статика) | `npm test` если generateTests, иначе skip |
-| Workspace | single app.js + express | src/ структура (IC Component pattern) |
+| Workspace | single app.js + express | `cards/{slug}/` — постоянное хранилище (v0.12+) |
 
 #### Источники истины
 - **Profile config:** `server/profiles/integration-card.js`

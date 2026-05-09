@@ -15,6 +15,8 @@
 | v0.8 | 2026-05-07 | Утверждено | PROFILES: profile = кассета, Integration Card профиль (deployer:none, verifier:manifest) |
 | v0.9 | 2026-05-08 | Утверждено | IC Tests+Docs: output questions, unit тесты, DEV_CHECK npm test, README, Confluence placeholder |
 | UX-001 | 2026-05-08 | Утверждено | Кнопка «Уточнить» на Spec Review: SPEC_REVIEW → ARCH_WORKING без потери истории, лимит 3 раунда |
+| v0.10 | 2026-05-09 | Утверждено | UX polish + sandbox preview: кнопка «Уточнить» (UX-001), Local Sandbox (VIZ-001), npm test fix |
+| v0.12-arch | 2026-05-09 | Утверждено | My Apps + Edit + Import: cards/{slug}/ storage, delta-Architect, Import Card; GitHub убран из IC |
 
 ## 1. Что такое Dark Factory
 
@@ -44,7 +46,7 @@ Dark Factory (DF) — веб-приложение, реализующее кон
 ## 3. Два уровня разработки
 
 Уровень 1 (мета):
-  Разработчик + Roo Code в VSCode -> строит Dark Factory.
+  Разработчик + Claude Code в VSCode -> строит Dark Factory.
   Это vibe coding процесс для курсового проекта.
 
 Уровень 2 (продукт):
@@ -102,8 +104,8 @@ Dark Factory (DF) — веб-приложение, реализующее кон
              |               |                |
              v HTTPS         v file           v deploy contract
   +---------------+    +-----------+    +----------------+
-  |  Hyperspace   |    |  state/   |    | Local Runner / |
-  | (LiteLLM API) |    | apps.json |    | Fly.io         |
+  |  Hyperspace   |    |  cards/   |    | Local Runner / |
+  | (LiteLLM API) |    | {slug}/   |    | Fly.io(Area51) |
   +---------------+    +-----------+    +----------------+
 
 
@@ -281,5 +283,7 @@ Proto DF = авиазавод. Специализированная DF = кон�
 - **Инсайты по ходу разработки:** `docs/log.md` → Insights
 
 ## 8. Текущее состояние и планы
-- **Текущая фаза:** `docs/work/`
+- **Статус:** v0.10 завершена. Следующая: v0.12 (My Apps + Edit + Import), затем v0.11 (Smart input)
+- **Детали текущей работы:** `HANDOFF.md`
 - **Долгосрочный вектор:** `ROADMAP.md`
+- **Бэклог:** `docs/backlog.md`
