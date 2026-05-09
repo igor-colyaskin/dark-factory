@@ -2,16 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'node:crypto';
-import flyManager from './fly-manager.js';
-import localRunner from './local-runner.js';
-import processRegistry from './process-registry.js';
-import { resolveRunMode } from './run-modes.js';
 import { resolveProfile } from './profiles/index.js';
-import appsStore from './apps-store.js';
-import githubTokens from './github-tokens.js';
-import githubClient from './github-client.js';
-import { generateReadme, generateSpec } from './readme-generator.js';
-import verifier from './verifier.js';
 import verifierC from './verifier-c.js';
 import fileManager from './file-manager.js';
 import cardsRegistry from './cards-registry.js';
@@ -130,7 +121,7 @@ class Orchestrator {
     this.sourceUrl = null;
     this.appName = null;
     this.error = null;
-    this.runMode = resolveRunMode();
+    this.runMode = { name: 'production', fakeDeploy: false, demoDelays: false };
     this.profile = resolveProfile();
     this.listeners = [];
     // v0.5: reference spec from past order
@@ -285,39 +276,7 @@ class Orchestrator {
    * @returns {Promise<string|null>} spec content or null
    */
   async resolveReferenceSpec(orderDescription) {
-    const match = orderDescription.match(/^На основе #(\d+):/);
-    if (!match) return null;
-
-    const refNumber = parseInt(match[1], 10);
-    console.log(`[ORCHESTRATOR] Reference detected: app #${refNumber}`);
-
-    try {
-      const apps = await appsStore.getAllApps();
-      const refApp = apps.find(a => a.number === refNumber);
-
-      if (!refApp) {
-        console.warn(`[ORCHESTRATOR] Reference app #${refNumber} not found, proceeding without reference`);
-        return null;
-      }
-
-      if (!refApp.sourceUrl) {
-        console.warn(`[ORCHESTRATOR] Reference app #${refNumber} has no sourceUrl, proceeding without reference`);
-        return null;
-      }
-
-      const result = await githubClient.readApp(refApp.sourceUrl);
-      if (!result.success) {
-        console.warn(`[ORCHESTRATOR] Could not read spec for #${refNumber}: ${result.error}, proceeding without reference`);
-        return null;
-      }
-
-      console.log(`[ORCHESTRATOR] Reference spec loaded from #${refNumber} (${result.spec.length} chars)`);
-      return result.spec;
-
-    } catch (err) {
-      console.warn(`[ORCHESTRATOR] Reference resolution failed: ${err.message}, proceeding without reference`);
-      return null;
-    }
+    return null; // appsStore removed — reference feature not supported in IC profile
   }
 
   // Start processing order
@@ -550,11 +509,6 @@ class Orchestrator {
     // deployer:'none' takes priority over run mode (integration cards have no server)
     if (this.profile.deployer === 'none') {
       await this.executeNoDeploy();
-    } else if (this.runMode.fakeDeploy) {
-      await this.executeFakeDeploy();
-    } else {
-      await this.executeLocalDeploy();
-    }
 
     return this.getState();
   }
@@ -594,58 +548,15 @@ class Orchestrator {
    */
   async archiveApp(options = {}) {
     try {
-      // IC profile: register in cards-registry instead of appsStore
-      if (this.profile?.deployer === 'none') {
-        const cardSlug = this.currentSpec?.cardSlug;
-        const cardName = this.currentSpec?.cardTitle || cardSlug;
-        if (cardSlug) {
-          cardsRegistry.registerCard({ slug: cardSlug, name: cardName || cardSlug });
-          console.log(`[orchestrator] IC card registered: ${cardSlug}`);
-        }
-        return;
+      // IC profile: register in cards-registry
+      const cardSlug = this.currentSpec?.cardSlug;
+      const cardName = this.currentSpec?.cardTitle || cardSlug;
+      if (cardSlug) {
+        cardsRegistry.registerCard({ slug: cardSlug, name: cardName || cardSlug });
+        console.log(`[orchestrator] IC card registered: ${cardSlug}`);
       }
-
-      // Build metrics object from user stories
-      const metrics = {
-        totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
-        totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0),
-        agents: {}
-      };
-
-      // Add per-agent metrics
-      this.userStories.forEach(us => {
-        const agentKey = us.agent.toLowerCase(); // 'Arc' -> 'arc', 'Dev' -> 'dev', 'Tst' -> 'tst'
-        metrics.agents[agentKey] = {
-          cost: us.cost,
-          time: us.time
-        };
-      });
-
-      // Serialize spec or architectOutput
-      let architectOutput = 'N/A';
-      if (this.currentSpec) {
-        architectOutput = JSON.stringify(this.currentSpec, null, 2);
-      } else if (this.agentOutputs[1]) {
-        architectOutput = typeof this.agentOutputs[1] === 'object'
-          ? JSON.stringify(this.agentOutputs[1], null, 2)
-          : this.agentOutputs[1];
-      }
-
-      const appRecord = await appsStore.addApp({
-        id: this.appName,
-        flyAppName: this.appName,
-        createdAt: new Date().toISOString(),
-        order: this.orderDescription,
-        architectOutput: architectOutput,
-        url: this.publicUrl,
-        sourceUrl: options.sourceUrl || null,
-        metrics: metrics
-      });
-
-      console.log(`[orchestrator] App archived as #${appRecord.number} (${appRecord.id})`);
     } catch (err) {
       console.error(`[orchestrator] Failed to archive app: ${err.message}`);
-      // Do NOT throw - order completes successfully regardless
     }
   }
 
@@ -687,424 +598,6 @@ class Orchestrator {
     return files;
   }
 
-  /**
-   * Push workspace files to GitHub as a new repo.
-   * Non-blocking: returns null on any failure instead of throwing.
-   * @returns {Promise<string|null>} sourceUrl or null
-   */
-  async executeGithubPush() {
-    this.broadcastEvent({ type: 'deploy_progress', step: 'github_push', message: 'Pushing to GitHub...' });
-
-    const connected = await githubTokens.isConnected();
-    if (!connected) {
-      console.log('[ORCHESTRATOR] GitHub not connected, skipping push');
-      return null;
-    }
-
-    const tokenData = await githubTokens.read();
-    const owner = tokenData.username;
-    const repoName = this.appName;
-
-    const files = await this.readWorkspaceFiles();
-    if (files.length === 0) {
-      console.warn('[ORCHESTRATOR] No workspace files found, skipping GitHub push');
-      return null;
-    }
-
-    // Generate README.md and SPEC.md, replacing the auto_init README
-    const appSlug = this.agentOutputs[1]?.appSlug || null;
-    const createdAt = new Date().toISOString();
-    const readmeContent = generateReadme({
-      appName: this.appName,
-      appSlug,
-      orderDescription: this.orderDescription,
-      spec: this.currentSpec,
-      createdAt
-    });
-    const specContent = generateSpec({
-      appName: this.appName,
-      appSlug,
-      orderDescription: this.orderDescription,
-      spec: this.currentSpec,
-      createdAt
-    });
-
-    const allFiles = [
-      ...files,
-      { path: 'README.md', content: readmeContent },
-      { path: 'SPEC.md', content: specContent }
-    ];
-
-    let repoCreated = false;
-    try {
-      const createResult = await githubClient.createRepo(repoName, {
-        private: true,
-        description: `Generated by Dark Factory: ${this.orderDescription.substring(0, 100)}`
-      });
-      if (!createResult.success) {
-        throw new Error(`Failed to create repo: ${createResult.error}`);
-      }
-      repoCreated = true;
-
-      const branch = createResult.repo.defaultBranch || 'main';
-      const commitResult = await githubClient.commitFiles(owner, repoName, allFiles, 'Initial commit by Dark Factory', branch);
-      if (!commitResult.success) {
-        throw new Error(`Failed to commit files: ${commitResult.error}`);
-      }
-
-      // Topics are best-effort — don't throw on failure
-      await githubClient.setTopics(owner, repoName, ['dark-factory', 'ai-generated', 'nodejs']);
-
-      const sourceUrl = `https://github.com/${owner}/${repoName}`;
-      console.log(`[ORCHESTRATOR] GitHub push successful: ${sourceUrl}`);
-      return sourceUrl;
-
-    } catch (error) {
-      console.error(`[ORCHESTRATOR] GitHub push failed: ${error.message}`);
-      if (repoCreated) {
-        try {
-          const rollback = await githubClient.deleteRepo(owner, repoName);
-          if (rollback.success) {
-            console.log('[ORCHESTRATOR] GitHub rollback: repo deleted');
-          } else {
-            console.warn('[ORCHESTRATOR] GitHub rollback failed:', rollback.error);
-          }
-        } catch (rollbackError) {
-          console.error('[ORCHESTRATOR] GitHub rollback exception:', rollbackError.message);
-        }
-      }
-      return null;
-    }
-  }
-
-  // Execute deployment to Fly.io with timeout
-  async executeDeploy() {
-    console.log('[ORCHESTRATOR] Starting deployment to Fly.io');
-
-    // Generate app name from slug + sequential number
-    const slug = sanitizeSlug(this.agentOutputs[1]?.appSlug);
-    const number = await appsStore.getNextNumber();
-    let appName = slug ? `df-${slug}-${number}` : 'df-' + crypto.randomUUID().slice(0, 8);
-    console.log(`[ORCHESTRATOR] Generated app name: ${appName}${slug ? ' (from slug)' : ' (random)'}`);
-
-    let appCreated = false;
-    let timeoutId;
-
-    try {
-      // Create timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error(`Deployment timeout exceeded (${this.deployTimeout / 1000}s)`));
-        }, this.deployTimeout);
-      });
-
-      // Create deployment promise
-      const deployPromise = (async () => {
-        // Step 1: Create app
-        console.log('[ORCHESTRATOR] Step 1: Creating Fly app');
-        this.broadcastEvent({ type: 'deploy_progress', step: 'creating_app', message: 'Creating Fly.io app...' });
-
-        const createResult = await flyManager.createApp(appName);
-
-        if (!createResult.success) {
-          // If name already taken — retry with UUID suffix
-          if (createResult.error && createResult.error.toLowerCase().includes('already exists')) {
-            const fallbackName = appName + '-' + crypto.randomUUID().slice(0, 4);
-            console.log(`[ORCHESTRATOR] App name ${appName} taken, trying ${fallbackName}`);
-            const retryResult = await flyManager.createApp(fallbackName);
-            if (!retryResult.success) {
-              throw new Error(`Failed to create app: ${retryResult.error}`);
-            }
-            // Update appName for the rest of the flow
-            appName = fallbackName;
-          } else {
-            throw new Error(`Failed to create app: ${createResult.error}`);
-          }
-        }
-
-        appCreated = true;
-        this.appName = appName;
-
-        // Step 2: Prepare workspace
-        console.log('[ORCHESTRATOR] Step 2: Preparing workspace');
-        this.broadcastEvent({ type: 'deploy_progress', step: 'preparing_workspace', message: 'Preparing deployment files...' });
-
-        const prepareResult = await flyManager.prepareWorkspace(WORKSPACE_PATH, appName);
-
-        if (!prepareResult.success) {
-          throw new Error(`Failed to prepare workspace: ${prepareResult.error}`);
-        }
-
-        // Step 3: Deploy
-        console.log('[ORCHESTRATOR] Step 3: Deploying to Fly.io');
-        this.broadcastEvent({ type: 'deploy_progress', step: 'building_image', message: 'Building and deploying image...' });
-
-        const deployResult = await flyManager.deploy(WORKSPACE_PATH, appName);
-
-        if (!deployResult.success) {
-          throw new Error(`Failed to deploy: ${deployResult.error}`);
-        }
-
-        // Step 4: Wait for healthy
-        console.log('[ORCHESTRATOR] Step 4: Waiting for app to become healthy');
-        this.broadcastEvent({ type: 'deploy_progress', step: 'waiting_healthy', message: 'Waiting for app to start...' });
-
-        const healthResult = await flyManager.waitForHealthy(appName, 60000);
-
-        if (!healthResult.success) {
-          throw new Error(`App did not become healthy: ${healthResult.error}`);
-        }
-
-        return true;
-      })();
-
-      // Race between deployment and timeout
-      await Promise.race([deployPromise, timeoutPromise]);
-
-      // Clear timeout on success
-      clearTimeout(timeoutId);
-
-      // Success!
-      this.publicUrl = flyManager.getAppUrl(appName);
-      this.deployRetryCount = 0;
-      this.error = null;
-
-      console.log(`[ORCHESTRATOR] Deployment successful: ${this.publicUrl}`);
-
-      // GitHub push (non-blocking: failure → sourceUrl null, order still completes)
-      await this.transition(STATES.GITHUB_PUSH);
-      const sourceUrl = await this.executeGithubPush();
-      this.sourceUrl = sourceUrl;
-
-      // Archive app before marking as DONE
-      await this.archiveApp({ sourceUrl });
-
-      await this.transition(STATES.DONE);
-
-    } catch (error) {
-      // Clear timeout
-      if (timeoutId) clearTimeout(timeoutId);
-
-      console.error(`[ORCHESTRATOR] Deployment error: ${error.message}`);
-
-      // Cleanup: try to destroy app if it was created
-      if (appCreated) {
-        console.log(`[ORCHESTRATOR] Attempting cleanup: destroying ${appName}`);
-        try {
-          await flyManager.destroyApp(appName);
-          console.log('[ORCHESTRATOR] Cleanup successful');
-        } catch (cleanupError) {
-          console.error(`[ORCHESTRATOR] Cleanup failed: ${cleanupError.message}`);
-        }
-      }
-
-      // Determine if we should retry
-      const shouldRetry = this.shouldRetryDeploy(error.message);
-
-      if (shouldRetry && this.deployRetryCount < this.maxDeployRetries) {
-        // Retry deployment
-        this.deployRetryCount++;
-        console.log(`[ORCHESTRATOR] Retrying deployment (${this.deployRetryCount}/${this.maxDeployRetries})`);
-        this.notifyListeners();
-
-        // Retry after a short delay
-        setTimeout(() => this.executeDeploy(), 2000);
-      } else {
-        // Save error details and transition to ERROR
-        this.error = {
-          message: error.message,
-          phase: 'DEPLOYING',
-          appName: appCreated ? appName : null
-        };
-
-        const reason = shouldRetry
-          ? `after ${this.maxDeployRetries} retries`
-          : '(non-retryable error)';
-
-        console.error(`[ORCHESTRATOR] Deployment failed ${reason}: ${error.message}`);
-        await this.transition(STATES.ERROR);
-      }
-    }
-  }
-
-  /**
-   * Run verifier against live app. Non-blocking: failure doesn't stop the order.
-   */
-  async executeVerify() {
-    const t0 = Date.now();
-    this.broadcastEvent({ type: 'deploy_progress', step: 'verifying', message: 'Verifying application...' });
-
-    try {
-      const report = await verifier.run(this.publicUrl, this.currentSpec);
-      this.verificationReport = report;
-      const elapsed = Date.now() - t0;
-
-      await this.transition(STATES.VERIFYING, {
-        usId: 4,
-        status: 'done',
-        cost: 0,
-        time: Math.round(elapsed / 1000)
-      });
-
-      console.log(`[ORCHESTRATOR] Verification complete: verdict=${report.verdict}`);
-    } catch (e) {
-      console.error(`[ORCHESTRATOR] Verification failed: ${e.message}`);
-      this.verificationReport = { error: e.message, verdict: 'ERROR' };
-      await this.transition(STATES.VERIFYING, { usId: 4, status: 'error', cost: 0, time: Math.round((Date.now() - t0) / 1000) });
-    }
-  }
-
-  /**
- * Fake deploy for mock-fast and demo modes.
- * Simulates deploy progress events and sets a plausible-looking fake URL.
- */
-  async executeLocalDeploy() {
-    console.log('[ORCHESTRATOR] Starting LOCAL deployment');
-
-    const slug = this.agentOutputs[1]?.appSlug;
-    const number = await appsStore.getNextNumber();
-    const appName = slug ? `df-${slug}-${number}` : `df-${crypto.randomUUID().slice(0, 8)}`;
-    this.appName = appName;
-
-    try {
-      const { url, pid, port } = await localRunner.deploy(appName, (step, message) => {
-        this.broadcastEvent({ type: 'deploy_progress', step, message });
-      });
-
-      processRegistry.register(appName, { pid, port });
-      this.publicUrl = url;
-      this.error = null;
-      console.log(`[ORCHESTRATOR] Local deploy complete: ${url}`);
-
-      // Verify the deployed app (non-blocking: failure doesn't stop order)
-      await this.transition(STATES.VERIFYING, { usId: 4, status: 'running' });
-      await this.executeVerify();
-
-      // GitHub push (non-blocking: failure → sourceUrl null, order still completes)
-      await this.transition(STATES.GITHUB_PUSH);
-      const sourceUrl = await this.executeGithubPush();
-      this.sourceUrl = sourceUrl;
-
-      await this.archiveApp({ sourceUrl });
-      await this.transition(STATES.DONE);
-
-    } catch (e) {
-      console.error(`[ORCHESTRATOR] Local deploy failed: ${e.message}`);
-      await this.transition(STATES.ERROR, { error: e.message });
-    }
-  }
-
-  /**
-   * No-deploy path for profiles with deployer:'none' (e.g. Integration Card).
-   * Skips local runner, routes verifier by profile.verifier.
-   */
-  async executeNoDeploy() {
-    console.log('[ORCHESTRATOR] deployer=none — skipping deployment');
-
-    const slug = sanitizeSlug(this.agentOutputs[1]?.appSlug);
-    const number = await appsStore.getNextNumber();
-    const appName = slug ? `df-${slug}-${number}` : `df-${crypto.randomUUID().slice(0, 8)}`;
-    this.appName = appName;
-    this.publicUrl = null;
-    this.error = null;
-
-    this.broadcastEvent({ type: 'deploy_progress', step: 'no_deploy', message: 'No deployment needed.' });
-
-    if (this.profile.verifier === 'manifest') {
-      await this.transition(STATES.VERIFYING, { usId: 4, status: 'running' });
-      await this.executeManifestVerify();
-    } else {
-      // verifier: 'none'
-      await this.transition(STATES.VERIFYING, { usId: 4, status: 'done', cost: 0, time: 0 });
-      this.verificationReport = { verdict: 'SKIPPED', reason: 'no verifier configured' };
-    }
-
-    // IC cards are not pushed to GitHub — output is cards/{slug}/ folder
-    let sourceUrl = null;
-    if (this.profile.deployer !== 'none') {
-      await this.transition(STATES.GITHUB_PUSH);
-      sourceUrl = await this.executeGithubPush();
-      this.sourceUrl = sourceUrl;
-    }
-
-    await this.archiveApp({ sourceUrl });
-    await this.transition(STATES.DONE);
-  }
-
-  /**
-   * Structural manifest.json verification (verifier:'manifest').
-   */
-  async executeManifestVerify() {
-    const t0 = Date.now();
-    this.broadcastEvent({ type: 'deploy_progress', step: 'verifying', message: 'Checking manifest...' });
-
-    try {
-      const report = await verifierC.run(fileManager.workspaceDir, this.currentSpec);
-      this.verificationReport = report;
-      console.log(`[ORCHESTRATOR] Manifest verification complete: verdict=${report.verdict}`);
-    } catch (e) {
-      console.error(`[ORCHESTRATOR] Manifest verification failed: ${e.message}`);
-      this.verificationReport = { verdict: 'ERROR', features: [], vision: null };
-    }
-
-    await this.transition(STATES.VERIFYING, {
-      usId: 4, status: 'done', cost: 0, time: Math.round((Date.now() - t0) / 1000)
-    });
-  }
-
-  /**
- * Simulates deploy progress events and sets a plausible-looking fake URL.
- */
-  async executeFakeDeploy() {
-    console.log('[ORCHESTRATOR] Starting FAKE deployment (mode:', this.runMode.name + ')');
-
-    const slug = sanitizeSlug(this.agentOutputs[1]?.appSlug);
-    const number = await appsStore.getNextNumber();
-    const appName = slug ? `df-mock-${slug}-${number}` : 'df-mock-' + crypto.randomUUID().slice(0, 8);
-    this.appName = appName;
-    console.log(`[ORCHESTRATOR] Generated app name: ${appName}${slug ? ' (from slug)' : ' (random)'}`);
-
-    // Step delays — longer for demo mode (16 seconds total for demo)
-    const stepDelay = this.runMode.demoDelays ? 4000 : 400;
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-    const steps = [
-      { step: 'creating_app', message: '[MOCK] Creating Fly.io app...' },
-      { step: 'preparing_workspace', message: '[MOCK] Preparing deployment files...' },
-      { step: 'building_image', message: '[MOCK] Building and deploying image...' },
-      { step: 'waiting_healthy', message: '[MOCK] Waiting for app to start...' }
-    ];
-
-    for (const s of steps) {
-      this.broadcastEvent({ type: 'deploy_progress', ...s });
-      await sleep(stepDelay);
-    }
-
-    // Fake URL — matches Fly.io pattern so UI and QR code render realistically
-    this.publicUrl = `https://${appName}.fly.dev`;
-    this.error = null;
-
-    console.log(`[ORCHESTRATOR] FAKE deployment complete: ${this.publicUrl}`);
-    console.log('[ORCHESTRATOR] ⚠ This URL is not real. No actual deployment was performed.');
-
-    // Mark as fake so UI can display a badge
-    this.broadcastEvent({ type: 'deploy_fake_url', url: this.publicUrl });
-
-    // Skip real verification — fake URL is not a real app
-    await this.transition(STATES.VERIFYING, { usId: 4, status: 'done', cost: 0, time: 0 });
-    this.verificationReport = { verdict: 'SKIPPED', reason: 'fake deploy mode' };
-
-    // GitHub push (non-blocking)
-    await this.transition(STATES.GITHUB_PUSH);
-    const sourceUrl = await this.executeGithubPush();
-    this.sourceUrl = sourceUrl;
-
-    // Archive app before marking as DONE
-    await this.archiveApp({ sourceUrl });
-
-    await this.transition(STATES.DONE);
-  }
-
   // Reset orchestrator to initial state
   async reset() {
     console.log('[ORCHESTRATOR] Resetting from state:', this.state);
@@ -1124,7 +617,7 @@ class Orchestrator {
     this.sourceUrl = null;
     this.appName = null;
     this.error = null;
-    this.runMode = resolveRunMode(); // Re-read run mode from environment
+    this.runMode = { name: 'production', fakeDeploy: false, demoDelays: false }; // Re-read run mode from environment
     this.profile = resolveProfile();  // Re-read profile from environment
     this.referenceSpec = null;
     this.verificationReport = null;
