@@ -347,7 +347,18 @@ app.post('/api/cards/import', upload.single('file'), async (req, res) => {
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
     const appId = manifest?.['sap.app']?.id || '';
     const slug = appId.split('.').pop().toLowerCase();
-    const name = manifest?.['sap.app']?.title || slug;
+    let name = manifest?.['sap.app']?.title || slug;
+    // Resolve SAP card i18n binding {{KEY}} from i18n.properties
+    const i18nMatch = name.match(/^\{\{([^}]+)\}\}$/);
+    if (i18nMatch) {
+      try {
+        const i18nPath = path.join(path.dirname(manifestPath), 'i18n', 'i18n.properties');
+        const i18n = await readFile(i18nPath, 'utf8');
+        const hit = i18n.match(new RegExp(`^${i18nMatch[1]}=(.+)$`, 'm'));
+        if (hit) name = hit[1].trim();
+      } catch { /* fall back to slug below */ }
+      if (i18nMatch) name = name.startsWith('{{') ? slug : name;
+    }
 
     if (!slug) {
       return res.status(400).json({ success: false, message: 'Cannot determine card slug from sap.app.id' });
