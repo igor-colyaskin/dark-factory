@@ -1186,6 +1186,17 @@ function showPickupBlock(state) {
     publicUrlSection.style.display = 'none';
     deployErrorSection.style.display = 'block';
   }
+
+  // VIZ-001: show Preview button for IC cards (identified by cardSlug in spec)
+  const sandboxSection = document.getElementById('sandbox-preview');
+  if (sandboxSection) {
+    sandboxSection.style.display = state.currentSpec?.cardSlug ? 'block' : 'none';
+    const btn = document.getElementById('sandbox-preview-btn');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '▶ Preview Card';
+    }
+  }
 }
 
 // Render verification report in the pickup block
@@ -1228,6 +1239,29 @@ function renderVerificationReport(state) {
     ${visionHtml}
   `;
   container.style.display = 'block';
+}
+
+// VIZ-001: start IC sandbox and open preview in new tab
+async function handleSandboxPreview() {
+  const btn = document.getElementById('sandbox-preview-btn');
+  btn.disabled = true;
+  btn.textContent = 'Запускаю...';
+  try {
+    const res = await fetch('/api/sandbox/start', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      window.open(data.url, '_blank');
+      btn.textContent = '▶ Preview Card';
+    } else {
+      btn.textContent = '⚠ Ошибка';
+      console.error('[Preview]', data.message);
+    }
+  } catch (e) {
+    btn.textContent = '⚠ Ошибка';
+    console.error('[Preview]', e.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // Show Status Message
