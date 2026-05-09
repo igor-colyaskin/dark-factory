@@ -137,6 +137,9 @@ class Orchestrator {
     this.referenceSpec = null;
     // v0.7: verification report
     this.verificationReport = null;
+    // v0.11: edit mode
+    this.editMode = false;
+    this.editSlug = null;
   }
 
   // Subscribe to state changes
@@ -207,6 +210,9 @@ class Orchestrator {
       referenceSpec: this.referenceSpec,
       // v0.7
       verificationReport: this.verificationReport,
+      // v0.11
+      editMode: this.editMode,
+      editSlug: this.editSlug,
     };
   }
 
@@ -366,6 +372,18 @@ class Orchestrator {
       if (mode === 'spec') {
         // Architect produced a spec — go to review
         this.currentSpec = result.spec || null;
+        this.questions = [];
+        await this.transition(STATES.SPEC_REVIEW, {
+          usId: 1,
+          status: 'review',
+          agentOutput: result
+        });
+        return this.getState();
+      }
+
+      if (mode === 'patch') {
+        // Delta-architect produced a patch-spec for edit mode
+        this.currentSpec = result;
         this.questions = [];
         await this.transition(STATES.SPEC_REVIEW, {
           usId: 1,
@@ -1110,6 +1128,8 @@ class Orchestrator {
     this.profile = resolveProfile();  // Re-read profile from environment
     this.referenceSpec = null;
     this.verificationReport = null;
+    this.editMode = false;
+    this.editSlug = null;
 
     await this.saveState();
     this.notifyListeners();

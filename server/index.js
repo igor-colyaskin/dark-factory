@@ -22,6 +22,7 @@ import githubClient from './github-client.js';
 import localRunner from './local-runner.js';
 import processRegistry from './process-registry.js';
 import sandboxManager from './sandbox-manager.js';
+import deltaArchitect from './prompts/integration-card/delta-architect.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -371,6 +372,45 @@ app.post('/api/cards/import', upload.single('file'), async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Edit Card (v0.11) ─────────────────────────────────────────────────────────
+
+app.post('/api/edit/:slug', async (req, res) => {
+  const { slug } = req.params;
+  const { changeRequest } = req.body;
+
+  if (!changeRequest?.trim()) {
+    return res.status(400).json({ success: false, message: 'changeRequest required' });
+  }
+
+  const cardPath = path.join(CARDS_DIR, slug);
+  if (!existsSync(cardPath)) {
+    return res.status(404).json({ success: false, message: 'Card not found' });
+  }
+
+  try {
+    await orchestrator.reset();
+    sandboxManager.stop();
+
+    orchestrator.editMode = true;
+    orchestrator.editSlug = slug;
+    fileManager.setWorkspace(cardPath);
+
+    await orchestrator.startOrder(changeRequest.trim());
+
+    res.json({ success: true, state: orchestrator.getState() });
+
+    runPipeline().catch(err => {
+      console.error('[Edit] Pipeline error:', err);
+      broadcastState({ ...orchestrator.getState(), error: err.message });
+    });
+  } catch (e) {
+    console.error('[Edit] start error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.post('/api/cancel', async (req, res) => {
   try {
     await orchestrator.handleCancel();
@@ -552,6 +592,36 @@ app.get('/api/my-apps/:id/status', async (req, res) => {
 // Serve workspace files (for viewing static files)
 app.use('/workspace', express.static(path.join(__dirname, '../workspace')));
 
+// Read all text files from a card directory for delta-architect context
+async function readCardFilesForEdit(dirPath) {
+  const IGNORE = new Set(['node_modules', '.git', '.DS_Store', 'Thumbs.db']);
+  const BINARY_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.zip']);
+  const files = [];
+
+  async function readDir(dir, prefix) {
+    let entries;
+    try { entries = await readdir(dir, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      if (IGNORE.has(entry.name)) continue;
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        await readDir(path.join(dir, entry.name), rel);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (!BINARY_EXT.has(ext)) {
+          try {
+            const content = await readFile(path.join(dir, entry.name), 'utf-8');
+            files.push({ path: rel, content });
+          } catch {}
+        }
+      }
+    }
+  }
+
+  await readDir(dirPath, '');
+  return files;
+}
+
 // Pipeline workflow
 async function runPipeline() {
   const state = orchestrator.getState();
@@ -590,16 +660,26 @@ async function runArchitect() {
 
   const state = orchestrator.getState();
   const profile = orchestrator.profile;
-  const systemPrompt = profile.prompts.architect.systemPrompt;
-  const userPrompt = profile.prompts.architect.generateUserPrompt(
-    state.orderDescription,
-    state.clarifyHistory,
-    state.clarifyRound,
-    state.maxClarifyRounds,
-    state.referenceSpec,
-    state.currentSpec
-  );
-  
+
+  let systemPrompt, userPrompt;
+
+  if (orchestrator.editMode) {
+    // Edit mode: use delta-architect with existing card files
+    const currentFiles = await readCardFilesForEdit(fileManager.workspaceDir);
+    systemPrompt = deltaArchitect.systemPrompt;
+    userPrompt = deltaArchitect.generateUserPrompt(state.orderDescription, currentFiles);
+  } else {
+    systemPrompt = profile.prompts.architect.systemPrompt;
+    userPrompt = profile.prompts.architect.generateUserPrompt(
+      state.orderDescription,
+      state.clarifyHistory,
+      state.clarifyRound,
+      state.maxClarifyRounds,
+      state.referenceSpec,
+      state.currentSpec
+    );
+  }
+
   const result = await agentManager.callAgentWithRetry(
     'architect',
     systemPrompt,
