@@ -31,9 +31,8 @@ AMD-путь `./sdk-stubs/resources/com/sap/...` → URL `/test/unit/sdk-stubs/r
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `plugin_architecture.md`, `integration_card_template.md`
-2. Обсудить scope v0.11 — Smart input
-3. Обсудить UX-002 (Edit mode) — где хранить реестр карточек (см. backlog.md)
-4. CARDS.md — обсудить и закоммитить (отложено с предыдущей сессии)
+2. **SDK-001** — smart clone (см. раздел ниже). Делать до v0.12.
+3. После SDK-001 — реализация v0.12 (My Apps + Edit + Import)
 
 ## v0.12 — My Apps + Edit mode + Import (архитектура зафиксирована)
 
@@ -63,26 +62,30 @@ GitHub убран из DF-IC: не нужен, коллеге для устан�
 - GitHub push в Edit mode — не нужен
 - Новый repo при редактировании — не нужен
 
+## SDK-001 — Smart Clone (делать до v0.12)
 
+**Зачем:** 75% рабочей нагрузки — редактирование существующих карточек (не создание новых).
+Импортированные карточки не получат sandbox+tests без полноценных SDK-стабов.
+Текущие стабы — минимальные (не падает AMD loader). Smart clone — полный test double.
 
-**workspace vs workspaces:** разные пайплайны. `workspace/` (ед.ч.) — IC-карточки, единый, перезаписывается.
-`workspaces/` (мн.ч.) — Node.js приложения (Local Runner). Карточки никуда не "переезжают".
+**Скоуп:** 5 модулей, ~15 методов. Маленький и предсказуемый.
+Полный API surface задокументирован в `docs/API_REVIEW.md`.
 
-**Зомби-процесс сандбокса:** после миграции стабов старый процесс сандбокса на 3100 держал
-устаревший `rootPath` → карточка не рендерилась. Fix: `taskkill //F //PID <pid>`, потом
-нажать Preview Card снова. Команда для диагностики: `netstat -ano | grep ":3100 "`.
+**Модули:**
+- `Base.controller` — extend-паттерн, наследование от sap.ui.core.mvc.Controller
+- `ErrorHandler` — 4 метода: handleErrorEvent, handleCustomErrorEvent, attachErrorHandlingForModel, checkMaintenanceMode
+- `StorageUtils` — 4 статических метода: createStorage, readItem, setItem, removeItem
+- `CustomError` — 3 класса: GenericError, NotFoundPartnerIDError, UnauthorizedError (+ instanceof)
+- `AuthorizationDialog.controller` — конструктор + openDialog(bool)
 
-**Бэклог обновлён (docs/backlog.md):**
-- VIZ-001, UX-001 — помечены выполненными
-- TPL-001 (три точки) — подтверждён, приоритет низкий
-- TPL-002 (namespace/папка конвенция) — новый, средний приоритет
-- UX-002 (Edit mode) — новый, высокий приоритет, v0.12
+**Стратегия:** новый артефакт (не копия кода SDK), пишется из знания API. Заменяет per-card стабы единым пакетом. Tech debt: 29 карточек с локальной CustomError.js — отдельный тикет.
 
-**UX-002 — ключевой инсайт:** типичный сценарий работы разработчика — переключение между
-несколькими карточками с инкрементальными изменениями. Создавать новый GitHub repo на каждое
-"перекрась кнопку" неприемлемо. Нужен Edit mode (post-Submit).
-**Открытый вопрос:** где хранить реестр карточек (slug → repo URL)?
-Варианты: локальный `cards-registry.json`, GitHub-индекс, ручной ввод URL.
+---
+
+**workspace vs workspaces:** разные пайплайны. `workspace/` (ед.ч.) — IC-карточки, единый, перезаписывается (до v0.12; в v0.12 → `cards/{slug}/`).
+`workspaces/` (мн.ч.) — Node.js приложения (Local Runner).
+
+**Зомби-процесс сандбокса:** старый процесс на 3100 держит устаревший `rootPath` → карточка не рендерится. Fix: `taskkill //F //PID <pid>`. Диагностика: `netstat -ano | grep ":3100 "`.
 
 ## VIZ-001 — реализация завершена ✅ (сессия 2026-05-09)
 
