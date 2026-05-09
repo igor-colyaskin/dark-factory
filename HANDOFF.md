@@ -7,9 +7,11 @@
 
 ## Быстрый статус
 
-## v0.11 полностью завершена ✅
+## v0.11 полностью завершена + E2E пройден ✅
 
 **Последняя выпущенная версия:** v0.11 — SDK-001 + My Apps + Edit mode + Import ✅ (сессия 2026-05-09)
+**E2E-проверка:** Create → Preview → My Apps → Edit mode — пройдено ✅ (сессия 2026-05-09)
+**Import (сценарий D) и Delete (сценарий E):** не проверялись, но риск низкий.
 **Следующая:** v0.12 — Smart Input (sample JSON → автоматический парсинг полей)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
@@ -17,8 +19,23 @@ GitHub — личный аккаунт через OAuth App.
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `project_state_v04.md`, `integration_card_template.md`
-2. **v0.12** — Smart Input / sample JSON (scope см. раздел ниже)
-3. End-to-end проверка v0.11: создать новую IC-карточку → убедиться в `cards/{slug}/` → My Apps → Preview → Edit → Import zip
+2. **v0.12** — refining-сессия: детализировать scope Smart Input перед реализацией
+
+## Баги найдены и исправлены в E2E-сессии (2026-05-09)
+
+**В runtime (app.js / server):**
+- `escapeHtml` и `formatDate` не были определены в `client/app.js` → добавлены в конец файла
+- `verifier-b.js` — статический `import puppeteer-core` крашил сервер при старте (пакет не установлен) → заменён на динамический `import()` внутри `takeScreenshot()`
+- `window.open(url, '_blank')` после `await fetch()` блокировался браузером → паттерн `openPreviewWindow()`: открываем вкладку сразу на клик, пишем splash, потом `win.location.href = url`
+
+**В шаблонах генератора (`developer.js`) — баги LLM:**
+- `mockserver.js`: LLM генерировал generic regex `entity(.*)` вместо реального пути эндпоинта → исправить в промпте: path должен совпадать с `spec.endpoint` (например `employees(.*)`)
+- `manifest.json`: LLM добавлял `"resources": { "css": [...] }` без создания файла → шаблон изменён на `"resources": {}`
+- `index.html`: атрибут `data-sap-ui-xx-waitForTheme="true"` скрывал body пока грузилась тема UI5 → спиннер был невидим → атрибут убран из sandbox-шаблона
+
+**Preview UX:**
+- Добавлен `openPreviewWindow()` в `client/app.js` — splash-экран (тёмный, 🏭 Dark Factory IC, синий спиннер) показывается сразу при клике, до fetch и до загрузки sandbox
+- `init.js` шаблон — спиннер в `index.html` прячется через `onAfterRendering` делегат (не синхронно)
 
 ## v0.12 — Smart Input (план)
 
