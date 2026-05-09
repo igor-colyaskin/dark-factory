@@ -292,11 +292,12 @@ app.get('/api/cards', (req, res) => {
 app.delete('/api/cards/:slug', async (req, res) => {
   const { slug } = req.params;
   try {
-    cardsRegistry.removeCard(slug);
+    await sandboxManager.stop();
     const cardPath = path.join(CARDS_DIR, slug);
     if (existsSync(cardPath)) {
       await rm(cardPath, { recursive: true, force: true });
     }
+    cardsRegistry.removeCard(slug);
     res.json({ success: true });
   } catch (e) {
     console.error('[Cards] delete error:', e.message);
