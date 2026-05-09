@@ -121,7 +121,6 @@ class Orchestrator {
     this.sourceUrl = null;
     this.appName = null;
     this.error = null;
-    this.runMode = { name: 'production', fakeDeploy: false, demoDelays: false };
     this.profile = resolveProfile();
     this.listeners = [];
     // v0.5: reference spec from past order
@@ -186,8 +185,6 @@ class Orchestrator {
       error: this.error,
       totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
       totalTime: this.userStories.reduce((sum, us) => sum + us.time, 0),
-      isFakeDeploy: this.runMode.fakeDeploy,
-      runMode: this.runMode.name,
       profileId: this.profile.id,
       // v0.3
       clarifyHistory: this.clarifyHistory,
@@ -618,7 +615,6 @@ class Orchestrator {
     this.sourceUrl = null;
     this.appName = null;
     this.error = null;
-    this.runMode = { name: 'production', fakeDeploy: false, demoDelays: false }; // Re-read run mode from environment
     this.profile = resolveProfile();  // Re-read profile from environment
     this.referenceSpec = null;
     this.verificationReport = null;
