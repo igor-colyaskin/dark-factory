@@ -7,26 +7,43 @@
 
 ## Быстрый статус
 
-**Последняя выпущенная:** UX-001 — кнопка «Уточнить» на экране Spec Review ✅ (сессия 2026-05-08)
-**Согласованный порядок фаз:**
-1. ~~**UX-001**~~ — выпущено ✅
-2. **VIZ-001** — sandbox preview (первая сессия = дизайн/архитектура) ← следующее
-3. **v0.10** — Smart input (sample JSON → auto field extraction)
+**Последняя выпущенная версия:** v0.10 — UX polish + sandbox preview ✅ (сессия 2026-05-09)
+**Следующая:** v0.11 — Smart input (sample JSON → auto field extraction)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
-**Рабочий документ:** `docs/work/viz-001.md` — создать в начале следующей сессии
-**Бэклог:** `docs/backlog.md` — VIZ-001 (sandbox preview, топ-3), UX-001 (кнопка Уточнить)
 
 ## Что сделать в первую очередь
 
-1. Прочитай файлы в таком порядке:
-   - память `ic_roadmap.md` — scope v0.9 done, v0.10 план, future
-   - память `plugin_architecture.md` — proto-F, Square 1/2, plugin contract
-   - память `integration_card_template.md` — структура шаблона
+1. Прочитай память: `ic_roadmap.md`, `plugin_architecture.md`, `integration_card_template.md`
+2. Следующая задача — v0.11 Smart input (обсудить scope)
 
-2. Создай `docs/work/viz-001.md` и согласуй scope (первая сессия = только дизайн).
+## VIZ-001 — реализация завершена ✅ (сессия 2026-05-09)
 
-3. Не начинай код до подтверждения.
+### Что сделано
+
+**Архитектурное решение:** sandbox встроен в шаблон через `ui5-local.yaml` + `external_libs/`. SDK-стабы per-workspace.
+
+**Реализованные файлы:**
+- `server/sandbox-manager.js` — старт/стоп `ui5 serve`, маппинг `{pid, port}`, один процесс
+- `server/index.js` — `POST /api/sandbox/start`, `POST /api/sandbox/stop`, `sandboxManager.stop()` при новом заказе
+- `client/index.html` — кнопка "Preview Card" в Pickup
+- `client/app.js` — `handleSandboxPreview()`, показ кнопки по `state.currentSpec.cardSlug`
+- `server/prompts/integration-card/developer.js` — в `generateStaticFiles()` добавлены sandbox-файлы и SDK-стабы
+
+### Ключевые технические решения (закрытые баги)
+
+**1. `ui5-middleware-servestatic` игнорирует `mountPath`**
+Middleware делает `return serveStatic(rootPath)` без всякого path stripping.
+Fix: стабы перемещены в `external_libs/resources/com/sap/...` — путь совпадает с URL `/resources/com/sap/...`.
+`SDK_BASE_PATH = 'src/test/external_libs/resources/com/sap/fiorireuselibrary/ui5cardssdk'`
+
+**2. `AuthorizationDialog.controller.js` отсутствовал в стабах**
+`Main.controller.js` импортирует его (хотя не вызывает). Добавлена пустая заглушка `T_STUB_AUTHORIZATION_DIALOG`.
+
+**3. `sap.ui.loader.config` путь в `unitTests.qunit.js`**
+Обновлён с `external_libs/com/sap/...` на `external_libs/resources/com/sap/...`.
+
+**Результат:** карточка рендерится с mock-данными в отдельной вкладке.
 
 ## Технические решения, актуальные для следующей сессии
 
@@ -42,18 +59,24 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 `let lastACError` в `index.js` хранит вывод npm test при неудаче.
 Передаётся в `generateUserPrompt` как 4-й параметр → попадает в retry-промпт девелопера.
 
-## Что сделала сессия 2026-05-08 (UX-001)
+## Что v0.10 дала проекту (UX-001 + VIZ-001)
 
-**Кнопка «Уточнить» на экране Spec Review:**
+**Кнопка «Уточнить» (UX-001):**
 - Новый переход: `SPEC_REVIEW → ARCH_WORKING → ... → SPEC_REVIEW` без потери истории
-- `orchestrator.handleRefineRequest(message)` — добавляет `{ refine: true, message }` в `clarifyHistory`, сбрасывает `clarifyRound = 0`, инкрементирует `refineRound`
-- Лимит: `maxRefineRounds = 3` (кнопка disabled после третьего уточнения)
-- `POST /api/refine` — новый endpoint
-- Оба архитектора (generic + IC) получили параметр `previousSpec` — видят старый spec при уточнении
-- Ветвление `clarifyHistory.length === 0` вместо `round === 0` — корректно работает после сброса `clarifyRound`
-- UI: textarea стилизована под поле заказа, toggle показывает/скрывает, `Start` скрывается пока textarea открыта
+- `orchestrator.handleRefineRequest(message)` — `{ refine: true, message }` в `clarifyHistory`, сброс `clarifyRound`, инкремент `refineRound`
+- Лимит: `maxRefineRounds = 3`; `POST /api/refine`
+- Ветвление `clarifyHistory.length === 0` вместо `round === 0`
 
-## Что v0.10 — Smart Input (v0.10 план)
+**Sandbox preview (VIZ-001):**
+- `server/sandbox-manager.js` — старт/стоп `ui5 serve`, один процесс per DF instance
+- `POST /api/sandbox/start` + `POST /api/sandbox/stop` в `server/index.js`
+- Кнопка "Preview Card" в Pickup — только для IC-карточек
+- `generateStaticFiles()` — sandbox-файлы + SDK-стабы (6 файлов) + `sandbox` npm-скрипт
+- SDK-стабы лежат в `external_libs/resources/com/sap/...` — путь совпадает с URL `/resources/com/sap/...`
+  (причина: `ui5-middleware-servestatic` игнорирует `mountPath`, делает голый `serveStatic(rootPath)`)
+- `AuthorizationDialog.controller.js` — пустой стаб (импортируется но не вызывается)
+
+## Что v0.11 — Smart Input (план)
 
 **Focus:** Smart input — пользователь даёт sample JSON от BE → Архитектор парсит поля автоматически, clarify-раунд сокращается до минимума.
 
@@ -62,7 +85,7 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 - Отдельное поле UI для "Sample BE response"
 - Комбо: сначала описание, потом архитектор запрашивает sample JSON
 
-## Ключевые файлы (актуально для v0.9+)
+## Ключевые файлы (актуально для v0.10+)
 
 | Файл | Роль |
 |------|------|
