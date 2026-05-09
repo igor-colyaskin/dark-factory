@@ -7,20 +7,16 @@
 
 ## Быстрый статус
 
-## v0.11 полностью завершена + E2E пройден ✅
+## v0.11.1 cleanup завершена ✅
 
-**Последняя выпущенная версия:** v0.11 — SDK-001 + My Apps + Edit mode + Import ✅ (сессия 2026-05-09)
-**E2E-проверка:** Create → Preview → My Apps → Edit mode — пройдено ✅ (сессия 2026-05-09)
-**Import (сценарий D) и Delete (сценарий E):** не проверялись, но риск низкий.
-**Следующая:** v0.11.1 — cleanup (удалить мёртвые модули: Fly/GitHub/LocalRunner/Verifier-a/b/nodejs-app), затем v0.12 Smart Input
-**Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
-GitHub — личный аккаунт через OAuth App.
+**Последняя выпущенная версия:** v0.11.1 — cleanup (удалены Fly/GitHub/LocalRunner/Verifier-a/b/nodejs-app) ✅ (сессия 2026-05-09)
+**v0.11 E2E:** Create → Preview → My Apps → Edit → Import → Delete — всё пройдено ✅
+**Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655)
 
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `project_state_v04.md`, `integration_card_template.md`
-2. **v0.11.1** — cleanup: удалить мёртвые модули (Fly, GitHub, LocalRunner, verifier-a/b, nodejs-app профиль и промпты). Делать до v0.12.
-3. **v0.12** — refining-сессия: детализировать scope Smart Input перед реализацией
+2. **v0.12** — refining-сессия: детализировать scope Smart Input перед реализацией
 
 ## Баги найдены и исправлены в E2E-сессии (2026-05-09)
 
@@ -57,6 +53,22 @@ Scope v0.12 ещё не детализирован — нужна refining-се�
 `workspaces/` (мн.ч.) — Node.js приложения (Local Runner).
 
 **Зомби-процесс сандбокса:** старый процесс на 3100 держит устаревший `rootPath` → карточка не рендерится. Fix: `taskkill //F //PID <pid>`. Диагностика: `netstat -ano | grep ":3100 "`.
+
+## Что v0.11.1 дала проекту (сессия 2026-05-09)
+
+**Удалено 17 файлов** (мёртвый код nodejs-app pipeline):
+`fly-manager.js`, `github-client.js`, `github-tokens.js`, `local-runner.js`,
+`process-registry.js`, `apps-store.js`, `verifier-a.js`, `verifier-b.js`,
+`verifier.js`, `ac-checker.js`, `run-modes.js`, `readme-generator.js`,
+`routes/github-auth.js`, `profiles/nodejs-app.js`,
+`prompts/architect.js`, `prompts/developer.js`, `prompts/tester.js`
+
+**Изменены файлы:**
+- `server/index.js` — удалены роуты /api/github, /api/my-apps/*, /workspace, /my-apps; dead acChecker branch в runDevCheck
+- `server/profiles/index.js` — только `integration-card`, nodejs-app убран
+- `server/orchestrator.js` — ~516 строк удалено: executeGithubPush, executeDeploy, executeVerify, executeLocalDeploy, executeFakeDeploy; resolveRunMode → inline object; appsStore/github deps убраны
+
+**Результат:** сервер стартует чисто, `profiles/index.js` и `orchestrator.js` не содержат dead imports.
 
 ## Что v0.11 дала проекту (сессия 2026-05-09)
 
