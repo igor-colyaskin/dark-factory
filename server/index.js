@@ -3,8 +3,12 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
-import { mkdirSync } from 'fs';
+import { mkdirSync, existsSync } from 'fs';
+import { rm, readFile, readdir, cp } from 'fs/promises';
+import { tmpdir } from 'os';
 import { promisify } from 'util';
+import AdmZip from 'adm-zip';
+import multer from 'multer';
 import orchestrator from './orchestrator.js';
 import fileManager from './file-manager.js';
 import acChecker from './ac-checker.js';
@@ -275,6 +279,97 @@ app.post('/api/sandbox/stop', (req, res) => {
   sandboxManager.stop();
   res.json({ success: true });
 });
+
+// ── My Apps: IC cards API (v0.11) ─────────────────────────────────────────────
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+
+app.get('/api/cards', (req, res) => {
+  res.json(cardsRegistry.readRegistry());
+});
+
+app.delete('/api/cards/:slug', async (req, res) => {
+  const { slug } = req.params;
+  try {
+    cardsRegistry.removeCard(slug);
+    const cardPath = path.join(CARDS_DIR, slug);
+    if (existsSync(cardPath)) {
+      await rm(cardPath, { recursive: true, force: true });
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Cards] delete error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/cards/:slug/preview', async (req, res) => {
+  const { slug } = req.params;
+  const cardPath = path.join(CARDS_DIR, slug);
+  if (!existsSync(cardPath)) {
+    return res.status(404).json({ success: false, message: 'Card not found' });
+  }
+  try {
+    sandboxManager.stop();
+    const { port } = await sandboxManager.start(cardPath);
+    res.json({ success: true, url: `http://localhost:${port}/test/manual/index.html` });
+  } catch (e) {
+    console.error('[Cards] preview error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/cards/import', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded' });
+  }
+  const tmpDir = path.join(tmpdir(), `df-import-${Date.now()}`);
+  try {
+    const zip = new AdmZip(req.file.buffer);
+    zip.extractAllTo(tmpDir, true);
+
+    // Locate manifest — support both root-level and nested in one subfolder
+    let manifestPath = path.join(tmpDir, 'src', 'manifest.json');
+    if (!existsSync(manifestPath)) {
+      // Try one level deeper (zip may contain a top-level folder)
+      const entries = await readdir(tmpDir, { withFileTypes: true });
+      const subdir = entries.find(e => e.isDirectory());
+      if (subdir) {
+        manifestPath = path.join(tmpDir, subdir.name, 'src', 'manifest.json');
+      }
+    }
+    if (!existsSync(manifestPath)) {
+      return res.status(400).json({ success: false, message: 'Invalid card: src/manifest.json not found' });
+    }
+
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    const appId = manifest?.['sap.app']?.id || '';
+    const slug = appId.split('.').pop().toLowerCase();
+    const name = manifest?.['sap.app']?.title || slug;
+
+    if (!slug) {
+      return res.status(400).json({ success: false, message: 'Cannot determine card slug from sap.app.id' });
+    }
+
+    const destPath = path.join(CARDS_DIR, slug);
+    if (existsSync(destPath)) {
+      return res.status(409).json({ success: false, message: `Card "${slug}" already exists` });
+    }
+
+    const srcRoot = path.dirname(path.dirname(manifestPath)); // parent of src/
+    await cp(srcRoot, destPath, { recursive: true });
+    cardsRegistry.registerCard({ slug, name });
+
+    res.json({ success: true, slug, name });
+  } catch (e) {
+    console.error('[Cards] import error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  } finally {
+    rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 app.post('/api/cancel', async (req, res) => {
   try {
