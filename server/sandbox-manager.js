@@ -82,11 +82,13 @@ class SandboxManager {
   }
 
   stop() {
-    if (this._proc) {
-      console.log(`[Sandbox] Stopping pid ${this._proc.pid}`);
-      try { this._proc.child.kill('SIGTERM'); } catch {}
-      this._proc = null;
-    }
+    if (!this._proc) return Promise.resolve();
+    const { child, pid } = this._proc;
+    console.log(`[Sandbox] Stopping pid ${pid}`);
+    this._proc = null;
+    // taskkill /T kills the entire process tree (shell → npm → ui5 serve)
+    return execAsync(`taskkill /F /T /PID ${pid}`)
+      .catch(() => { try { child.kill('SIGTERM'); } catch {} });
   }
 
   getStatus() {
