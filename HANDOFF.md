@@ -7,55 +7,54 @@
 
 ## Быстрый статус
 
-**Последняя выпущенная версия:** v0.10 — UX polish + sandbox preview ✅ (сессия 2026-05-09)
+## v0.10 полностью завершена ✅
+
+**Последняя выпущенная версия:** v0.10 — UX polish + sandbox preview + npm test ✅ (сессия 2026-05-09)
 **Следующая:** v0.11 — Smart input (sample JSON → auto field extraction)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
 
-## ⚠️ Открытый вопрос после v0.10 — npm test
+## ✅ npm test починен (сессия 2026-05-09)
 
-**Статус:** тесты всё ещё зависают на "Probing urls". Стабы мигрированы в `sdk-stubs/`, но 404 не устранён.
+**Корень проблемы:** регекс `/((?:test-)?resources\/.*)` в `ui5-test-runner/src/ui5.js`
+перехватывает URL с `/resources/` ВЕЗДЕ в пути → проксирует на SAP CDN → 404.
+AMD-путь `./sdk-stubs/resources/com/sap/...` → URL `/test/unit/sdk-stubs/resources/com/sap/...`
+содержал `/resources/` → CDN перехват.
 
-**⚠️ Незакоммиченные изменения (нужно коммитить после фикса):**
-- `server/prompts/integration-card/developer.js` — новый `SDK_BASE_PATH`, новые пути в `T_UNIT_TESTS_JS` и `T_MANUAL_INDEX_HTML`
-- `server/prompts/integration-card/templates/form-rest/ui5-local.yaml` — `rootPath: "./src/test/unit/sdk-stubs"`
-- `workspace/src/test/unit/unitTests.qunit.js` — путь `./sdk-stubs/resources/com/sap/...`
-- `workspace/src/test/manual/index.html` — новый resource-root для SDK
-- `workspace/ui5-local.yaml` — `rootPath: "./src/test/unit/sdk-stubs"`
+**Fix:** два набора стабов:
+- `sdk-stubs/resources/com/sap/...` — для sandbox (ui5 serve + ui5-middleware-servestatic)
+- `sdk-stubs/com/sap/...` — для npm test (AMD loader, URL без /resources/)
+`unitTests.qunit.js` AMD path: `./sdk-stubs/com/sap/fiorireuselibrary/ui5cardssdk`
 
-**История миграции стабов (сессия 2026-05-09):**
-
-1. Изначально стабы: `external_libs/com/sap/fiorireuselibrary/ui5cardssdk/`
-2. Первый fix: → `external_libs/resources/com/sap/...` (чтобы URL `/resources/com/sap/...` совпал с путём)
-   - Это починило **sandbox** (`ui5 serve`), но тесты всё равно висли
-3. Диагностика: `ui5-test-runner` раздаёт только `test/unit/` (testsuite dir) + прямые файлы в `test/`
-   - `curl test/external_libs/...` → **404** (поддиректория `test/` вне `test/unit/` недоступна)
-   - `curl test/unit/AllTests.js` → 200 ✅
-4. Второй fix: → `test/unit/sdk-stubs/resources/com/sap/...`
-   - Все файлы на диске созданы: `CustomError.js`, `Base.controller.js`, `AuthorizationDialog.controller.js`, etc.
-   - Все ссылки в коде обновлены (см. незакоммиченные изменения выше)
-   - `curl localhost:PORT/test/unit/sdk-stubs/resources/.../CustomError.js` → **ещё 404** ❌
-   - Причина НЕИЗВЕСТНА: `AllTests.js` (в `test/unit/`) отдаётся, а `sdk-stubs/` (поддиректория `test/unit/`) — нет
-
-**Текущие актуальные пути (в незакоммиченном коде):**
-```
-SDK_BASE_PATH = 'src/test/unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk'
-unitTests.qunit.js loader path: './sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk'
-ui5-local.yaml rootPath: './src/test/unit/sdk-stubs'
-manual/index.html resource-root: '../unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk'
-```
-
-**Следующий шаг для диагностики:**
-1. Запустить тест снова: `cd workspace && npm test` — взять порт из вывода
-2. Curl: `curl -v "http://localhost:PORT/test/unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk/CustomError.js"`
-3. Если 404 — исследовать как `ui5-test-runner` определяет testsuite dir и что именно раздаёт
-   Возможно нужен другой подход: добавить стабы в `src/` и исключить их из coverage
+**Результат:** `npm test` → 4/4 тесты ✅
 
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `plugin_architecture.md`, `integration_card_template.md`
-2. Разобраться с `npm test` (см. раздел выше — открытый вопрос)
-3. После — v0.11 Smart input (обсудить scope)
+2. Обсудить scope v0.11 — Smart input
+3. Обсудить UX-002 (Edit mode) — где хранить реестр карточек (см. backlog.md)
+4. CARDS.md — обсудить и закоммитить (отложено с предыдущей сессии)
+
+## Итоги сессии 2026-05-09 (часть 2) — бэклог и архитектурные решения
+
+**workspace vs workspaces:** разные пайплайны. `workspace/` (ед.ч.) — IC-карточки, единый, перезаписывается.
+`workspaces/` (мн.ч.) — Node.js приложения (Local Runner). Карточки никуда не "переезжают".
+
+**Зомби-процесс сандбокса:** после миграции стабов старый процесс сандбокса на 3100 держал
+устаревший `rootPath` → карточка не рендерилась. Fix: `taskkill //F //PID <pid>`, потом
+нажать Preview Card снова. Команда для диагностики: `netstat -ano | grep ":3100 "`.
+
+**Бэклог обновлён (docs/backlog.md):**
+- VIZ-001, UX-001 — помечены выполненными
+- TPL-001 (три точки) — подтверждён, приоритет низкий
+- TPL-002 (namespace/папка конвенция) — новый, средний приоритет
+- UX-002 (Edit mode) — новый, высокий приоритет, v0.12
+
+**UX-002 — ключевой инсайт:** типичный сценарий работы разработчика — переключение между
+несколькими карточками с инкрементальными изменениями. Создавать новый GitHub repo на каждое
+"перекрась кнопку" неприемлемо. Нужен Edit mode (post-Submit).
+**Открытый вопрос:** где хранить реестр карточек (slug → repo URL)?
+Варианты: локальный `cards-registry.json`, GitHub-индекс, ручной ввод URL.
 
 ## VIZ-001 — реализация завершена ✅ (сессия 2026-05-09)
 
