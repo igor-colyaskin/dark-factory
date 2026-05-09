@@ -223,18 +223,46 @@ function renderCardItem(card) {
   `;
 }
 
+function openPreviewWindow() {
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0a0a1a;display:flex;height:100vh;align-items:center;justify-content:center;color:#fff}
+    .card{text-align:center;padding:48px 64px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;max-width:420px}
+    .logo{font-size:2rem;margin-bottom:8px}
+    .title{font-size:1.25rem;font-weight:600;letter-spacing:.02em;margin-bottom:6px}
+    .sub{font-size:.85rem;color:rgba(255,255,255,.45);margin-bottom:36px}
+    .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.12);border-top-color:#4f8ef7;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 24px}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    .hint{font-size:.8rem;color:rgba(255,255,255,.3)}
+  </style></head><body>
+  <div class="card">
+    <div class="logo">🏭</div>
+    <div class="title">Dark Factory IC</div>
+    <div class="sub">Integration Card Preview</div>
+    <div class="spinner"></div>
+    <div class="hint">Запускаем sandbox, загружаем карточку…</div>
+  </div>
+  </body></html>`);
+  win.document.close();
+  return win;
+}
+
 async function handlePreviewCard(slug) {
   const btn = document.querySelector(`.app-card[data-card-slug="${slug}"] .btn-primary`);
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  const win = openPreviewWindow();
   try {
     const res = await fetch(`/api/cards/${encodeURIComponent(slug)}/preview`, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      window.open(data.url, '_blank');
+      win.location.href = data.url;
     } else {
+      win.close();
       alert(`Ошибка preview: ${data.message}`);
     }
   } catch (e) {
+    win.close();
     alert(`Ошибка: ${e.message}`);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Preview'; }
@@ -1241,17 +1269,20 @@ async function handleSandboxPreview() {
   const btn = document.getElementById('sandbox-preview-btn');
   btn.disabled = true;
   btn.textContent = 'Запускаю...';
+  const win = openPreviewWindow();
   try {
     const res = await fetch('/api/sandbox/start', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      window.open(data.url, '_blank');
+      win.location.href = data.url;
       btn.textContent = '▶ Preview Card';
     } else {
+      win.close();
       btn.textContent = '⚠ Ошибка';
       console.error('[Preview]', data.message);
     }
   } catch (e) {
+    win.close();
     btn.textContent = '⚠ Ошибка';
     console.error('[Preview]', e.message);
   } finally {
