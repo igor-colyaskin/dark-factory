@@ -12,10 +12,50 @@
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
 
+## ⚠️ Открытый вопрос после v0.10 — npm test
+
+**Статус:** тесты всё ещё зависают на "Probing urls". Стабы мигрированы в `sdk-stubs/`, но 404 не устранён.
+
+**⚠️ Незакоммиченные изменения (нужно коммитить после фикса):**
+- `server/prompts/integration-card/developer.js` — новый `SDK_BASE_PATH`, новые пути в `T_UNIT_TESTS_JS` и `T_MANUAL_INDEX_HTML`
+- `server/prompts/integration-card/templates/form-rest/ui5-local.yaml` — `rootPath: "./src/test/unit/sdk-stubs"`
+- `workspace/src/test/unit/unitTests.qunit.js` — путь `./sdk-stubs/resources/com/sap/...`
+- `workspace/src/test/manual/index.html` — новый resource-root для SDK
+- `workspace/ui5-local.yaml` — `rootPath: "./src/test/unit/sdk-stubs"`
+
+**История миграции стабов (сессия 2026-05-09):**
+
+1. Изначально стабы: `external_libs/com/sap/fiorireuselibrary/ui5cardssdk/`
+2. Первый fix: → `external_libs/resources/com/sap/...` (чтобы URL `/resources/com/sap/...` совпал с путём)
+   - Это починило **sandbox** (`ui5 serve`), но тесты всё равно висли
+3. Диагностика: `ui5-test-runner` раздаёт только `test/unit/` (testsuite dir) + прямые файлы в `test/`
+   - `curl test/external_libs/...` → **404** (поддиректория `test/` вне `test/unit/` недоступна)
+   - `curl test/unit/AllTests.js` → 200 ✅
+4. Второй fix: → `test/unit/sdk-stubs/resources/com/sap/...`
+   - Все файлы на диске созданы: `CustomError.js`, `Base.controller.js`, `AuthorizationDialog.controller.js`, etc.
+   - Все ссылки в коде обновлены (см. незакоммиченные изменения выше)
+   - `curl localhost:PORT/test/unit/sdk-stubs/resources/.../CustomError.js` → **ещё 404** ❌
+   - Причина НЕИЗВЕСТНА: `AllTests.js` (в `test/unit/`) отдаётся, а `sdk-stubs/` (поддиректория `test/unit/`) — нет
+
+**Текущие актуальные пути (в незакоммиченном коде):**
+```
+SDK_BASE_PATH = 'src/test/unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk'
+unitTests.qunit.js loader path: './sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk'
+ui5-local.yaml rootPath: './src/test/unit/sdk-stubs'
+manual/index.html resource-root: '../unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk'
+```
+
+**Следующий шаг для диагностики:**
+1. Запустить тест снова: `cd workspace && npm test` — взять порт из вывода
+2. Curl: `curl -v "http://localhost:PORT/test/unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk/CustomError.js"`
+3. Если 404 — исследовать как `ui5-test-runner` определяет testsuite dir и что именно раздаёт
+   Возможно нужен другой подход: добавить стабы в `src/` и исключить их из coverage
+
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `plugin_architecture.md`, `integration_card_template.md`
-2. Следующая задача — v0.11 Smart input (обсудить scope)
+2. Разобраться с `npm test` (см. раздел выше — открытый вопрос)
+3. После — v0.11 Smart input (обсудить scope)
 
 ## VIZ-001 — реализация завершена ✅ (сессия 2026-05-09)
 
@@ -34,8 +74,8 @@ GitHub — личный аккаунт через OAuth App.
 
 **1. `ui5-middleware-servestatic` игнорирует `mountPath`**
 Middleware делает `return serveStatic(rootPath)` без всякого path stripping.
-Fix: стабы перемещены в `external_libs/resources/com/sap/...` — путь совпадает с URL `/resources/com/sap/...`.
-`SDK_BASE_PATH = 'src/test/external_libs/resources/com/sap/fiorireuselibrary/ui5cardssdk'`
+Fix: стабы в `src/test/unit/sdk-stubs/resources/com/sap/...` — путь URL `/resources/com/sap/...` совпадает с подпутём.
+`SDK_BASE_PATH = 'src/test/unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk'`
 
 **2. `AuthorizationDialog.controller.js` отсутствовал в стабах**
 `Main.controller.js` импортирует его (хотя не вызывает). Добавлена пустая заглушка `T_STUB_AUTHORIZATION_DIALOG`.
@@ -72,7 +112,7 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 - `POST /api/sandbox/start` + `POST /api/sandbox/stop` в `server/index.js`
 - Кнопка "Preview Card" в Pickup — только для IC-карточек
 - `generateStaticFiles()` — sandbox-файлы + SDK-стабы (6 файлов) + `sandbox` npm-скрипт
-- SDK-стабы лежат в `external_libs/resources/com/sap/...` — путь совпадает с URL `/resources/com/sap/...`
+- SDK-стабы лежат в `src/test/unit/sdk-stubs/resources/com/sap/...`
   (причина: `ui5-middleware-servestatic` игнорирует `mountPath`, делает голый `serveStatic(rootPath)`)
 - `AuthorizationDialog.controller.js` — пустой стаб (импортируется но не вызывается)
 
