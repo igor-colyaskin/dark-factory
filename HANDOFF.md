@@ -12,14 +12,15 @@
 **Последняя выпущенная версия:** v0.11 — SDK-001 + My Apps + Edit mode + Import ✅ (сессия 2026-05-09)
 **E2E-проверка:** Create → Preview → My Apps → Edit mode — пройдено ✅ (сессия 2026-05-09)
 **Import (сценарий D) и Delete (сценарий E):** не проверялись, но риск низкий.
-**Следующая:** v0.12 — Smart Input (sample JSON → автоматический парсинг полей)
+**Следующая:** v0.11.1 — cleanup (удалить мёртвые модули: Fly/GitHub/LocalRunner/Verifier-a/b/nodejs-app), затем v0.12 Smart Input
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
 
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `project_state_v04.md`, `integration_card_template.md`
-2. **v0.12** — refining-сессия: детализировать scope Smart Input перед реализацией
+2. **v0.11.1** — cleanup: удалить мёртвые модули (Fly, GitHub, LocalRunner, verifier-a/b, nodejs-app профиль и промпты). Делать до v0.12.
+3. **v0.12** — refining-сессия: детализировать scope Smart Input перед реализацией
 
 ## Баги найдены и исправлены в E2E-сессии (2026-05-09)
 
