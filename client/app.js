@@ -270,6 +270,15 @@ function handleEditCard(slug) {
 
   switchTab('order');
 
+  // Reset order page to clean input state (previous order may have left it in display mode)
+  orderForm.style.display = 'flex';
+  const orderDisplay = document.getElementById('order-display');
+  if (orderDisplay) orderDisplay.style.display = 'none';
+  manufacturingBlock.style.display = 'none';
+  pickupBlock.style.display = 'none';
+  clarifySection.style.display = 'none';
+  specReviewSection.style.display = 'none';
+
   const title = document.getElementById('order-title');
   if (title) title.textContent = `✏️ Редактирование`;
 
