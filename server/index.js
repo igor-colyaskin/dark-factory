@@ -11,16 +11,10 @@ import AdmZip from 'adm-zip';
 import multer from 'multer';
 import orchestrator from './orchestrator.js';
 import fileManager from './file-manager.js';
-import acChecker from './ac-checker.js';
 import costTracker from './cost-tracker.js';
 import cardsRegistry from './cards-registry.js';
-import appsStore from './apps-store.js';
 import { resolveProfile, setActiveProfile, getAvailableProfiles, getActiveProfileId } from './profiles/index.js';
 import { validateEnvOrExit } from './env-validator.js';
-import githubAuthRouter from './routes/github-auth.js';
-import githubClient from './github-client.js';
-import localRunner from './local-runner.js';
-import processRegistry from './process-registry.js';
 import sandboxManager from './sandbox-manager.js';
 import deltaArchitect from './prompts/integration-card/delta-architect.js';
 
@@ -44,9 +38,6 @@ console.log(`   Profile: ${activeProfile.id} (${activeProfile.name})`);
 
 // Validate environment variables before proceeding
 validateEnvOrExit(RUN_MODE);
-
-// Initialize apps store
-await appsStore.init();
 
 let agentManager;
 let useMockWorkspace = false;
@@ -82,9 +73,6 @@ app.use(express.static(path.join(__dirname, '../client')));
 
 // SPA fallback: serve index.html for client-side routes
 app.get('/settings', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/index.html'));
-});
-app.get('/my-apps', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 
@@ -470,140 +458,6 @@ app.post('/api/settings/profile', (req, res) => {
   }
 });
 
-// GitHub OAuth routes
-app.use('/api/github', githubAuthRouter);
-
-// GET endpoint to get all archived apps
-app.get('/api/my-apps', async (req, res) => {
-  try {
-    const apps = await appsStore.getAllApps();
-    res.json({ success: true, apps });
-  } catch (error) {
-    console.error('Error fetching apps:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch apps' });
-  }
-});
-
-// GET endpoint to get a specific archived app
-app.get('/api/my-apps/:id', async (req, res) => {
-  try {
-    const app = await appsStore.getApp(req.params.id);
-    
-    if (!app) {
-      return res.status(404).json({ success: false, message: 'App not found' });
-    }
-    
-    res.json({ success: true, app });
-  } catch (error) {
-    console.error('Error fetching app:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch app' });
-  }
-});
-
-// DELETE endpoint to delete an archived app
-app.delete('/api/my-apps/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const appRecord = await appsStore.getApp(id);
-
-    if (!appRecord) {
-      return res.status(404).json({ success: false, message: 'App not found' });
-    }
-
-    // 1. Local Runner teardown — non-blocking
-    if (appRecord.flyAppName) {
-      const proc = processRegistry.get(appRecord.flyAppName);
-      if (proc) {
-        localRunner.teardown(proc.pid, appRecord.flyAppName);
-        processRegistry.remove(appRecord.flyAppName);
-      }
-    }
-
-    // 2. Fly teardown — non-blocking (VDI may block flyctl)
-    const isMock = appRecord.flyAppName && appRecord.flyAppName.startsWith('df-mock-');
-    if (!isMock && appRecord.flyAppName) {
-      try {
-        const flyManager = await import('./fly-manager.js');
-        const flyResult = await flyManager.default.destroyApp(appRecord.flyAppName);
-        if (!flyResult.success) {
-          console.warn(`[DELETE] Fly destroy failed for ${appRecord.flyAppName}: ${flyResult.error} — proceeding anyway`);
-        }
-      } catch (err) {
-        console.warn(`[DELETE] Fly destroy error: ${err.message} — proceeding anyway`);
-      }
-    }
-
-    // 3. GitHub repo deletion — non-blocking
-    if (appRecord.sourceUrl) {
-      try {
-        const parsed = new URL(appRecord.sourceUrl);
-        const parts = parsed.pathname.slice(1).split('/');
-        const owner = parts[0];
-        const repoName = parts[1];
-        if (owner && repoName) {
-          const ghResult = await githubClient.deleteRepo(owner, repoName);
-          if (!ghResult.success) {
-            console.warn(`[DELETE] GitHub repo delete failed: ${ghResult.error} — proceeding anyway`);
-          } else {
-            console.log(`[DELETE] GitHub repo ${owner}/${repoName} deleted`);
-          }
-        }
-      } catch (err) {
-        console.warn(`[DELETE] GitHub repo delete error: ${err.message} — proceeding anyway`);
-      }
-    }
-
-    // 4. Delete from archive — always
-    await appsStore.deleteApp(id);
-
-    console.log(`[DELETE] App ${id} deleted`);
-    res.json({ success: true, message: 'App deleted' });
-
-  } catch (error) {
-    console.error('Error deleting app:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete app' });
-  }
-});
-
-// Open app on-demand: start if not running, return url
-app.post('/api/my-apps/:id/open', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const appRecord = await appsStore.getApp(id);
-    if (!appRecord) return res.status(404).json({ success: false, message: 'App not found' });
-
-    const appName = appRecord.flyAppName;
-    if (!appName) return res.status(400).json({ success: false, message: 'App has no local workspace' });
-
-    // Already running?
-    const existing = processRegistry.get(appName);
-    if (existing) {
-      return res.json({ success: true, url: `http://localhost:${existing.port}` });
-    }
-
-    // Start it
-    const { url, pid, port } = await localRunner.deploy(appName, () => {});
-    processRegistry.register(appName, { pid, port });
-    res.json({ success: true, url });
-  } catch (e) {
-    console.error('[OPEN]', e.message);
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
-
-// App running status
-app.get('/api/my-apps/:id/status', async (req, res) => {
-  const { id } = req.params;
-  const appRecord = await appsStore.getApp(id).catch(() => null);
-  if (!appRecord) return res.status(404).json({ success: false });
-  const proc = appRecord.flyAppName ? processRegistry.get(appRecord.flyAppName) : null;
-  res.json({ running: !!proc, url: proc ? `http://localhost:${proc.port}` : null });
-});
-
-// Serve workspace files (for viewing static files)
-app.use('/workspace', express.static(path.join(__dirname, '../workspace')));
-
 // Read all text files from a card directory for delta-architect context
 async function readCardFilesForEdit(dirPath) {
   const IGNORE = new Set(['node_modules', '.git', '.DS_Store', 'Thumbs.db']);
@@ -877,21 +731,6 @@ async function runDevCheck() {
     console.log('[DEV_CHECK] deployer=none — skipping nodejs AC checks');
     await orchestrator.handleACCheckResult(2, true);
     await runPipeline();
-    return;
-  }
-
-  const checkResult = await acChecker.checkDevelopment();
-
-  await orchestrator.handleACCheckResult(2, checkResult.passed);
-
-  if (checkResult.passed) {
-    // Continue to testing
-    await runPipeline();
-  } else {
-    // Will retry or go to ERROR state
-    if (orchestrator.retryCount < orchestrator.maxRetries) {
-      await runPipeline();
-    }
   }
 }
 
