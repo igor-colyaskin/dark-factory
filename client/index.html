@@ -261,14 +261,18 @@
       <!-- Page: Products -->
       <div id="page-products" class="page" style="display: none;">
         <section class="block products-block">
-          <div class="block-header">
+          <div class="block-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <h2>📦 My Apps</h2>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-sm btn-secondary" onclick="handleImportCard()">↑ Import</button>
+              <button class="btn btn-sm btn-primary" onclick="switchTab('order')">+ New Card</button>
+            </div>
           </div>
           <div class="block-content">
             <div id="products-list"></div>
             <div id="products-empty" class="products-empty">
               <p>Nothing here yet.</p>
-              <p>Go to <a href="#" id="go-to-order-link">Order</a> and create your first app.</p>
+              <p>Go to <a href="#" id="go-to-order-link">Order</a> and create your first card.</p>
             </div>
           </div>
         </section>
@@ -343,23 +347,31 @@
     <p id="loading-message">Processing...</p>
   </div>
 
-  <!-- Delete Confirmation Modal -->
+  <!-- Delete Confirmation Modal (legacy — not used for IC cards) -->
   <div id="delete-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
-      <h3 class="modal-title">Удалить приложение?</h3>
+      <h3 class="modal-title">Удалить?</h3>
       <p class="modal-app-info" id="delete-modal-info"></p>
-      <div class="modal-warning">
-        <p>Это:</p>
-        <ul>
-          <li>удалит приложение с Fly.io (оно перестанет работать)</li>
-          <li>удалит запись из архива</li>
-        </ul>
-        <p><strong>Отменить нельзя.</strong></p>
-      </div>
       <div id="delete-modal-error" class="modal-error" style="display: none;"></div>
       <div class="modal-actions">
-        <button id="delete-cancel-btn" class="btn btn-secondary" onclick="closeDeleteModal()">Отмена</button>
-        <button id="delete-confirm-btn" class="btn btn-danger" onclick="confirmDelete()">Да, удалить</button>
+        <button id="delete-cancel-btn" class="btn btn-secondary">Отмена</button>
+        <button id="delete-confirm-btn" class="btn btn-danger">Да, удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Card Modal -->
+  <div id="import-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h3 class="modal-title">Импортировать карточку</h3>
+      <p style="margin:0 0 12px;font-size:0.9em;color:var(--text-muted)">
+        Выберите zip-архив карточки. Zip должен содержать <code>src/manifest.json</code>.
+      </p>
+      <input type="file" id="import-file-input" accept=".zip" style="margin-bottom:12px;width:100%;">
+      <div id="import-modal-error" class="modal-error" style="display: none;"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeImportModal()">Отмена</button>
+        <button id="import-submit-btn" class="btn btn-primary" onclick="submitImport()">Импортировать</button>
       </div>
     </div>
   </div>

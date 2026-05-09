@@ -6,8 +6,6 @@
 let eventSource = null;
 let currentState = null;
 let sessionId = null;
-let productsCache = [];
-let deleteTargetId = null;
 
 // DOM Elements
 const orderBlock = document.getElementById('order-block');
@@ -123,13 +121,6 @@ function setupEventListeners() {
   newOrderBtn.addEventListener('click', handleNewOrder);
   openPublicBtn.addEventListener('click', handleOpenPublic);
   copyUrlBtn.addEventListener('click', handleCopyUrl);
-
-  // Close delete modal on outside click
-  document.getElementById('delete-modal').addEventListener('click', (e) => {
-    if (e.target.id === 'delete-modal') {
-      closeDeleteModal();
-    }
-  });
 }
 
 // Setup Tabs
@@ -170,9 +161,9 @@ function switchTab(tabName, { updateUrl = true } = {}) {
     history.pushState({ page: tabName }, '', TAB_ROUTES[tabName]);
   }
 
-  // Load products when switching to that tab
+  // Load cards when switching to that tab
   if (tabName === 'products') {
-    loadProducts();
+    loadCards();
   }
 
   // Load GitHub status when switching to Settings
@@ -182,247 +173,146 @@ function switchTab(tabName, { updateUrl = true } = {}) {
   }
 }
 
-// Load Products
-async function loadProducts() {
-  const productsList = document.getElementById('products-list');
-  const productsEmpty = document.getElementById('products-empty');
+// ── IC Cards (My Apps) ────────────────────────────────────────────────────────
 
+let cardsCache = [];
+
+async function loadCards() {
+  const list = document.getElementById('products-list');
+  const empty = document.getElementById('products-empty');
   try {
-    const response = await fetch('/api/my-apps');
-    const data = await response.json();
-
-    if (!data.success || !data.apps || data.apps.length === 0) {
-      productsCache = [];
-      productsList.innerHTML = '';
-      productsEmpty.style.display = 'block';
+    const data = await fetch('/api/cards').then(r => r.json());
+    if (!Array.isArray(data) || data.length === 0) {
+      cardsCache = [];
+      list.innerHTML = '';
+      empty.style.display = 'block';
       return;
     }
-
-    productsCache = data.apps;
-    productsEmpty.style.display = 'none';
-    productsList.innerHTML = data.apps.map(app => renderAppCard(app)).join('');
-
-  } catch (error) {
-    console.error('Error loading products:', error);
-    productsCache = [];
-    productsList.innerHTML = '<p class="products-error">Failed to load applications.</p>';
-    productsEmpty.style.display = 'none';
+    cardsCache = data;
+    empty.style.display = 'none';
+    list.innerHTML = data.map(renderCardItem).join('');
+  } catch (e) {
+    console.error('Error loading cards:', e);
+    list.innerHTML = '<p class="products-error">Failed to load cards.</p>';
+    empty.style.display = 'none';
   }
 }
 
-// Render App Card
-function renderAppCard(app) {
-  const orderExcerpt = app.order && app.order.length > 80
-    ? app.order.substring(0, 80) + '...'
-    : (app.order || '');
-
-  const dateFormatted = formatDate(app.createdAt);
-  const costFormatted = app.metrics && typeof app.metrics.totalCost === 'number'
-    ? `$${app.metrics.totalCost.toFixed(2)}`
-    : '--';
-  const timeFormatted = app.metrics && typeof app.metrics.totalTime === 'number'
-    ? formatTime(app.metrics.totalTime)
-    : '--';
-
+function renderCardItem(card) {
+  const created = formatDate(card.createdAt);
+  const modified = formatDate(card.lastModified);
+  const slug = escapeHtml(card.slug);
+  const name = escapeHtml(card.name);
   return `
-    <div class="app-card" data-app-id="${app.id}">
+    <div class="app-card" data-card-slug="${slug}">
       <div class="app-card-header">
-        <span class="app-card-number">#${app.number}</span>
-        <span class="app-card-id">${app.id}</span>
-        <span class="app-card-date">${dateFormatted}</span>
+        <span class="app-card-id">${name}</span>
+        <span class="app-card-date">${created}</span>
       </div>
-      <div class="app-card-order">${escapeHtml(orderExcerpt)}</div>
-      <div class="app-card-metrics">
-        <span class="app-card-metric">💰 ${costFormatted}</span>
-        <span class="app-card-metric">⏱ ${timeFormatted}</span>
-      </div>
-      <div class="app-card-url">
-        ${app.url && !app.url.startsWith('http://localhost')
-          ? `<a href="${app.url}" target="_blank" rel="noopener noreferrer">🌐 ${app.url}</a>`
-          : app.url
-            ? `<button class="btn btn-sm btn-primary" onclick="handleOpenApp('${app.id}')">▶ Открыть</button>`
-            : ''}
-        ${app.sourceUrl ? `<a href="${app.sourceUrl}" target="_blank" rel="noopener noreferrer" class="app-card-github-link"><svg height="13" viewBox="0 0 16 16" width="13" fill="currentColor" style="vertical-align:-2px;margin-right:4px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Source Code</a>` : ''}
+      <div class="app-card-order" style="font-size:0.85em;color:var(--text-muted)">
+        ${slug} &bull; изменено ${modified}
       </div>
       <div class="app-card-actions">
-        <button class="btn btn-sm btn-secondary" onclick="handleDetails('${app.id}')" data-action="details">Детали</button>
-        <button class="btn btn-sm btn-secondary" onclick="handleRepeatWithChanges(${app.number})"
-          ${!app.sourceUrl ? 'disabled title="Source code не сохранён — повтор недоступен"' : ''}
-          data-action="repeat">Повторить с изменениями</button>
-        <button class="btn btn-sm btn-danger-outline" onclick="handleDeleteClick('${app.id}')" data-action="delete">Стереть</button>
+        <button class="btn btn-sm btn-secondary" onclick="handleEditCard('${slug}')">Редактировать</button>
+        <button class="btn btn-sm btn-primary" onclick="handlePreviewCard('${slug}')">Preview</button>
+        <button class="btn btn-sm btn-danger-outline" onclick="handleDeleteCard('${slug}', '${name}')">Стереть</button>
       </div>
-      <div class="app-card-details" id="details-${app.id}" style="display: none;"></div>
     </div>
   `;
 }
 
-// Format Date
-function formatDate(isoString) {
-  if (!isoString) return '--';
-  const d = new Date(isoString);
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-}
-
-// Escape HTML
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Handle Details (Phase 6)
-function handleDetails(appId) {
-  const detailsDiv = document.getElementById(`details-${appId}`);
-  const btn = document.querySelector(`.app-card[data-app-id="${appId}"] [data-action="details"]`);
-
-  if (!detailsDiv || !btn) return;
-
-  const isVisible = detailsDiv.style.display !== 'none';
-
-  if (isVisible) {
-    // Collapse
-    detailsDiv.style.display = 'none';
-    btn.textContent = 'Детали';
-  } else {
-    // Expand — populate if empty
-    if (!detailsDiv.innerHTML) {
-      const app = productsCache.find(a => a.id === appId);
-      const content = app && app.architectOutput ? app.architectOutput : 'No details available.';
-      const sourceSection = app?.sourceUrl
-        ? `<div class="app-card-details-source">
-            <strong>Source Code:</strong>
-            <a href="${app.sourceUrl}" target="_blank" rel="noopener noreferrer">${app.sourceUrl}</a>
-           </div>`
-        : '';
-      detailsDiv.innerHTML = sourceSection + `<pre class="app-card-details-content">${escapeHtml(content)}</pre>`;
-    }
-    detailsDiv.style.display = 'block';
-    btn.textContent = 'Скрыть';
-  }
-}
-
-// Handle "Повторить с изменениями" — prefill order textarea and switch to Order tab
-function handleRepeatWithChanges(appNumber) {
-  pendingOrderPrefill = `На основе #${appNumber}: `;
-  switchTab('order');
-  fetch('/api/reset', { method: 'POST' }).catch(() => {});
-  // SSE will deliver IDLE → renderUI → applyPendingPrefill()
-}
-
-async function handleOpenApp(appId) {
-  const btn = document.querySelector(`.app-card[data-app-id="${appId}"] [onclick^="handleOpenApp"]`);
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Запускаю...'; }
+async function handlePreviewCard(slug) {
+  const btn = document.querySelector(`.app-card[data-card-slug="${slug}"] .btn-primary`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
   try {
-    const res = await fetch(`/api/my-apps/${appId}/open`, { method: 'POST' });
+    const res = await fetch(`/api/cards/${encodeURIComponent(slug)}/preview`, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
       window.open(data.url, '_blank');
     } else {
-      alert(`Не удалось запустить: ${data.message}`);
+      alert(`Ошибка preview: ${data.message}`);
     }
   } catch (e) {
     alert(`Ошибка: ${e.message}`);
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '▶ Открыть'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Preview'; }
   }
 }
 
-// Handle Delete Click (Phase 7)
-function handleDeleteClick(appId) {
-  const app = productsCache.find(a => a.id === appId);
-  if (!app) return;
-
-  deleteTargetId = appId;
-
-  // Populate modal
-  const modalInfo = document.getElementById('delete-modal-info');
-  modalInfo.textContent = `#${app.number} (${app.id})`;
-
-  // Reset state
-  const errorDiv = document.getElementById('delete-modal-error');
-  errorDiv.style.display = 'none';
-  errorDiv.textContent = '';
-
-  const confirmBtn = document.getElementById('delete-confirm-btn');
-  confirmBtn.disabled = false;
-  confirmBtn.textContent = 'Да, удалить';
-
-  const cancelBtn = document.getElementById('delete-cancel-btn');
-  cancelBtn.disabled = false;
-
-  // Show modal
-  document.getElementById('delete-modal').style.display = 'flex';
-}
-
-// Close Delete Modal
-function closeDeleteModal() {
-  document.getElementById('delete-modal').style.display = 'none';
-  deleteTargetId = null;
-}
-
-// Confirm Delete
-async function confirmDelete() {
-  if (!deleteTargetId) return;
-
-  const confirmBtn = document.getElementById('delete-confirm-btn');
-  const cancelBtn = document.getElementById('delete-cancel-btn');
-  const errorDiv = document.getElementById('delete-modal-error');
-
-  // Loading state
-  confirmBtn.disabled = true;
-  confirmBtn.textContent = 'Удаление...';
-  cancelBtn.disabled = true;
-  errorDiv.style.display = 'none';
-
+async function handleDeleteCard(slug, name) {
+  if (!confirm(`Удалить карточку "${name}" (${slug})?\n\nФайлы в cards/${slug}/ будут удалены. Отменить нельзя.`)) return;
   try {
-    const response = await fetch(`/api/my-apps/${deleteTargetId}`, {
-      method: 'DELETE'
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      // Success — remove card from UI first, then close modal
-      // Store ID before closing modal (which resets deleteTargetId)
-      const idToDelete = deleteTargetId;
-
-      // Remove card from DOM
-      const card = document.querySelector(`.app-card[data-app-id="${idToDelete}"]`);
-      if (card) {
-        card.remove();
-      }
-
-      // Update cache
-      productsCache = productsCache.filter(a => a.id !== idToDelete);
-
-      // Show empty state if no cards left
-      if (productsCache.length === 0) {
+    const res = await fetch(`/api/cards/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      const card = document.querySelector(`.app-card[data-card-slug="${slug}"]`);
+      if (card) card.remove();
+      cardsCache = cardsCache.filter(c => c.slug !== slug);
+      if (cardsCache.length === 0) {
         document.getElementById('products-list').innerHTML = '';
         document.getElementById('products-empty').style.display = 'block';
       }
-
-      // Close modal after UI update
-      closeDeleteModal();
-
-      showStatus('Application deleted', 'success');
     } else {
-      // Error from server
-      errorDiv.textContent = result.message || 'Failed to delete application.';
-      errorDiv.style.display = 'block';
-      confirmBtn.disabled = false;
-      confirmBtn.textContent = 'Да, удалить';
-      cancelBtn.disabled = false;
+      alert(`Не удалось удалить: ${data.message}`);
     }
-  } catch (error) {
-    console.error('Error deleting app:', error);
-    errorDiv.textContent = 'Network error. Please try again.';
-    errorDiv.style.display = 'block';
-    confirmBtn.disabled = false;
-    confirmBtn.textContent = 'Да, удалить';
-    cancelBtn.disabled = false;
+  } catch (e) {
+    alert(`Ошибка: ${e.message}`);
   }
 }
+
+// Implemented in Commit 7
+function handleEditCard(slug) {
+  switchTab('order');
+}
+
+function handleImportCard() {
+  document.getElementById('import-modal').style.display = 'flex';
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').style.display = 'none';
+  document.getElementById('import-file-input').value = '';
+  const err = document.getElementById('import-modal-error');
+  err.style.display = 'none';
+  err.textContent = '';
+}
+
+async function submitImport() {
+  const fileInput = document.getElementById('import-file-input');
+  const file = fileInput.files[0];
+  if (!file) { showImportError('Выберите zip-файл'); return; }
+
+  const btn = document.getElementById('import-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Импорт...';
+  document.getElementById('import-modal-error').style.display = 'none';
+
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const res = await fetch('/api/cards/import', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.success) {
+      closeImportModal();
+      loadCards();
+    } else {
+      showImportError(data.message || 'Ошибка импорта');
+    }
+  } catch (e) {
+    showImportError(`Ошибка: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Импортировать';
+  }
+}
+
+function showImportError(msg) {
+  const el = document.getElementById('import-modal-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Connect to SSE
 function connectSSE() {
@@ -723,7 +613,7 @@ function updateUI(state) {
     case 'DONE':
       hideLoading();
       showPickupBlock(state);
-      loadProducts();
+      loadCards();
       break;
 
     case 'ERROR':
