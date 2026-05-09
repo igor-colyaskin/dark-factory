@@ -60,6 +60,12 @@
             <h2 id="order-title">📝 Order</h2>
           </div>
 
+          <!-- Edit mode banner -->
+          <div id="edit-mode-banner" style="display:none;background:var(--accent-bg,#e8f0fe);border:1px solid var(--accent-border,#c0d0f8);border-radius:6px;padding:8px 12px;margin:0 16px 8px;display:none;flex-direction:row;align-items:center;gap:8px;font-size:0.9em;">
+            ✏️ Редактирование карточки: <strong id="edit-mode-card-name"></strong>
+            <button onclick="cancelEditMode()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1em;line-height:1;" title="Отмена">×</button>
+          </div>
+
           <div class="block-content">
             <form id="order-form">
               <textarea id="order-input" name="order" rows="6"
@@ -135,6 +141,7 @@
 
             <!-- Spec Review Section (shown in SPEC_REVIEW state) -->
             <div id="spec-review-section" class="spec-review-section" style="display: none;">
+              <h3 id="spec-review-title" style="margin:0 0 12px;font-size:1em;font-weight:600;">Spec Review</h3>
               <div id="spec-content" class="spec-content"></div>
               <div id="refine-area" class="refine-area" style="display: none;">
                 <textarea id="refine-input" class="refine-input" rows="3"

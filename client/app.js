@@ -6,6 +6,8 @@
 let eventSource = null;
 let currentState = null;
 let sessionId = null;
+let editingSlug = null;
+let editingName = null;
 
 // DOM Elements
 const orderBlock = document.getElementById('order-block');
@@ -262,7 +264,49 @@ async function handleDeleteCard(slug, name) {
 
 // Implemented in Commit 7
 function handleEditCard(slug) {
+  const card = cardsCache.find(c => c.slug === slug);
+  editingSlug = slug;
+  editingName = card?.name || slug;
+
   switchTab('order');
+
+  const title = document.getElementById('order-title');
+  if (title) title.textContent = `✏️ Редактирование`;
+
+  const banner = document.getElementById('edit-mode-banner');
+  if (banner) {
+    document.getElementById('edit-mode-card-name').textContent = editingName;
+    banner.style.display = 'flex';
+  }
+
+  const input = document.getElementById('order-input');
+  if (input) {
+    input.placeholder = 'Опишите что нужно изменить (например: добавить поле Department, изменить заголовок карточки)…';
+    input.value = '';
+    input.focus();
+  }
+
+  const btn = document.getElementById('submit-order-btn');
+  if (btn) btn.textContent = 'Применить изменение';
+}
+
+function cancelEditMode() {
+  editingSlug = null;
+  editingName = null;
+
+  const title = document.getElementById('order-title');
+  if (title) title.textContent = '📝 Order';
+
+  const banner = document.getElementById('edit-mode-banner');
+  if (banner) banner.style.display = 'none';
+
+  const input = document.getElementById('order-input');
+  if (input) {
+    input.placeholder = 'Example: Create a simple TODO application where users can add, complete, and delete tasks.';
+  }
+
+  const btn = document.getElementById('submit-order-btn');
+  if (btn) btn.textContent = 'Submit Order';
 }
 
 function handleImportCard() {
@@ -402,18 +446,29 @@ async function handleOrderSubmit(e) {
   showLoading('Submitting your order...');
 
   try {
-    const response = await fetch('/api/order', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-Id': sessionId
-      },
-      body: JSON.stringify({ description: orderDescription })
-    });
+    let response;
+    if (editingSlug) {
+      // Edit mode: call /api/edit/:slug
+      response = await fetch(`/api/edit/${encodeURIComponent(editingSlug)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Session-Id': sessionId },
+        body: JSON.stringify({ changeRequest: orderDescription })
+      });
+    } else {
+      response = await fetch('/api/order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Id': sessionId
+        },
+        body: JSON.stringify({ description: orderDescription })
+      });
+    }
 
     const result = await response.json();
 
     if (result.success) {
+      cancelEditMode();
       showStatus('Order submitted successfully!', 'success');
 
       // Update order block
@@ -570,6 +625,9 @@ function updateUI(state) {
       refineBtn.disabled = (state.refineRound >= state.maxRefineRounds);
       specReviewSection.style.display = 'block';
       showStatus('Spec is ready for review', 'info');
+      // Update spec-review title for edit mode
+      const srTitle = document.getElementById('spec-review-title');
+      if (srTitle) srTitle.textContent = state.editMode ? `Редактирование: ${state.editSlug}` : 'Spec Review';
       break;
 
     case 'DEV_WORKING':
@@ -727,7 +785,54 @@ function renderSpecReview(state) {
 
   const parts = [];
 
-  // Summary
+  // ── Patch-spec (edit mode) ─────────────────────────────────────────────────
+  if (spec.mode === 'patch') {
+    parts.push('<div class="spec-section">');
+    parts.push('<h4>Что изменится</h4>');
+    parts.push('<p>' + escapeHtml(spec.changeSummary || 'Нет описания') + '</p>');
+    parts.push('</div>');
+
+    if (spec.fieldsAdded?.length > 0) {
+      parts.push('<div class="spec-section"><h4>Добавить поля</h4><ul>');
+      spec.fieldsAdded.forEach(f => {
+        parts.push(`<li><strong>${escapeHtml(f.label)}</strong> — ${escapeHtml(f.beField)} (${escapeHtml(f.control || 'Text')})</li>`);
+      });
+      parts.push('</ul></div>');
+    }
+
+    if (spec.fieldsRemoved?.length > 0) {
+      parts.push('<div class="spec-section"><h4>Удалить поля</h4><ul>');
+      spec.fieldsRemoved.forEach(f => parts.push(`<li>${escapeHtml(f)}</li>`));
+      parts.push('</ul></div>');
+    }
+
+    if (spec.fieldsModified?.length > 0) {
+      parts.push('<div class="spec-section"><h4>Изменить поля</h4><ul>');
+      spec.fieldsModified.forEach(f => {
+        parts.push(`<li><strong>${escapeHtml(f.beField)}</strong>: ${escapeHtml(JSON.stringify(f))}</li>`);
+      });
+      parts.push('</ul></div>');
+    }
+
+    if (spec.specChanges && Object.keys(spec.specChanges).length > 0) {
+      parts.push('<div class="spec-section"><h4>Изменить свойства карточки</h4><ul>');
+      Object.entries(spec.specChanges).forEach(([k, v]) => {
+        parts.push(`<li><strong>${escapeHtml(k)}:</strong> ${escapeHtml(String(v))}</li>`);
+      });
+      parts.push('</ul></div>');
+    }
+
+    if (spec.filesToModify?.length > 0) {
+      parts.push('<div class="spec-section"><h4>Файлы для изменения</h4><ul>');
+      spec.filesToModify.forEach(f => parts.push(`<li><code>${escapeHtml(f)}</code></li>`));
+      parts.push('</ul></div>');
+    }
+
+    specContent.innerHTML = parts.join('\n');
+    return;
+  }
+
+  // ── Regular spec ──────────────────────────────────────────────────────────
   parts.push('<div class="spec-section">');
   parts.push('<h4>Summary</h4>');
   parts.push('<p>' + escapeHtml(spec.summary) + '</p>');
