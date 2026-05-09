@@ -241,7 +241,7 @@ server:
     - name: ui5-middleware-servestatic
       beforeMiddleware: serveResources
       configuration:
-        rootPath: "./src/test/external_libs"
+        rootPath: "./src/test/unit/sdk-stubs"
         mountPath: "/resources"
 resources:
   configuration:
@@ -366,7 +366,7 @@ sap.ui.getCore().attachInit(function () {
 
 \tsap.ui.loader.config({
 \t\tpaths: {
-\t\t\t"com/sap/fiorireuselibrary/ui5cardssdk": "../../test/external_libs/resources/com/sap/fiorireuselibrary/ui5cardssdk"
+\t\t\t"com/sap/fiorireuselibrary/ui5cardssdk": "./sdk-stubs/com/sap/fiorireuselibrary/ui5cardssdk"
 \t\t}
 \t});
 
@@ -380,7 +380,9 @@ sap.ui.getCore().attachInit(function () {
 // These stubs are served via ui5-local.yaml (ui5-middleware-servestatic) and
 // remapped in unitTests.qunit.js so both `ui5 serve` and `npm test` work offline.
 
-const SDK_BASE_PATH = 'src/test/external_libs/resources/com/sap/fiorireuselibrary/ui5cardssdk';
+const SDK_BASE_PATH = 'src/test/unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk';
+// AMD path must NOT contain /resources/ — ui5-test-runner CDN regex intercepts it
+const SDK_AMD_PATH = 'src/test/unit/sdk-stubs/com/sap/fiorireuselibrary/ui5cardssdk';
 
 const T_STUB_CUSTOM_ERROR = `/* istanbul ignore file */
 sap.ui.define(["sap/ui/base/Object"], function (BaseObject) {
@@ -495,7 +497,7 @@ const T_MANUAL_INDEX_HTML = `<!DOCTYPE html>
 \t\tdata-sap-ui-language="en_US"
 \t\tdata-sap-ui-libs="sap.ui.core"
 \t\tdata-sap-ui-async="true"
-\t\tdata-sap-ui-resource-roots='{ "com.sap.partner.wz.SLUG": "../../", "com.sap.fiorireuselibrary.ui5cardssdk": "../external_libs/resources/com/sap/fiorireuselibrary/ui5cardssdk" }'
+\t\tdata-sap-ui-resource-roots='{ "com.sap.partner.wz.SLUG": "../../", "com.sap.fiorireuselibrary.ui5cardssdk": "../unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk" }'
 \t\tdata-sap-ui-on-init="module:com/sap/partner/wz/SLUG/test/manual/init">
 \t</script>
 </head>
@@ -550,6 +552,13 @@ export function generateStaticFiles(cardSlug, spec = {}) {
     { path: `${SDK_BASE_PATH}/StorageUtils.js`,               content: T_STUB_STORAGE_UTILS,           action: 'create' },
     { path: `${SDK_BASE_PATH}/library.js`,                    content: T_STUB_LIBRARY,                 action: 'create' },
     { path: `${SDK_BASE_PATH}/AuthorizationDialog.controller.js`, content: T_STUB_AUTHORIZATION_DIALOG, action: 'create' },
+    // AMD stubs — same files at path without /resources/ so ui5-test-runner CDN regex doesn't intercept
+    { path: `${SDK_AMD_PATH}/CustomError.js`,       content: T_STUB_CUSTOM_ERROR,       action: 'create' },
+    { path: `${SDK_AMD_PATH}/Base.controller.js`,   content: T_STUB_BASE_CONTROLLER,    action: 'create' },
+    { path: `${SDK_AMD_PATH}/ErrorHandler.js`,      content: T_STUB_ERROR_HANDLER,      action: 'create' },
+    { path: `${SDK_AMD_PATH}/StorageUtils.js`,      content: T_STUB_STORAGE_UTILS,      action: 'create' },
+    { path: `${SDK_AMD_PATH}/library.js`,           content: T_STUB_LIBRARY,            action: 'create' },
+    { path: `${SDK_AMD_PATH}/AuthorizationDialog.controller.js`, content: T_STUB_AUTHORIZATION_DIALOG, action: 'create' },
     // Sandbox files — needed for VIZ-001 preview via `npm run sandbox`
     { path: 'src/test/sandboxSetup.js',              content: T_SANDBOX_SETUP,                    action: 'create' },
     { path: 'src/test/manual/index.html',            content: sub(T_MANUAL_INDEX_HTML),           action: 'create' },

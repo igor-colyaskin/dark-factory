@@ -22,7 +22,7 @@ server:
     - name: ui5-middleware-servestatic
       beforeMiddleware: serveResources
       configuration:
-        rootPath: "./src/test/external_libs"
+        rootPath: "./src/test/unit/sdk-stubs"
         mountPath: "/resources"
 resources:
   configuration:
