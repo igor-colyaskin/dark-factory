@@ -13,6 +13,8 @@ import githubClient from './github-client.js';
 import { generateReadme, generateSpec } from './readme-generator.js';
 import verifier from './verifier.js';
 import verifierC from './verifier-c.js';
+import fileManager from './file-manager.js';
+import cardsRegistry from './cards-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -574,6 +576,17 @@ class Orchestrator {
    */
   async archiveApp(options = {}) {
     try {
+      // IC profile: register in cards-registry instead of appsStore
+      if (this.profile?.deployer === 'none') {
+        const cardSlug = this.currentSpec?.cardSlug;
+        const cardName = this.currentSpec?.cardTitle || cardSlug;
+        if (cardSlug) {
+          cardsRegistry.registerCard({ slug: cardSlug, name: cardName || cardSlug });
+          console.log(`[orchestrator] IC card registered: ${cardSlug}`);
+        }
+        return;
+      }
+
       // Build metrics object from user stories
       const metrics = {
         totalCost: this.userStories.reduce((sum, us) => sum + us.cost, 0),
@@ -652,7 +665,7 @@ class Orchestrator {
       }
     };
 
-    await readDir(WORKSPACE_PATH, '');
+    await readDir(fileManager.workspaceDir, '');
     return files;
   }
 
@@ -988,9 +1001,13 @@ class Orchestrator {
       this.verificationReport = { verdict: 'SKIPPED', reason: 'no verifier configured' };
     }
 
-    await this.transition(STATES.GITHUB_PUSH);
-    const sourceUrl = await this.executeGithubPush();
-    this.sourceUrl = sourceUrl;
+    // IC cards are not pushed to GitHub — output is cards/{slug}/ folder
+    let sourceUrl = null;
+    if (this.profile.deployer !== 'none') {
+      await this.transition(STATES.GITHUB_PUSH);
+      sourceUrl = await this.executeGithubPush();
+      this.sourceUrl = sourceUrl;
+    }
 
     await this.archiveApp({ sourceUrl });
     await this.transition(STATES.DONE);
@@ -1004,7 +1021,7 @@ class Orchestrator {
     this.broadcastEvent({ type: 'deploy_progress', step: 'verifying', message: 'Checking manifest...' });
 
     try {
-      const report = await verifierC.run(WORKSPACE_PATH, this.currentSpec);
+      const report = await verifierC.run(fileManager.workspaceDir, this.currentSpec);
       this.verificationReport = report;
       console.log(`[ORCHESTRATOR] Manifest verification complete: verdict=${report.verdict}`);
     } catch (e) {

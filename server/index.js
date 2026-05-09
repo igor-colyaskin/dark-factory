@@ -554,6 +554,15 @@ async function runDeveloper() {
     throw new Error('Architecture output not found');
   }
 
+  // IC profile: write files to cards/{slug}/ (persistent); others use workspace/
+  if (profile.deployer === 'none' && spec?.cardSlug) {
+    const cardPath = path.join(CARDS_DIR, spec.cardSlug);
+    mkdirSync(cardPath, { recursive: true });
+    fileManager.setWorkspace(cardPath);
+  } else {
+    fileManager.resetWorkspace();
+  }
+
   const systemPrompt = profile.prompts.developer.systemPrompt;
   const userPrompt = profile.prompts.developer.generateUserPrompt(
     state.orderDescription,

@@ -286,6 +286,14 @@ class FileManager {
   getWorkspacePath() {
     return this.workspaceDir;
   }
+
+  setWorkspace(absolutePath) {
+    this.workspaceDir = absolutePath;
+  }
+
+  resetWorkspace() {
+    this.workspaceDir = WORKSPACE_DIR;
+  }
 }
 
 // Singleton instance
