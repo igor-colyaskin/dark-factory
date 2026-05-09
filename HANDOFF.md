@@ -7,86 +7,95 @@
 
 ## Быстрый статус
 
-## v0.10 полностью завершена ✅
+## v0.11 полностью завершена ✅
 
-**Последняя выпущенная версия:** v0.10 — UX polish + sandbox preview + npm test ✅ (сессия 2026-05-09)
-**Следующая:** v0.11 — SDK-001 (первым) + My Apps + Edit mode + Import
+**Последняя выпущенная версия:** v0.11 — SDK-001 + My Apps + Edit mode + Import ✅ (сессия 2026-05-09)
+**Следующая:** v0.12 — Smart Input (sample JSON → автоматический парсинг полей)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
 
-## ✅ npm test починен (сессия 2026-05-09)
-
-**Корень проблемы:** регекс `/((?:test-)?resources\/.*)` в `ui5-test-runner/src/ui5.js`
-перехватывает URL с `/resources/` ВЕЗДЕ в пути → проксирует на SAP CDN → 404.
-AMD-путь `./sdk-stubs/resources/com/sap/...` → URL `/test/unit/sdk-stubs/resources/com/sap/...`
-содержал `/resources/` → CDN перехват.
-
-**Fix:** два набора стабов:
-- `sdk-stubs/resources/com/sap/...` — для sandbox (ui5 serve + ui5-middleware-servestatic)
-- `sdk-stubs/com/sap/...` — для npm test (AMD loader, URL без /resources/)
-`unitTests.qunit.js` AMD path: `./sdk-stubs/com/sap/fiorireuselibrary/ui5cardssdk`
-
-**Результат:** `npm test` → 4/4 тесты ✅
-
 ## Что сделать в первую очередь
 
-1. Прочитай память: `ic_roadmap.md`, `plugin_architecture.md`, `integration_card_template.md`
-2. **SDK-001** — smart clone (см. раздел ниже). Первый шаг v0.11.
-3. После SDK-001 — реализация v0.11 (My Apps + Edit + Import)
-4. **v0.12** — Smart Input / sample JSON (после v0.11)
+1. Прочитай память: `ic_roadmap.md`, `project_state_v04.md`, `integration_card_template.md`
+2. **v0.12** — Smart Input / sample JSON (scope см. раздел ниже)
+3. End-to-end проверка v0.11: создать новую IC-карточку → убедиться в `cards/{slug}/` → My Apps → Preview → Edit → Import zip
 
-## v0.11 — My Apps + Edit mode + Import (архитектура зафиксирована)
+## v0.12 — Smart Input (план)
 
-**Контекст:** создание карточек с нуля — 12-16/год, редактирование существующих — основная работа.
-GitHub убран из DF-IC: не нужен, коллеге для установки достаточно AI API key.
+**Focus:** пользователь вставляет sample JSON от BE → Архитектор парсит поля автоматически,
+clarify-раунд сокращается до минимума.
 
-**Хранилище карточек:**
-- `workspace/` → `cards/{slug}/` — постоянная папка на карточку
-- `cards-registry.json` в корне DF: `[{ slug, name, createdAt, lastModified }]`
-- Пишется при создании карточки, читается страницей My Apps
+Форматы для обсуждения:
+- Вставить JSON прямо в заказ → архитектор распознаёт и обрабатывает
+- Отдельное поле UI для "Sample BE response"
+- Комбо: сначала описание, потом архитектор запрашивает sample JSON
 
-**My Apps страница:**
-- Список карточек: имя, дата, кнопки Edit / Preview
-- Кнопки: **+ New Card**, **Import Card**
-
-**Edit flow (delta-режим):**
-- Пользователь описывает изменение
-- Delta-Архитектор: видит текущие файлы + задачу → строит патч (не spec с нуля)
-- Developer: применяет изменения → `cards/{slug}/`
-- Delta-Архитектор — **отдельный промпт**, не вариация существующего
-
-**Import Card:**
-- Указать папку с чужой карточкой → копируется в `cards/{slug}/` → запись в реестр
-- Сценарий: коллега в отпуске + инцидент → передаёт папку любым способом (zip/clone/сеть)
-
-**Что не делаем:**
-- GitHub push в Edit mode — не нужен
-- Новый repo при редактировании — не нужен
-
-## SDK-001 — Smart Clone (первый шаг v0.11)
-
-**Зачем:** 75% рабочей нагрузки — редактирование существующих карточек (не создание новых).
-Импортированные карточки не получат sandbox+tests без полноценных SDK-стабов.
-Текущие стабы — минимальные (не падает AMD loader). Smart clone — полный test double.
-
-**Скоуп:** 5 модулей, ~15 методов. Маленький и предсказуемый.
-Полный API surface задокументирован в `docs/API_REVIEW.md`.
-
-**Модули:**
-- `Base.controller` — extend-паттерн, наследование от sap.ui.core.mvc.Controller
-- `ErrorHandler` — 4 метода: handleErrorEvent, handleCustomErrorEvent, attachErrorHandlingForModel, checkMaintenanceMode
-- `StorageUtils` — 4 статических метода: createStorage, readItem, setItem, removeItem
-- `CustomError` — 3 класса: GenericError, NotFoundPartnerIDError, UnauthorizedError (+ instanceof)
-- `AuthorizationDialog.controller` — конструктор + openDialog(bool)
-
-**Стратегия:** новый артефакт (не копия кода SDK), пишется из знания API. Заменяет per-card стабы единым пакетом. Tech debt: 29 карточек с локальной CustomError.js — отдельный тикет.
+Scope v0.12 ещё не детализирован — нужна refining-сессия.
 
 ---
 
-**workspace vs workspaces:** разные пайплайны. `workspace/` (ед.ч.) — IC-карточки, единый, перезаписывается (до v0.12; в v0.12 → `cards/{slug}/`).
+**workspace vs workspaces:** разные пайплайны. `workspace/` (ед.ч.) — IC-карточки пишутся в `cards/{slug}/`,
+`workspace/` больше не используется активно для IC (только для non-IC профилей).
 `workspaces/` (мн.ч.) — Node.js приложения (Local Runner).
 
 **Зомби-процесс сандбокса:** старый процесс на 3100 держит устаревший `rootPath` → карточка не рендерится. Fix: `taskkill //F //PID <pid>`. Диагностика: `netstat -ano | grep ":3100 "`.
+
+## Что v0.11 дала проекту (сессия 2026-05-09)
+
+**7 коммитов, всё в main:**
+
+**Commit 1 — cards-registry.js + инфраструктура cards/**
+- `server/cards-registry.js` — CRUD реестра: `readRegistry`, `registerCard` (upsert), `updateCardModified`, `removeCard`
+- `server/index.js` — `export const CARDS_DIR`, `mkdirSync(CARDS_DIR)` при старте
+- `.gitignore` — добавлены `cards/` и `cards-registry.json`
+
+**Commit 2 — IC pipeline пишет в cards/{slug}/**
+- `server/file-manager.js` — `setWorkspace(path)` + `resetWorkspace()` методы
+- `server/index.js` — в `runDeveloper()`: до записи файлов `fileManager.setWorkspace(cards/{slug}/)` для IC, иначе `resetWorkspace()`
+- `server/orchestrator.js` — import fileManager + cardsRegistry; `readWorkspaceFiles` и `executeManifestVerify` используют `fileManager.workspaceDir`; `archiveApp` для IC: `cardsRegistry.registerCard()` вместо `appsStore.addApp()`; `executeNoDeploy` пропускает GitHub push для IC
+
+**Commit 3 — API /api/cards**
+- `GET /api/cards` → readRegistry()
+- `DELETE /api/cards/:slug` → removeCard + rm -rf
+- `POST /api/cards/:slug/preview` → stop sandbox + start с новым cardPath
+- `POST /api/cards/import` → multer zip upload, adm-zip extract, manifest validation, copy to cards/{slug}/
+  - Поддержка: flat (src/ в корне zip) и nested (один подкаталог в zip)
+  - Slug из `sap.app.id` → последний сегмент; имя из `sap.app.title`
+- Добавлены зависимости: `adm-zip`, `multer`
+
+**Commit 4 — My Apps: IC cards UI**
+- `client/app.js` — убраны: `productsCache`, `loadProducts`, `renderAppCard`, `handleDetails`, `handleRepeatWithChanges`, `handleOpenApp`, `handleDeleteClick`, `confirmDelete`, `closeDeleteModal`
+- Добавлены: `loadCards`, `renderCardItem`, `handlePreviewCard`, `handleDeleteCard` (через `confirm()`), `handleImportCard`, `submitImport`, `showImportError`
+- `client/index.html` — заголовок My Apps с кнопками "+ New Card" и "Import", import-modal с `<input type="file" accept=".zip">`
+
+**Commit 5 — delta-architect.js**
+- `server/prompts/integration-card/delta-architect.js` — NEW
+- Экспортирует: `systemPrompt`, `generateUserPrompt(changeRequest, currentFiles)`, `generateSpec(rawResponse)`
+- Формат ответа: `mode: "patch"` — без clarify-раундов, один shot
+- Patch-spec поля: `cardSlug`, `changeSummary`, `fieldsAdded`, `fieldsRemoved`, `fieldsModified`, `specChanges`, `filesToModify`
+
+**Commit 6 — Edit pipeline server-side**
+- `server/orchestrator.js` — `editMode`, `editSlug` props; exposed в `getState()`; сброс в `reset()`; обработка `mode === "patch"` в `handleAgentComplete` → переход в SPEC_REVIEW
+- `server/index.js` — import delta-architect; `readCardFilesForEdit(dirPath)` helper (recursive, skip binary/node_modules); в `runArchitect()`: при `editMode` — использует delta-architect + existing files; `POST /api/edit/:slug` endpoint (reset + set editMode + startOrder)
+
+**Commit 7 — Edit flow UI**
+- `client/app.js` — `editingSlug/editingName` state; `handleEditCard(slug)` — edit-mode banner + placeholder + кнопка "Применить изменение"; `cancelEditMode()`; `handleOrderSubmit` вызывает `/api/edit/:slug` в edit mode; `renderSpecReview()` обрабатывает `mode:"patch"` — changeSummary + fieldsAdded/Removed/Modified + filesToModify
+- `client/index.html` — edit-mode-banner в order block; `spec-review-title` h3 (меняется на "Редактирование: {slug}" в edit mode)
+
+## SDK-001 — Smart Clone ✅ (сессия 2026-05-09)
+
+**Что сделано:** SDK-стабы вынесены из inline T_STUB_* строк в отдельные файлы.
+Директория: `server/prompts/integration-card/sdk-stubs/`
+
+Файлы:
+- `CustomError.js` — ES6 class hierarchy (CustomError → Error, 3 подкласса), правильный instanceof
+- `Base.controller.js` — полный API: fnAuthMetaDataPRMCheck, getResourceBundle, getCard, fnODataRead, fnODataCreate, getUrlParameter; реальные Promise-обёртки для oData
+- `ErrorHandler.js` — 4 метода no-op, сохраняет oComponent
+- `StorageUtils.js` — in-memory `_store` (module-level), `_reset()` для test isolation, keyed by prefix
+- `AuthorizationDialog.controller.js` — extends Controller, openDialog/closeAuthDialog no-ops
+- `library.js` — то же содержимое что было в T_STUB_LIBRARY
+
+`developer.js` — использует `readStub(name)` для подключения файлов из `sdk-stubs/`.
 
 ## VIZ-001 — реализация завершена ✅ (сессия 2026-05-09)
 
@@ -116,6 +125,20 @@ Fix: стабы в `src/test/unit/sdk-stubs/resources/com/sap/...` — путь 
 
 **Результат:** карточка рендерится с mock-данными в отдельной вкладке.
 
+## ✅ npm test починен (сессия 2026-05-09)
+
+**Корень проблемы:** регекс `/((?:test-)?resources\/.*)` в `ui5-test-runner/src/ui5.js`
+перехватывает URL с `/resources/` ВЕЗДЕ в пути → проксирует на SAP CDN → 404.
+AMD-путь `./sdk-stubs/resources/com/sap/...` → URL `/test/unit/sdk-stubs/resources/com/sap/...`
+содержал `/resources/` → CDN перехват.
+
+**Fix:** два набора стабов:
+- `sdk-stubs/resources/com/sap/...` — для sandbox (ui5 serve + ui5-middleware-servestatic)
+- `sdk-stubs/com/sap/...` — для npm test (AMD loader, URL без /resources/)
+`unitTests.qunit.js` AMD path: `./sdk-stubs/com/sap/fiorireuselibrary/ui5cardssdk`
+
+**Результат:** `npm test` → 4/4 тесты ✅
+
 ## Технические решения, актуальные для следующей сессии
 
 **Confluence page:**
@@ -124,11 +147,29 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 
 **Template analysis (pending):**
 Игорь ещё не завершил анализ ~30 карточек команды на предмет второго шаблона (Table).
-Решение по table-шаблону до v0.10 не нужно — только если v0.10 откроет этот вопрос.
+Решение по table-шаблону до v0.12 не нужно — только если v0.12 откроет этот вопрос.
 
 **lastACError mechanism:**
 `let lastACError` в `index.js` хранит вывод npm test при неудаче.
 Передаётся в `generateUserPrompt` как 4-й параметр → попадает в retry-промпт девелопера.
+
+## Ключевые файлы (актуально для v0.11+)
+
+| Файл | Роль |
+|------|------|
+| `HANDOFF.md` | этот файл |
+| `docs/contracts.md` | контракты всех агентов, включая IC-профиль |
+| `docs/log.md` | архив решений и фаз v0.1–v0.9 |
+| `server/cards-registry.js` | CRUD реестра cards-registry.json |
+| `server/file-manager.js` | writeFiles + setWorkspace/resetWorkspace |
+| `server/index.js` | pipeline wiring, IC workspace redirect, /api/cards, /api/edit/:slug |
+| `server/orchestrator.js` | state machine, editMode/editSlug, archiveApp (IC→cardsRegistry) |
+| `server/sandbox-manager.js` | ui5 serve, один процесс per DF instance |
+| `server/prompts/integration-card/architect.js` | protocol/layout/generateTests/generateDocs + output questions round |
+| `server/prompts/integration-card/developer.js` | generateStaticFiles(spec) + основной LLM-промпт + testGenerator |
+| `server/prompts/integration-card/delta-architect.js` | **NEW** edit mode: patch-spec из файлов + задачи |
+| `server/prompts/integration-card/sdk-stubs/` | **NEW** Smart Clone SDK-стабы (6 файлов) |
+| `server/prompts/integration-card/tester.js` | видит все файлы после v0.9 fix |
 
 ## Что v0.10 дала проекту (UX-001 + VIZ-001)
 
@@ -146,52 +187,6 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
 - SDK-стабы лежат в `src/test/unit/sdk-stubs/resources/com/sap/...`
   (причина: `ui5-middleware-servestatic` игнорирует `mountPath`, делает голый `serveStatic(rootPath)`)
 - `AuthorizationDialog.controller.js` — пустой стаб (импортируется но не вызывается)
-
-## Что v0.12 — Smart Input (план)
-
-**Focus:** Smart input — пользователь даёт sample JSON от BE → Архитектор парсит поля автоматически, clarify-раунд сокращается до минимума.
-
-Форматы для обсуждения:
-- Вставить JSON прямо в заказ → архитектор распознаёт и обрабатывает
-- Отдельное поле UI для "Sample BE response"
-- Комбо: сначала описание, потом архитектор запрашивает sample JSON
-
-## Ключевые файлы (актуально для v0.10+)
-
-| Файл | Роль |
-|------|------|
-| `HANDOFF.md` | этот файл |
-| `docs/contracts.md` | контракты всех агентов, включая IC-профиль (v0.9) |
-| `docs/log.md` | архив решений и фаз v0.1–v0.9 |
-| `server/index.js` | writeFiles + generateStaticFiles + runDevCheck (npm install + npm test) + testGenerator вызов |
-| `server/prompts/integration-card/architect.js` | protocol/layout/generateTests/generateDocs + output questions round |
-| `server/prompts/integration-card/developer.js` | generateStaticFiles(spec) + основной LLM-промпт (5 файлов) + testGeneratorSystemPrompt/generateTestsUserPrompt |
-| `server/prompts/integration-card/tester.js` | видит все файлы после v0.9 fix |
-| `server/prompts/integration-card/templates/form-rest/` | источник шаблона и тест-референсов |
-
-## Что починила сессия 2026-05-08 (тест-инфраструктура IC)
-
-`npm test` падал на всех прогонах после v0.9. Три независимых бага:
-
-**1. @sapitpe/ui5cardssdk в npm dependencies → E404**
-Пакет недоступен в публичном npm (только Work Zone runtime).
-Fix: убран из `dependencies`, `ui5.dependencies`, `ui5-test-runner.dependencies` в `T_PACKAGE_JSON_WITH_TESTS`.
-
-**2. external_libs стабы не генерировались → SDK не загружался**
-`DataHelper.js` импортирует `CustomError` из SDK. Стабы есть в шаблоне, но `generateStaticFiles()` их не копировал.
-Fix: 4 стаб-файла добавлены в `generateStaticFiles()` всегда (нужны и для `npm test` и для `ui5 serve`).
-
-**3. `"./Component"` в `T_ALL_TESTS` → AMD loader зависал**
-`AllTests.js` импортировал `"./Component"` (test/unit/Component.js из шаблона) — файл не генерируется.
-UI5 AMD loader ждал несуществующий модуль, тест-страница не инициализировалась (таймаут 1.5 мин).
-Fix: убран `"./Component"` из `T_ALL_TESTS`, оставлен только `"./helpers/DataHelper.qunit"`.
-
-**4. .nycrc.json игнорировался → coverage включала src/test/**
-`ui5-test-runner` генерирует свой `.nyc_output/settings/.nycrc.json` и передаёт его nyc через `--nycrc-path`.
-Наш `.nycrc.json` в корне workspace не читался. Плюс пути были неверные (relative to workspace, а cwd = src/).
-Fix: пути исправлены (relative to src/), добавлен `--coverage-settings .nycrc.json` в test-команду.
-
-**Результат:** `npm test` → 4/4, coverage только `DataHelper.js`, `src/test/**` исключён.
 
 ## Что v0.9 дала проекту
 
@@ -273,7 +268,7 @@ v0.9 fix (DataHelper.qunit.js — отдельный вызов).
 - **sourceUrl, не githubUrl** — абстракция от конкретного бэкенда
 - **Нет Deployer facade** — до второй живой реализации
 - **On-demand UX** — приложение не запущено по умолчанию
-- **GITHUB_PUSH non-blocking** — GitHub-push бонус, не блокер
+- **GITHUB_PUSH non-blocking** — GitHub-push бонус, не блокер; для IC — полностью убран
 - **Profile = кассета** — промпты + deployer + verifier, выбирается в Settings
 - **Plugin Path 2** — factory выпускает single-plugin продукты, не комбинации
 - **Cherry-pick combo-commit** — механизм дистрибуции плагинов через git
@@ -283,12 +278,9 @@ v0.9 fix (DataHelper.qunit.js — отдельный вызов).
 - **Нет HANDOFF hook** — Игорь смотрит глазами перед коммитом
 - **GitHub убран из DF-IC** — IC-профиль не нуждается в GitHub. Output = файлы в `cards/{slug}/`.
   Коллеге для установки DF-IC нужен только AI API key.
-- **cards/{slug}/ вместо workspace/** — постоянное хранилище карточек, sandbox-manager
-  получает путь динамически
-- **Delta-Архитектор — отдельный промпт** — Edit mode: Архитектор видит файлы + задачу изменения
-  и строит патч, не spec с нуля. Не вариация существующего промпта.
-- **SDK-001 — первый шаг v0.11** — Smart clone SDK-стабов (5 модулей), реализуется до My Apps/Edit/Import
-  в рамках той же версии.
+- **cards/{slug}/ вместо workspace/** — постоянное хранилище карточек; fileManager.setWorkspace() / resetWorkspace()
+- **Delta-Архитектор — отдельный промпт** — Edit mode: видит файлы + задачу → патч, не spec с нуля
+- **Import = zip upload** — browser file picker, adm-zip, поддержка flat и nested zip
 
 ## Технические детали среды
 
