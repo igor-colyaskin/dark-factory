@@ -10,7 +10,7 @@
 ## v0.10 полностью завершена ✅
 
 **Последняя выпущенная версия:** v0.10 — UX polish + sandbox preview + npm test ✅ (сессия 2026-05-09)
-**Следующая:** v0.12 — My Apps + Edit mode (порядок пересмотрен: v0.12 раньше v0.11)
+**Следующая:** v0.11 — SDK-001 (первым) + My Apps + Edit mode + Import
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655),
 GitHub — личный аккаунт через OAuth App.
 
@@ -31,10 +31,11 @@ AMD-путь `./sdk-stubs/resources/com/sap/...` → URL `/test/unit/sdk-stubs/r
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `plugin_architecture.md`, `integration_card_template.md`
-2. **SDK-001** — smart clone (см. раздел ниже). Делать до v0.12.
-3. После SDK-001 — реализация v0.12 (My Apps + Edit + Import)
+2. **SDK-001** — smart clone (см. раздел ниже). Первый шаг v0.11.
+3. После SDK-001 — реализация v0.11 (My Apps + Edit + Import)
+4. **v0.12** — Smart Input / sample JSON (после v0.11)
 
-## v0.12 — My Apps + Edit mode + Import (архитектура зафиксирована)
+## v0.11 — My Apps + Edit mode + Import (архитектура зафиксирована)
 
 **Контекст:** создание карточек с нуля — 12-16/год, редактирование существующих — основная работа.
 GitHub убран из DF-IC: не нужен, коллеге для установки достаточно AI API key.
@@ -62,7 +63,7 @@ GitHub убран из DF-IC: не нужен, коллеге для устан�
 - GitHub push в Edit mode — не нужен
 - Новый repo при редактировании — не нужен
 
-## SDK-001 — Smart Clone (делать до v0.12)
+## SDK-001 — Smart Clone (первый шаг v0.11)
 
 **Зачем:** 75% рабочей нагрузки — редактирование существующих карточек (не создание новых).
 Импортированные карточки не получат sandbox+tests без полноценных SDK-стабов.
@@ -146,7 +147,7 @@ Placeholder реализован (title + пустая 2×2 таблица). П�
   (причина: `ui5-middleware-servestatic` игнорирует `mountPath`, делает голый `serveStatic(rootPath)`)
 - `AuthorizationDialog.controller.js` — пустой стаб (импортируется но не вызывается)
 
-## Что v0.11 — Smart Input (план)
+## Что v0.12 — Smart Input (план)
 
 **Focus:** Smart input — пользователь даёт sample JSON от BE → Архитектор парсит поля автоматически, clarify-раунд сокращается до минимума.
 
@@ -286,6 +287,8 @@ v0.9 fix (DataHelper.qunit.js — отдельный вызов).
   получает путь динамически
 - **Delta-Архитектор — отдельный промпт** — Edit mode: Архитектор видит файлы + задачу изменения
   и строит патч, не spec с нуля. Не вариация существующего промпта.
+- **SDK-001 — первый шаг v0.11** — Smart clone SDK-стабов (5 модулей), реализуется до My Apps/Edit/Import
+  в рамках той же версии.
 
 ## Технические детали среды
 

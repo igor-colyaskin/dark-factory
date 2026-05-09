@@ -36,7 +36,7 @@ NEGOTIATE → REMEMBER → VERIFY → PROFILES → IC
   v0.3        v0.5       v0.7     v0.8      v0.9
 ```
 
-Текущий вектор: углубление IC-профиля (UX-001 → VIZ-001 → v0.10 → Square 2).
+Текущий вектор: углубление IC-профиля (v0.10 ✅ → v0.11 SDK-001+My Apps → Square 2).
 Параллельный горизонт: когда IC достаточно зрел — новый специализированный профиль.
 
 ---
@@ -124,25 +124,41 @@ Architect output questions (generateTests, generateDocs) — отдельный 
 - `lastACError` module-level в index.js → retry-промпт Developer'а
 - Confluence page = placeholder (title + 2×2 таблица), полный шаблон — отдельная задача
 
+### v0.10 — UX polish + Sandbox preview ✅
+UX-001: кнопка «Уточнить» на экране Spec Review — новый переход SPEC_REVIEW → CLARIFYING
+без потери истории (до 3 раундов). VIZ-001: sandbox preview карточки с mock-данными
+в отдельной вкладке через `ui5 serve`. Починен `npm test` (CDN-regex / двойные стабы).
+
+Ключевые решения:
+- `orchestrator.handleRefineRequest()` — `{ refine: true }` в clarifyHistory, сброс clarifyRound
+- `server/sandbox-manager.js` — старт/стоп `ui5 serve`, один процесс per DF instance
+- SDK-стабы: два набора (`sdk-stubs/resources/...` для sandbox, `sdk-stubs/com/sap/...` для npm test)
+  причина: `ui5-middleware-servestatic` игнорирует mountPath → URL с /resources/ → CDN перехват
+
 ---
 
 ## Следующие версии
 
-### UX-001 — кнопка «Уточнить» (следующее)
+### v0.11 — SDK-001 + My Apps + Edit mode + Import
 
-Кнопка «Уточнить» на экране Spec Review. Сейчас Cancel = начать сначала (деструктивно).
-Новый переход: SPEC_REVIEW → CLARIFYING с сохранённым spec.
+**Шаг 1 — SDK-001 (Smart Clone):**
+Полные SDK-стабы для `@sapitpe/ui5cardssdk` — 5 модулей, ~15 методов
+(`Base.controller`, `ErrorHandler`, `StorageUtils`, `CustomError`, `AuthorizationDialog.controller`).
+Новый артефакт (не копия кода SDK), заменяет per-card минимальные стабы единым пакетом.
+Нужен до Import Card: импортированные карточки без полных стабов не пройдут sandbox+tests.
+API surface задокументирован в `docs/API_REVIEW.md`.
+
+**Шаг 2 — My Apps + Edit mode + Import Card:**
+- `workspace/` → `cards/{slug}/` — постоянная папка на карточку
+- `cards-registry.json` — реестр `[{ slug, name, createdAt, lastModified }]`
+- My Apps страница: список карточек, кнопки Edit / Preview / Import Card / + New Card
+- Edit flow: delta-Архитектор (видит файлы + задачу → патч, не spec с нуля) — отдельный промпт
+- Import Card: чужая папка → `cards/{slug}/` → реестр (сценарий: коллега в отпуске + инцидент)
+- GitHub убран из DF-IC полностью
 
 ---
 
-### VIZ-001 — sandbox preview
-
-После успешного DEV_CHECK показывать живую карточку с mock-данными прямо в DF UI.
-Первая сессия = только дизайн/архитектура (sandbox-сервер, SDK, CORS, lifecycle).
-
----
-
-### v0.10 — Smart Input
+### v0.12 — Smart Input
 
 **Тема:** пользователь даёт sample JSON от BE → Архитектор парсит поля
 автоматически, clarify-раунд сокращается до минимума.

@@ -342,7 +342,7 @@ Code review после DEV_CHECK. Не блокирует pipeline. Видит �
 | deployer | `local-runner` | `none` → DEPLOYING мгновенно |
 | verifier | `vision` (puppeteer + gemini) | `manifest` → VerifierC structural check |
 | DEV_CHECK | AC checker (Node.js статика) | `npm test` если generateTests, иначе skip |
-| Workspace | single app.js + express | `cards/{slug}/` — постоянное хранилище (v0.12+) |
+| Workspace | single app.js + express | `cards/{slug}/` — постоянное хранилище (v0.11+) |
 
 #### Источники истины
 - **Profile config:** `server/profiles/integration-card.js`
