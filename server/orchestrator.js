@@ -509,6 +509,7 @@ class Orchestrator {
     // deployer:'none' takes priority over run mode (integration cards have no server)
     if (this.profile.deployer === 'none') {
       await this.executeNoDeploy();
+    }
 
     return this.getState();
   }
