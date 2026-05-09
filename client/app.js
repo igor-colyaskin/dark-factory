@@ -49,11 +49,10 @@ const deployInfo = document.getElementById('deploy-info');
 const deployStatusText = document.getElementById('deploy-status-text');
 
 // Routing
-const TAB_ROUTES = { order: '/', products: '/my-apps', settings: '/settings' };
+const TAB_ROUTES = { order: '/', products: '/my-apps' };
 
 function getTabFromPath(pathname) {
   if (pathname === '/my-apps') return 'products';
-  if (pathname === '/settings') return 'settings';
   return 'order';
 }
 
@@ -62,11 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initSessionId();
   setupEventListeners();
   setupTabs();
-  setupSettings();
   connectSSE();
-  loadRunMode();
   initFromUrl();
-  handleGitHubCallback();
 });
 
 // Route: show correct page on initial load
@@ -94,23 +90,6 @@ function initSessionId() {
   }
 }
 
-// Load and display run mode
-async function loadRunMode() {
-  try {
-    const response = await fetch('/api/info');
-    const info = await response.json();
-
-    const badge = document.getElementById('run-mode-badge');
-    const mode = info.runMode || 'production';
-
-    badge.textContent = mode.toUpperCase();
-    badge.className = `run-mode-badge ${mode}`;
-
-    console.log(`Running in ${mode} mode`);
-  } catch (error) {
-    console.error('Error loading run mode:', error);
-  }
-}
 
 // Setup Event Listeners
 function setupEventListeners() {
@@ -156,7 +135,6 @@ function switchTab(tabName, { updateUrl = true } = {}) {
   // Update pages
   document.getElementById('page-order').style.display = tabName === 'order' ? 'block' : 'none';
   document.getElementById('page-products').style.display = tabName === 'products' ? 'block' : 'none';
-  document.getElementById('page-settings').style.display = tabName === 'settings' ? 'block' : 'none';
 
   // Update URL (only on user-initiated navigation)
   if (updateUrl) {
@@ -166,12 +144,6 @@ function switchTab(tabName, { updateUrl = true } = {}) {
   // Load cards when switching to that tab
   if (tabName === 'products') {
     loadCards();
-  }
-
-  // Load GitHub status when switching to Settings
-  if (tabName === 'settings') {
-    loadGitHubStatus();
-    loadProfileSettings();
   }
 }
 
@@ -1317,161 +1289,6 @@ function formatTime(seconds) {
 }
 
 // ============================================================================
-// Settings: Factory Profile
-// ============================================================================
-
-async function loadProfileSettings() {
-  try {
-    const res = await fetch('/api/settings/profile');
-    const data = await res.json();
-    renderProfileSelector(data.profiles, data.activeProfileId);
-  } catch (err) {
-    console.error('Failed to load profile settings:', err);
-  }
-}
-
-function renderProfileSelector(profiles, activeProfileId) {
-  const container = document.getElementById('profile-selector');
-  if (!container) return;
-
-  container.innerHTML = profiles.map(p => `
-    <label class="profile-option ${p.id === activeProfileId ? 'profile-option-active' : ''}">
-      <input type="radio" name="profile" value="${p.id}" ${p.id === activeProfileId ? 'checked' : ''}>
-      <span class="profile-option-name">${p.name}</span>
-    </label>
-  `).join('');
-
-  container.querySelectorAll('input[name="profile"]').forEach(radio => {
-    radio.addEventListener('change', async () => {
-      await selectProfile(radio.value);
-    });
-  });
-}
-
-async function selectProfile(profileId) {
-  try {
-    const res = await fetch('/api/settings/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profileId }),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    renderProfileSelector(
-      Array.from(document.querySelectorAll('input[name="profile"]')).map(r => ({
-        id: r.value,
-        name: r.closest('label').querySelector('.profile-option-name').textContent
-      })),
-      data.activeProfileId
-    );
-  } catch (err) {
-    console.error('Failed to set profile:', err);
-  }
-}
-
-// ============================================================================
-// Settings: GitHub Integration
-// ============================================================================
-
-async function loadGitHubStatus() {
-  try {
-    const response = await fetch('/api/github/status');
-    const data = await response.json();
-    renderGitHubStatus(data);
-  } catch (err) {
-    console.error('Failed to load GitHub status:', err);
-    renderGitHubStatus({ connected: false });
-  }
-}
-
-function renderGitHubStatus(data) {
-  const notConnectedBlock = document.getElementById('github-not-connected');
-  const connectedBlock = document.getElementById('github-connected');
-  const usernameEl = document.getElementById('github-username');
-  const connectedAtEl = document.getElementById('github-connected-at');
-
-  if (data.connected) {
-    notConnectedBlock.style.display = 'none';
-    connectedBlock.style.display = 'block';
-    usernameEl.textContent = '@' + data.username;
-    if (data.connectedAt) {
-      const date = new Date(data.connectedAt);
-      connectedAtEl.textContent = 'Connected on ' + date.toLocaleDateString() +
-        ' at ' + date.toLocaleTimeString();
-    }
-  } else {
-    notConnectedBlock.style.display = 'block';
-    connectedBlock.style.display = 'none';
-  }
-}
-
-function connectGitHub() {
-  window.location.href = '/api/github/authorize';
-}
-
-async function disconnectGitHub() {
-  if (!confirm('Disconnect GitHub? Your token will be removed. ' +
-               'Existing repositories on GitHub will not be affected.')) {
-    return;
-  }
-
-  try {
-    const response = await fetch('/api/github/disconnect', { method: 'POST' });
-    if (!response.ok) {
-      throw new Error('Server returned ' + response.status);
-    }
-    await loadGitHubStatus();
-    showGitHubMessage('Disconnected from GitHub.', 'success');
-  } catch (err) {
-    console.error('Failed to disconnect:', err);
-    showGitHubMessage('Failed to disconnect. Check console for details.', 'error');
-  }
-}
-
-function showGitHubMessage(text, type) {
-  const messageEl = document.getElementById('github-message');
-  messageEl.textContent = text;
-  messageEl.className = 'github-message github-message-' + type;
-  messageEl.style.display = 'block';
-
-  // Auto-hide after 5 seconds
-  setTimeout(() => {
-    messageEl.style.display = 'none';
-  }, 5000);
-}
-
-function handleGitHubCallback() {
-  const params = new URLSearchParams(window.location.search);
-  const githubParam = params.get('github');
-
-  if (!githubParam) return;
-
-  // Switch to Settings without pushing new history entry
-  switchTab('settings', { updateUrl: false });
-
-  if (githubParam === 'connected') {
-    showGitHubMessage('Successfully connected to GitHub!', 'success');
-  } else if (githubParam === 'error') {
-    const reason = params.get('reason') || 'unknown';
-    showGitHubMessage('Connection failed: ' + reason, 'error');
-  }
-
-  // Clean URL: remove query params, set correct path
-  window.history.replaceState({ page: 'settings' }, '', '/settings');
-}
-
-function setupSettings() {
-  const connectBtn = document.getElementById('github-connect-btn');
-  if (connectBtn) {
-    connectBtn.addEventListener('click', connectGitHub);
-  }
-
-  const disconnectBtn = document.getElementById('github-disconnect-btn');
-  if (disconnectBtn) {
-    disconnectBtn.addEventListener('click', disconnectGitHub);
-  }
-}
-
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 function escapeHtml(str) {

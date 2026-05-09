@@ -10,8 +10,6 @@
 </head>
 
 <body>
-  <!-- Run Mode Badge (fixed position) -->
-  <div id="run-mode-badge" class="run-mode-badge"></div>
 
   <!-- Main Layout: Sidebar + Workspace -->
   <div class="app-layout">
@@ -39,14 +37,6 @@
           </svg>
         </button>
 
-        <button class="sidebar-btn" data-tab="settings" data-tooltip="Settings">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path
-              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-            </path>
-          </svg>
-        </button>
       </nav>
     </aside>
 
@@ -283,65 +273,6 @@
       </div>
       <!-- End Page: Products -->
 
-      <!-- Page: Settings -->
-      <div id="page-settings" class="page" style="display: none;">
-        <section class="block settings-block">
-          <div class="block-header">
-            <h2>⚙️ Settings</h2>
-          </div>
-          <div class="block-content">
-            <!-- Factory Profile Section -->
-            <div class="settings-section">
-              <h3 class="settings-section-title">Factory Profile</h3>
-              <p class="settings-section-description">
-                Choose what type of application the factory builds.
-                The profile determines prompts, deployment, and verification strategy.
-              </p>
-              <div id="profile-selector" class="profile-selector">
-                <!-- Populated by JS -->
-              </div>
-            </div>
-
-            <!-- GitHub Integration Section -->
-            <div class="settings-section">
-              <h3 class="settings-section-title">GitHub Integration</h3>
-              <p class="settings-section-description">
-                Connect your GitHub account to automatically save generated apps as repositories.
-                Each app will be pushed to a separate private repository in your account.
-              </p>
-
-              <!-- Status: Not Connected -->
-              <div id="github-not-connected" class="github-status" style="display: none;">
-                <div class="github-status-indicator">
-                  <span class="status-dot status-dot-off"></span>
-                  <span class="status-text">Not connected</span>
-                </div>
-                <button id="github-connect-btn" class="btn btn-primary">
-                  Connect GitHub
-                </button>
-              </div>
-
-              <!-- Status: Connected -->
-              <div id="github-connected" class="github-status" style="display: none;">
-                <div class="github-status-indicator">
-                  <span class="status-dot status-dot-on"></span>
-                  <span class="status-text">Connected as <strong id="github-username"></strong></span>
-                </div>
-                <div class="github-connected-meta">
-                  <span id="github-connected-at" class="github-connected-at"></span>
-                </div>
-                <button id="github-disconnect-btn" class="btn btn-secondary">
-                  Disconnect
-                </button>
-              </div>
-
-              <!-- Status messages (after OAuth callback) -->
-              <div id="github-message" class="github-message" style="display: none;"></div>
-            </div>
-          </div>
-        </section>
-      </div>
-      <!-- End Page: Settings -->
     </main>
   </div>
 
