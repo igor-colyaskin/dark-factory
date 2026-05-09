@@ -693,17 +693,6 @@ body {
   gap: 8px;
 }
 
-.fake-url-badge {
-  background: rgba(204, 167, 0, 0.2);
-  color: var(--vscode-warning);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  border: 1px solid var(--vscode-warning);
-  text-align: center;
-}
-
 .public-url-link {
   color: var(--vscode-accent);
   text-decoration: none;
