@@ -3,11 +3,13 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
+import { mkdirSync } from 'fs';
 import { promisify } from 'util';
 import orchestrator from './orchestrator.js';
 import fileManager from './file-manager.js';
 import acChecker from './ac-checker.js';
 import costTracker from './cost-tracker.js';
+import cardsRegistry from './cards-registry.js';
 import appsStore from './apps-store.js';
 import { resolveProfile, setActiveProfile, getAvailableProfiles, getActiveProfileId } from './profiles/index.js';
 import { validateEnvOrExit } from './env-validator.js';
@@ -20,6 +22,9 @@ import sandboxManager from './sandbox-manager.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const execAsync = promisify(exec);
+
+export const CARDS_DIR = path.join(__dirname, '../cards');
+mkdirSync(CARDS_DIR, { recursive: true });
 
 // AC error from npm test — passed to developer on retry
 let lastACError = null;

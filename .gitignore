@@ -11,6 +11,9 @@ workspace/
 # Per-app local workspaces (Local Runner, v0.6+)
 workspaces/
 # Note: mock-workspace/ is committed (used for mock-fast and demo modes)
+# IC card workspaces and registry (user data, not source)
+cards/
+cards-registry.json
 
 # Runtime state
 state/current.json
