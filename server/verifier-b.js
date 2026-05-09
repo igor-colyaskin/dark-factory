@@ -7,7 +7,6 @@
  * asks for structured assessment of feature visibility.
  */
 
-import puppeteer from 'puppeteer-core';
 import 'dotenv/config';
 
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
@@ -16,6 +15,7 @@ const API_KEY = process.env.LLM_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN;
 const VISION_MODEL = 'gemini-2.5-flash';
 
 async function takeScreenshot(url) {
+  const { default: puppeteer } = await import('puppeteer-core');
   const browser = await puppeteer.launch({
     executablePath: CHROME_PATH,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
