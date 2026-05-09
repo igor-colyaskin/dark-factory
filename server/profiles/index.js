@@ -1,20 +1,13 @@
-import nodejsApp from './nodejs-app.js';
 import integrationCard from './integration-card.js';
 
 const PROFILES = {
-  'nodejs-app': nodejsApp,
   'integration-card': integrationCard,
 };
 
-let activeProfileId = process.env.ACTIVE_PROFILE || 'nodejs-app';
+let activeProfileId = 'integration-card';
 
 export function resolveProfile() {
-  const profile = PROFILES[activeProfileId];
-  if (!profile) {
-    console.warn(`[PROFILE] Unknown profile "${activeProfileId}", falling back to nodejs-app`);
-    return nodejsApp;
-  }
-  return profile;
+  return integrationCard;
 }
 
 export function setActiveProfile(id) {
@@ -22,7 +15,6 @@ export function setActiveProfile(id) {
     throw new Error(`Unknown profile: "${id}"`);
   }
   activeProfileId = id;
-  console.log(`[PROFILE] Active profile changed to: ${id}`);
 }
 
 export function getAvailableProfiles() {
