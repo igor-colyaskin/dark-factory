@@ -241,7 +241,7 @@ Deployer-контракта (v0.6). Fly.io-адаптер — Area-51 до ра�
 - Выход (clarify): `{ mode: "clarify", questions: [{ id, text, options[], allowOther }], progress }`
 - Выход (spec): `{ mode: "spec", appSlug, spec: { ...IC spec fields } }`
 
-#### Spec fields (v0.9)
+#### Spec fields (v0.13)
 
 ```json
 {
@@ -251,7 +251,7 @@ Deployer-контракта (v0.6). Fly.io-адаптер — Area-51 до ра�
   "formTitle":       "Employee Details",
   "destinationName": "HCM_API",
   "protocol":        "rest",
-  "layout":          "form",
+  "viewControls":    ["sap.m.SimpleForm"],
   "generateTests":   true,
   "generateDocs":    false,
   "fields": [
@@ -262,8 +262,10 @@ Deployer-контракта (v0.6). Fly.io-адаптер — Area-51 до ра�
 ```
 
 `protocol`: `rest` | `odata2` | `odata4` | `other`
-`layout`: `form` | `table` | `other`
-`control`: `Text` | `Link` | `ObjectStatus`
+`viewControls`: array of UI5 class names, e.g. `["sap.m.SimpleForm"]`, `["sap.m.Table"]`, `["sap.m.FilterBar", "sap.m.Table"]`
+- Inferred from order/mockup; Architect asks only if unclear
+- If length > 3: Architect warns in Spec Review (vibe-coding recommendation)
+`control` (per field): `Text` | `Link` | `ObjectStatus`
 
 #### Output Questions Round
 

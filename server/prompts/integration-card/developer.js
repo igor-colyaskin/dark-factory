@@ -509,7 +509,7 @@ export function generateStaticFiles(cardSlug, spec = {}) {
   const slug = cardSlug || 'card';
   const sub = (s) => s.replace(/SLUG/g, slug);
   const pkgJson = spec.generateTests ? sub(T_PACKAGE_JSON_WITH_TESTS) : sub(T_PACKAGE_JSON);
-  const isTable = spec.layout === 'table';
+  const isTable = (spec.viewControls || []).some(c => /table/i.test(c));
 
   const files = [
     { path: 'src/Component.js',               content: sub(T_COMPONENT),       action: 'create' },
@@ -582,7 +582,7 @@ export const systemPrompt = `You are a Developer agent in Dark Factory that gene
 Given a card spec from the Architect, you produce 4 of the 5 extension-point source files.
 (View.view.xml is generated in a separate focused call — do NOT include it here.)
 The card uses the templateSF pattern — a SAP UI5 AMD-style Component card.
-The visual layout (form, table, etc.) is determined by spec.layout — see per-file instructions below.
+The UI controls are determined by spec.viewControls (array of UI5 class names) — see per-file instructions below.
 Static files (Component.js, Main.controller.js, formatter.js, mockserver.js, package.json)
 are handled separately — do NOT include them in your response.
 
@@ -722,23 +722,13 @@ sap.ui.define(["sap/base/Log", "com/sap/fiorireuselibrary/ui5cardssdk/CustomErro
 \t\t},
 
 \t\t_processData: function (oRawData) {
-\t\t\t// IMPLEMENT based on spec.layout:
+\t\t\t// IMPLEMENT based on spec.viewControls:
 \t\t}
 \t};
 });
 \`\`\`
 
-**If spec.layout === "form"** — single entity, _processData returns a flat object:
-\`\`\`javascript
-_processData: function (oRawData) {
-\tconst oMapped = {
-\t\t// One line per field: viewKey: oRawData.beField || ""
-\t};
-\treturn oMapped;
-}
-\`\`\`
-
-**If spec.layout === "table"** — collection, _processData returns { items: [...] }:
+**If spec.viewControls contains a Table control** (sap.m.Table, sap.ui.table.Table, etc.) — collection, _processData returns { items: [...] }:
 \`\`\`javascript
 _processData: function (oRawData) {
 \tconst aRaw = Array.isArray(oRawData) ? oRawData : (oRawData.value || oRawData.results || []);
@@ -752,7 +742,17 @@ _processData: function (oRawData) {
 }
 \`\`\`
 
-**If spec.layout === "other"** — reason from the order and spec.fields to choose the appropriate mapping pattern.
+**If spec.viewControls does NOT contain a Table control** (form / details view) — single entity, _processData returns a flat object:
+\`\`\`javascript
+_processData: function (oRawData) {
+\tconst oMapped = {
+\t\t// One line per field: viewKey: oRawData.beField || ""
+\t};
+\treturn oMapped;
+}
+\`\`\`
+
+**Multiple controls in spec.viewControls** — reason from the controls list and spec.fields to decide data shape and mapping.
 
 **Protocol note for loadData():**
 The loadData() template above uses a generic oCard.request() — keep it as-is for REST.
@@ -810,7 +810,7 @@ Substitutions:
 
 ### 4. src/test/utils/MockDataGenerator.js — EXTENSION POINT
 
-**If spec.layout === "form"** — getData() returns a single object with spec.mockData values:
+**If spec.viewControls does NOT contain a Table control** — getData() returns a single object with spec.mockData values:
 \`\`\`javascript
 sap.ui.define([], function () {
 \t"use strict";
@@ -827,7 +827,7 @@ sap.ui.define([], function () {
 });
 \`\`\`
 
-**If spec.layout === "table"** — getData() returns an array of at least 3 objects.
+**If spec.viewControls contains a Table control** — getData() returns an array of at least 3 objects.
 Use spec.mockData as the template for each object; vary values realistically across rows:
 \`\`\`javascript
 sap.ui.define([], function () {
@@ -847,7 +847,7 @@ sap.ui.define([], function () {
 });
 \`\`\`
 
-**If spec.layout === "other"** — match the data shape expected by your DataHelper._processData implementation.
+**Multiple controls in spec.viewControls** — match the data shape expected by your DataHelper._processData implementation.
 
 ---
 
@@ -875,7 +875,7 @@ Use SAPUI5 XML view syntax. Replace \`SLUG\` with spec.cardSlug everywhere.
 
 \`\`\`json
 {
-  "thinking": "layout decision, column count, field-to-control mapping",
+  "thinking": "controls chosen, column count, field-to-control mapping",
   "files": [
     { "path": "src/View.view.xml", "content": "COMPLETE file content", "action": "create" }
   ],
@@ -885,7 +885,7 @@ Use SAPUI5 XML view syntax. Replace \`SLUG\` with spec.cardSlug everywhere.
 
 ## View Generation Rules
 
-### If spec.layout === "form"
+### If spec.viewControls does NOT contain a Table control (form / details view)
 
 Distribute fields across 1–4 columns:
 - 1–3 fields: 1 column  |  4–6: 2 columns  |  7–9: 3 columns  |  10+: 4 columns
@@ -934,7 +934,7 @@ Template (adjust columnsXL/L/M to match column count):
 </mvc:View>
 \`\`\`
 
-### If spec.layout === "table"
+### If spec.viewControls contains sap.m.Table
 
 Bind items to \`{/items}\`. One Column per field, one cell per field in ColumnListItem.
 
@@ -973,9 +973,11 @@ Template:
 </mvc:View>
 \`\`\`
 
-### If spec.layout === "other"
+### Multiple controls in spec.viewControls
 
-Reason from spec.fields and order description to choose appropriate UI5 controls.
+Reason from spec.viewControls list and spec.fields to compose the View.
+Render controls in the order they appear in spec.viewControls.
+Wrap in VBox with standard sapUiSmallMargin.
 
 ## Critical Rules
 
@@ -1018,7 +1020,7 @@ export function generateViewUserPrompt(spec, dataHelperContent = '') {
 export function generateUserPrompt(orderDescription, spec, retryCount = 0, errorFeedback = null) {
   const specText = JSON.stringify(spec, null, 2);
 
-  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 4 extension-point source files for this Integration Card. (View.view.xml is generated separately.)\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, layout = ${spec.layout || 'form'}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for layout = ${spec.layout || 'form'}\n\nRespond with valid JSON following the required format.`;
+  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 4 extension-point source files for this Integration Card. (View.view.xml is generated separately.)\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, viewControls = ${JSON.stringify(spec.viewControls || [])}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for viewControls = ${JSON.stringify(spec.viewControls || [])}\n\nRespond with valid JSON following the required format.`;
 
   if (retryCount > 0 && errorFeedback) {
     prompt += `\n\n# ⚠️ RETRY ${retryCount}\n\nPrevious attempt had issues:\n\n${errorFeedback}\n\nFix these issues in your response.`;

@@ -31,15 +31,15 @@
 
 ---
 
-### [TPL-004] protocol + viewControl как ортогональные измерения → шаблоны по матрице
-**Источник:** стратегическое обсуждение 2026-05-10, уточнён в сессии #3
+### [TPL-004] protocol + viewControls как ортогональные измерения
+**Источник:** стратегическое обсуждение 2026-05-10, финализирован 2026-05-10 сессия #5
 
 **Архитектурное решение (финальное):**
 - `spec.protocol` — `"rest"` | `"odata2"` | `"odata4"` | `"other"` — **всегда спрашивать явно**, никогда не выводить автоматически (даже из JSON-sample)
-- `spec.viewControl` — конкретный UI5-класс (`"sap.m.SimpleForm"`, `"sap.m.Table"`, etc.) — выводить из структуры данных, спрашивать если неясно
-- `spec.layout` — **удалить** (заменён на viewControl)
+- `spec.viewControls: string[]` — массив конкретных UI5-классов (`["sap.m.FilterBar", "sap.m.Table"]`) — выводить из мокапа/заказа, спрашивать если неясно
+- `spec.layout` — **удалить** (заменён на viewControls)
 
-**Почему два шаблона радикально различаются:**
+**Два шаблона по протоколу (не по контролам):**
 
 | Аспект | template-rest | template-odata2 |
 |--------|--------------|-----------------|
@@ -48,23 +48,25 @@
 | DataHelper | есть (`_processData` обязателен) | **нет вообще** |
 | Extension point | `_processData()`, View FormElements | entity set name в `_bindView()`, Column definitions |
 
-**Матрица выбора шаблона:**
-- `sap.m.SimpleForm + rest` → `templates/template-rest/`
-- `sap.m.Table + odata2` → `templates/template-odata2/`
-- остальное → LLM генерирует с нуля по аналогии
+Шаблон — только стартовая файловая структура. Developer адаптирует содержимое под `spec.viewControls` + `spec.protocol` вне зависимости от шаблона.
+
+**Порог сложности layout-а:**
+- `viewControls.length <= 3` → Developer строит layout автоматически
+- `viewControls.length > 3` → Архитектор показывает в Spec Review:
+  > *"Layout содержит N контролов — сложная композиция. Рекомендую: сгенерировать скелет (основной контрол + структура), остальное доработать через вайб-кодинг — для сложных layout-ов это точнее и быстрее. Продолжить или упростить заказ?"*
+- Условная видимость контролов (MessageStrip по состоянию и т.п.) — дополнительный сигнал сложности, учитывать наравне с количеством.
 
 **Подход к реализации (упрощённый — версия 1):**
-Не читать файлы с диска. Заменить `spec.layout` → `spec.viewControl` в промптах и логике.
-developer.js использует viewControl для условий вместо layout (промпты LLM остаются inline T_*).
+Не читать файлы с диска. Промпты LLM остаются inline T_*.
 
 **Что делать:**
 1. ~~Переименовать `templates/form-rest/` → `templates/template-rest/`, `templates/table-odata2/` → `templates/template-odata2/`~~ ✅ (сессия 2026-05-10 #4)
 2. `template-odata2/`: заменить `_bindTable()` → `_bindView()` в `Main.controller.js`
-3. `architect.js` — убрать `layout`, добавить `viewControl`; protocol — всегда явный вопрос, никогда не auto-detect
-4. `developer.js` — заменить все условия `spec.layout === "form/table/other"` на `spec.viewControl`-based; убрать `isTable = spec.layout === 'table'`
+3. `architect.js` — убрать `layout`, добавить `viewControls` (массив); protocol — всегда явный вопрос; предупреждение при > 3 контролах
+4. `developer.js` — заменить все условия по `spec.layout` на `spec.viewControls`-based; убрать `isTable = spec.layout === 'table'`
 5. `contracts.md` — обновить IC spec fields
 
-**Приоритет:** высокий — **до демо** (~3-4 ч, осталось ~2-3 ч)
+**Приоритет:** высокий — **до демо** (~2-3 ч)
 
 ---
 

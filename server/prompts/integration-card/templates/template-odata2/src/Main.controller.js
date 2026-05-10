@@ -19,7 +19,7 @@ sap.ui.define(
 				this.getView()
 					.getModel()
 					.metadataLoaded()
-					.then(() => this._bindTable())
+					.then(() => this._bindView())
 					.catch((oError) => {
 						Log.error("templatetable: metadataLoaded failed", oError);
 						if (oError && typeof oError.getParameters === "function") {
@@ -33,7 +33,7 @@ sap.ui.define(
 			// Replace "TemplateEntitySet" with the real OData entity set name.
 			// Add filters here if the table requires server-side filtering.
 			// ─────────────────────────────────────────────────────────────────
-			_bindTable: function () {
+			_bindView: function () {
 				this.byId("mainTable").bindItems({
 					path: "/TemplateEntitySet",
 					template: this.byId("mainTableTemplate"),
