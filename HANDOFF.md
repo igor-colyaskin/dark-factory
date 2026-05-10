@@ -9,25 +9,62 @@
 
 ## v0.13 — в работе (roadmap to demo)
 
-**Последняя выпущенная версия:** v0.12.1 — bug fixes ✅ (сессия 2026-05-10)
-- UX-003: "Другое" в clarify-вопросах починено
-- Mockserver regex: `entity(.*)` → `.*`
-- css/style.css: пустой файл добавлен в generateStaticFiles
+**Последняя сессия:** 2026-05-10 #3
 
-**v0.12:** Smart Input ✅ (сессия 2026-05-10)
+**v0.13 прогресс:**
+- UX-008 ✅ Vision pre-pass реализован (Gemini 2.5 Flash)
+- INF-002 ✅ Developer split на 2 вызова (View.view.xml отдельно)
+- TPL-004 архитектурное решение зафиксировано в памяти и backlog
+
+**v0.12.1:** bug fixes ✅ | **v0.12:** Smart Input ✅
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655)
 
 ## Что сделать в первую очередь
 
-1. Прочитай память: `ic_roadmap.md`, `project_state_v04.md`, `integration_card_template.md`
+1. Прочитай память: `ic_roadmap.md`, `project_state_v04.md`
 2. Текущий план — **v0.13 roadmap to demo** (см. ниже)
-3. **ВАЖНО: перед стартом TPL-004 прочитай секцию "Находки сессии 2026-05-10 #2" ниже**
+3. **Прочитай секцию "Находки сессии 2026-05-10 #3"** ниже
 
-## Находки сессии 2026-05-10 #2 (критично для TPL-004)
+## Находки сессии 2026-05-10 #3
 
-### CARDS.md анализ завершён
-37 карточек команды проанализированы (commit eb51eed). Доминирующий паттерн:
-- **55% — sap.m.Table + OData2** (model binding, не oCard.request())
+### UX-008 — Vision pre-pass реализован
+
+**Hyperspace vision:** оба Gemini 2.5 Flash и Claude Sonnet поддерживают vision. Тест: 1×1 PNG падал ("Could not process image") — нужен валидный PNG ≥10×10px. Используем Gemini для vision pre-pass.
+
+**Архитектура:**
+- Client: кнопка «📎 Mockup» + превью миниатюры, base64 → тело `/api/order`
+- Server: `orchestrator.imageData` + `orchestrator.visionAnalysis`
+- `agentManager.callVision(imageData)` — Gemini, возвращает JSON-анализ как текст
+- `runArchitect()` в index.js: если `imageData && !visionAnalysis` → vision pre-pass → `setVisionAnalysis()`
+- `architect.generateUserPrompt()` — новый параметр `visionAnalysis`, инжектируется как `## Mockup Analysis`
+- Изображение пересылается **один раз**, дальше анализ как текст на всех раундах
+
+**Тест прошёл:** мокап разобран отлично, спецификация корректная.
+
+### INF-002 — Developer split (View.view.xml отдельный вызов)
+
+**Проблема:** при многих полях View.view.xml переполняет Hyperspace ~8192 токен лимит.
+
+**Решение:** два LLM-вызова вместо одного:
+- **Call 1:** manifest.json + DataHelper.js + i18n.properties + MockDataGenerator.js (4 файла)
+- **Call 2:** View.view.xml (отдельный вызов, получает DataHelper как контекст для консистентности биндингов)
+
+Новые экспорты в `developer.js`: `viewGeneratorSystemPrompt`, `generateViewUserPrompt(spec, dataHelperContent)`.
+`index.js runDeveloper()`: Call 2 условно по `typeof profile.prompts.developer.viewGeneratorSystemPrompt`.
+Это независимо от layout — всегда 2 вызова для IC-профиля.
+
+**Статус на конец сессии:** generation прошла (Pickup показан), preview не проверен — сервер перезапустился nodemon во время разработки. Для следующей сессии: `npm run restart` + проверить preview в браузере.
+
+### TPL-004 — архитектурное решение зафиксировано
+
+`spec.protocol` и `spec.viewControl` — **ортогональные измерения**.
+- `spec.protocol` — всегда спрашивать явно (не выводить из JSON-sample)
+- `spec.viewControl` — выводить из данных, спрашивать если неясно
+- Шаблоны по протоколу: `template-rest` (`_processData` extension point) / `template-odata2` (`_bindView` extension point)
+- `spec.layout` — удалить после реализации TPL-004
+Подробнее — в памяти `ic_roadmap.md` и `docs/backlog.md` (TPL-004).
+
+
 - `sap.ui.table.Table` — только 1 карточка (TreeTable, не мержена в develop, экзотика)
 - Form pattern: sap.ui.layout.form (object/detail) или VBox layout
 
