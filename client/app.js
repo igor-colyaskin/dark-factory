@@ -8,6 +8,7 @@ let currentState = null;
 let sessionId = null;
 let editingSlug = null;
 let editingName = null;
+let mockupImageData = null; // { mimeType, base64, filename }
 
 // DOM Elements
 const orderBlock = document.getElementById('order-block');
@@ -102,6 +103,9 @@ function setupEventListeners() {
   newOrderBtn.addEventListener('click', handleNewOrder);
   openPublicBtn.addEventListener('click', handleOpenPublic);
   copyUrlBtn.addEventListener('click', handleCopyUrl);
+
+  document.getElementById('mockup-file-input').addEventListener('change', handleMockupSelect);
+  document.getElementById('mockup-clear-btn').addEventListener('click', clearMockup);
 }
 
 // Setup Tabs
@@ -442,6 +446,31 @@ function handleDeployProgress(data) {
   }
 }
 
+// Handle mockup image selection
+function handleMockupSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result; // data:<mimeType>;base64,<data>
+    const [header, base64] = dataUrl.split(',');
+    const mimeType = header.match(/data:([^;]+)/)[1];
+    mockupImageData = { mimeType, base64, filename: file.name };
+
+    document.getElementById('mockup-thumbnail').src = dataUrl;
+    document.getElementById('mockup-filename').textContent = file.name;
+    document.getElementById('mockup-preview').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearMockup() {
+  mockupImageData = null;
+  document.getElementById('mockup-file-input').value = '';
+  document.getElementById('mockup-preview').style.display = 'none';
+}
+
 // Handle Order Submit
 async function handleOrderSubmit(e) {
   e.preventDefault();
@@ -465,13 +494,17 @@ async function handleOrderSubmit(e) {
         body: JSON.stringify({ changeRequest: orderDescription })
       });
     } else {
+      const body = { description: orderDescription };
+      if (mockupImageData) {
+        body.imageData = { mimeType: mockupImageData.mimeType, base64: mockupImageData.base64 };
+      }
       response = await fetch('/api/order', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Session-Id': sessionId
         },
-        body: JSON.stringify({ description: orderDescription })
+        body: JSON.stringify(body)
       });
     }
 
@@ -479,6 +512,7 @@ async function handleOrderSubmit(e) {
 
     if (result.success) {
       cancelEditMode();
+      clearMockup();
       showStatus('Order submitted successfully!', 'success');
 
       // Update order block
