@@ -243,6 +243,68 @@ class AgentManager {
   }
 
   /**
+   * Analyze a UI mockup image using Gemini vision.
+   * @param {{ mimeType: string, base64: string }} imageData
+   * @returns {Promise<{ success: boolean, analysis: string, cost: number, time: number }>}
+   */
+  async callVision(imageData) {
+    if (!this.apiKey) throw new Error('LLM_API_KEY / ANTHROPIC_AUTH_TOKEN is not configured');
+
+    const prompt = `Analyze this UI mockup or screenshot to extract information for a SAP UI5 Integration Card.
+Return ONLY a JSON object (no markdown, no explanation) with this structure:
+{
+  "description": "one sentence — what entity/data this UI displays",
+  "viewControl": "most likely SAP UI5 control, e.g. sap.m.SimpleForm or sap.m.Table",
+  "fields": [
+    { "label": "Field Label", "controlHint": "Text|Link|ObjectStatus", "formatterHint": "formatDate|null" }
+  ],
+  "notes": "any other observations useful for the developer"
+}`;
+
+    const startTime = Date.now();
+    console.log('Calling Vision agent (gemini-2.5-flash)...');
+
+    try {
+      const response = await fetch(this.apiUrl, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemini-2.5-flash',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: `data:${imageData.mimeType};base64,${imageData.base64}` } }
+            ]
+          }],
+          temperature: 0.3,
+          max_tokens: 1000,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Vision API error: ${response.status} ${response.statusText}\n${errorText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) throw new Error('No content in vision API response');
+
+      const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+      const cost = this.extractCost(data);
+      console.log(`Vision completed in ${elapsedTime}s, cost: $${cost.toFixed(4)}`);
+
+      return { success: true, analysis: content, cost, time: elapsedTime, usage: data.usage || {} };
+    } catch (error) {
+      const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+      console.error('Vision failed:', error.message);
+      return { success: false, error: error.message, cost: 0, time: elapsedTime };
+    }
+  }
+
+  /**
    * Retry agent call with error feedback
    * @param {string} agentType - Agent type
    * @param {string} systemPrompt - System prompt
