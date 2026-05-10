@@ -9,7 +9,8 @@
 
 ## v0.11.1 cleanup завершена ✅
 
-**Последняя выпущенная версия:** v0.11.1 — cleanup (удалены Fly/GitHub/LocalRunner/Verifier-a/b/nodejs-app) ✅ (сессия 2026-05-09)
+**Последняя выпущенная версия:** v0.11.1 — cleanup ✅ (сессия 2026-05-09)
+**Docs cleanup:** ROADMAP, CONCEPT, backlog очищены от Fly/GitHub/nodejs-app (сессия 2026-05-10)
 **v0.11 E2E:** Create → Preview → My Apps → Edit → Import → Delete — всё пройдено ✅
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655)
 
