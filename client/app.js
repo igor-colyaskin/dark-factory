@@ -406,7 +406,7 @@ function connectSSE() {
 
 // Handle SSE Messages
 function handleSSEMessage(data) {
-  console.log('SSE message:', data);
+  // console.log('SSE message:', data);
 
   switch (data.type) {
     case 'connected':
@@ -450,6 +450,24 @@ function handleDeployProgress(data) {
 function handleMockupSelect(e) {
   const file = e.target.files[0];
   if (!file) return;
+
+  const errorEl = document.getElementById('mockup-error');
+  const ALLOWED = ['image/png', 'image/jpeg', 'image/webp'];
+  const MAX_BYTES = 5 * 1024 * 1024;
+
+  if (!ALLOWED.includes(file.type)) {
+    errorEl.textContent = 'Unsupported format. Use PNG, JPG, or WEBP.';
+    errorEl.style.display = 'block';
+    e.target.value = '';
+    return;
+  }
+  if (file.size > MAX_BYTES) {
+    errorEl.textContent = `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 5 MB.`;
+    errorEl.style.display = 'block';
+    e.target.value = '';
+    return;
+  }
+  errorEl.style.display = 'none';
 
   const reader = new FileReader();
   reader.onload = (ev) => {
@@ -613,7 +631,7 @@ function handleNewOrder() {
 
 // Update UI based on state
 function updateUI(state) {
-  console.log('Updating UI with state:', state);
+  // console.log('Updating UI with state:', state);
 
   // Update User Stories table
   updateUserStoriesTable(state.userStories);
