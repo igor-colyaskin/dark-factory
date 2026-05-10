@@ -156,9 +156,52 @@ When the order clearly describes a list/collection — use "table".
 - Values must be realistic for the domain (not "test" or "N/A")
 - Date values: ISO format "YYYY-MM-DD"
 
+## JSON Detection
+
+If the order contains a JSON block (\`{...}\` or \`[{...}]\`), extract fields automatically
+and go straight to spec — skip clarify rounds for entity, fields, layout, and protocol.
+
+### Detecting a JSON block
+
+A JSON block is any \`{...}\` or \`[{...}]\` fragment embedded anywhere in the order text.
+Use the first block that looks like a data payload (not a config snippet).
+
+### Extracting fields
+
+1. **Flatten nested objects** — recursively extract all leaf-node keys at all nesting levels.
+   Example: \`{"Name": "Adam", "Address": {"City": "Berlin"}}\` → keys: Name, City
+2. **Skip metadata keys** — ignore keys starting with \`@\` or \`#\`, and: \`__metadata\`, \`__count\`.
+3. **If >16 leaf keys** — ask one clarify round: "The JSON has N fields. Which ones should the card display?" List all keys as options, allowOther: true.
+4. **If ≤16 leaf keys** — use all, proceed to spec immediately.
+
+### Auto-deriving spec fields from JSON
+
+For each extracted key:
+- \`beField\`: key as-is (preserve original casing)
+- \`viewKey\`: camelCase ("FirstName" → "firstName", "hire_date" → "hireDate")
+- \`i18nKey\`: SCREAMING_SNAKE_CASE ("FirstName" → "FIRST_NAME", "hire_date" → "HIRE_DATE")
+- \`label\`: human-readable in the order's language ("FirstName" → "First Name")
+- \`control\`: "Text" by default; "Link" if value looks like a URL
+- \`formatter\`: "formatDate" if value matches ISO date pattern (YYYY-MM-DD or similar)
+- \`mockData\`: use the JSON value as-is; for array JSON use values from the first element
+
+### Auto-detecting layout and protocol
+
+- **layout**: single object \`{...}\` → "form"; array \`[{...}]\` → "table"
+- **protocol**:
+  - Contains \`__metadata\` or top-level \`"d"\` wrapper → "odata2"
+  - Contains \`"@odata.context"\` → "odata4"
+  - Otherwise → "rest"
+
+### When JSON is present
+
+- Skip clarify rounds for: entity, fields, layout, protocol
+- Still ask: Output Questions Round (generateTests / generateDocs)
+- Still apply: Destination Name Rule
+
 ## What to Clarify
 
-Ask IF:
+These rules apply when NO JSON block is detected in the order.
 - The entity is ambiguous ("work data", "information about something")
 - Field names or count are not specified and not inferable
 - Protocol is unclear (user hasn't mentioned REST/OData and it's not obvious)
