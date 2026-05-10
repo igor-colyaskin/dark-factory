@@ -661,6 +661,37 @@ async function runDeveloper() {
     throw new Error('Developer failed: ' + result.error);
   }
 
+  // Call 2: generate View.view.xml in a separate focused call (avoids Hyperspace ~8192 token limit)
+  if (typeof profile.prompts.developer.viewGeneratorSystemPrompt === 'string') {
+    console.log('[IC] Generating View.view.xml (separate LLM call)...');
+    const dataHelperFile = result.content.files.find(f => f.path === 'src/helpers/DataHelper.js');
+    const viewUserPrompt = profile.prompts.developer.generateViewUserPrompt(spec, dataHelperFile?.content || '');
+    const viewResult = await agentManager.callAgentWithRetry(
+      'developer',
+      profile.prompts.developer.viewGeneratorSystemPrompt,
+      viewUserPrompt,
+      { max_tokens: 8000 }
+    );
+    costTracker.recordEntry({
+      usId: 2,
+      usName: 'Development',
+      agent: 'developer-view',
+      model: viewResult.model,
+      cost: viewResult.cost,
+      time: viewResult.time,
+      tokens: viewResult.usage,
+      status: viewResult.success ? 'success' : 'error'
+    });
+    await costTracker.save();
+    if (viewResult.success && viewResult.content.files?.length > 0) {
+      result.content.files = [...(result.content.files || []), ...viewResult.content.files];
+      console.log('[IC] View.view.xml generated successfully');
+    } else {
+      console.error('[IC] View.view.xml generation failed:', viewResult.error);
+      throw new Error('View generation failed: ' + viewResult.error);
+    }
+  }
+
   // Write files to workspace
   if (useMockWorkspace) {
     console.log('[MOCK-FAST] Copying pre-built mock-workspace/');

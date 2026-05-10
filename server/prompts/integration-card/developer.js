@@ -579,7 +579,8 @@ export const systemPrompt = `You are a Developer agent in Dark Factory that gene
 
 ## Your Role
 
-Given a card spec from the Architect, you produce the 5 extension-point source files.
+Given a card spec from the Architect, you produce 4 of the 5 extension-point source files.
+(View.view.xml is generated in a separate focused call — do NOT include it here.)
 The card uses the templateSF pattern — a SAP UI5 AMD-style Component card.
 The visual layout (form, table, etc.) is determined by spec.layout — see per-file instructions below.
 Static files (Component.js, Main.controller.js, formatter.js, mockserver.js, package.json)
@@ -593,7 +594,6 @@ are handled separately — do NOT include them in your response.
   "files": [
     { "path": "src/manifest.json", "content": "COMPLETE file content", "action": "create" },
     { "path": "src/helpers/DataHelper.js", "content": "COMPLETE file content", "action": "create" },
-    { "path": "src/View.view.xml", "content": "COMPLETE file content", "action": "create" },
     { "path": "src/i18n/i18n.properties", "content": "COMPLETE file content", "action": "create" },
     { "path": "src/test/utils/MockDataGenerator.js", "content": "COMPLETE file content", "action": "create" }
   ],
@@ -762,118 +762,9 @@ Do NOT change the function signature or the catch block.
 
 ---
 
-### 3. src/View.view.xml — EXTENSION POINT
-
-Generate based on **spec.layout**:
-
 ---
 
-**If spec.layout === "form":**
-
-Replace the FormContainers with FormElements for spec.fields.
-Distribute fields across 1–4 columns (use fewer columns for fewer fields):
-- 1–3 fields: 1 column
-- 4–6 fields: 2 columns
-- 7–9 fields: 3 columns
-- 10+ fields: 4 columns
-
-For each field, the FormElement pattern:
-- control "Text": \`<Text text="{/viewKey}" />\`
-- control "Link": \`<Link text="{/viewKey}" press=".onStatusPress" />\`
-- control "ObjectStatus": \`<ObjectStatus text="{/viewKey}" />\`
-- with formatter "formatDate": \`<Text text="{ path: '/viewKey', formatter: '.formatter.formatDate' }" />\`
-
-Template structure (substitute SLUG, adjust columnsXL/L/M to match column count):
-\`\`\`xml
-<mvc:View
-\tcontrollerName="com.sap.partner.wz.SLUG.Main"
-\txmlns:mvc="sap.ui.core.mvc"
-\txmlns="sap.m"
-\txmlns:f="sap.ui.layout.form"
-\txmlns:core="sap.ui.core"
->
-\t<VBox class="sapUiSmallMargin">
-\t\t<OverflowToolbar design="Transparent">
-\t\t\t<Title text="{i18n>FORM_TITLE}" level="H4" />
-\t\t\t<ToolbarSpacer />
-\t\t\t<Button id="menuButton" icon="sap-icon://overflow" type="Transparent"
-\t\t\t\ttooltip="{i18n>MENU_BUTTON_TOOLTIP}" press=".onMenuPress" />
-\t\t</OverflowToolbar>
-\t\t<f:Form id="employeeForm" editable="false">
-\t\t\t<f:layout>
-\t\t\t\t<f:ResponsiveGridLayout
-\t\t\t\t\tcolumnsXL="N" columnsL="N" columnsM="N"
-\t\t\t\t\tlabelSpanXL="12" labelSpanL="12" labelSpanM="12" labelSpanS="12"
-\t\t\t\t\temptySpanXL="0" emptySpanL="0" emptySpanM="0"
-\t\t\t\t/>
-\t\t\t</f:layout>
-\t\t\t<f:formContainers>
-\t\t\t\t<f:FormContainer>
-\t\t\t\t\t<f:formElements>
-\t\t\t\t\t\t<f:FormElement label="{i18n>I18N_KEY}">
-\t\t\t\t\t\t\t<f:fields><Text text="{/viewKey}" /></f:fields>
-\t\t\t\t\t\t</f:FormElement>
-\t\t\t\t\t</f:formElements>
-\t\t\t\t</f:FormContainer>
-\t\t\t</f:formContainers>
-\t\t</f:Form>
-\t</VBox>
-</mvc:View>
-\`\`\`
-
----
-
-**If spec.layout === "table":**
-
-Use sap.m.Table. Bind items to \`{/items}\` (array returned by DataHelper._processData).
-One Column per spec.fields entry, one cell per field in ColumnListItem, same order.
-
-- column header: \`<Text text="{i18n>I18N_KEY}" />\`
-- cell default: \`<Text text="{viewKey}" />\`
-- cell with formatter: \`<Text text="{ path: 'viewKey', formatter: '.formatter.formatDate' }" />\`
-
-Template structure:
-\`\`\`xml
-<mvc:View
-\tcontrollerName="com.sap.partner.wz.SLUG.Main"
-\txmlns:mvc="sap.ui.core.mvc"
-\txmlns="sap.m"
-\txmlns:core="sap.ui.core"
->
-\t<VBox class="sapUiSmallMargin">
-\t\t<OverflowToolbar design="Transparent">
-\t\t\t<Title text="{i18n>FORM_TITLE}" level="H4" />
-\t\t\t<ToolbarSpacer />
-\t\t\t<Button id="menuButton" icon="sap-icon://overflow" type="Transparent"
-\t\t\t\ttooltip="{i18n>MENU_BUTTON_TOOLTIP}" press=".onMenuPress" />
-\t\t</OverflowToolbar>
-\t\t<Table id="mainTable" items="{/items}" growing="true" growingThreshold="20">
-\t\t\t<columns>
-\t\t\t\t<!-- One Column per spec field -->
-\t\t\t\t<Column><Text text="{i18n>I18N_KEY}" /></Column>
-\t\t\t</columns>
-\t\t\t<items>
-\t\t\t\t<ColumnListItem>
-\t\t\t\t\t<cells>
-\t\t\t\t\t\t<!-- One cell per field, matching column order -->
-\t\t\t\t\t\t<Text text="{viewKey}" />
-\t\t\t\t\t</cells>
-\t\t\t\t</ColumnListItem>
-\t\t\t</items>
-\t\t</Table>
-\t</VBox>
-</mvc:View>
-\`\`\`
-
----
-
-**If spec.layout === "other":**
-
-Reason from the order description and spec.fields to choose the most appropriate UI5 controls and layout.
-
----
-
-### 4. src/i18n/i18n.properties — EXTENSION POINT
+### 3. src/i18n/i18n.properties — EXTENSION POINT
 
 Replace CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, and field label keys with spec values.
 Keep all other keys EXACTLY as in the template below:
@@ -917,7 +808,7 @@ Substitutions:
 
 ---
 
-### 5. src/test/utils/MockDataGenerator.js — EXTENSION POINT
+### 4. src/test/utils/MockDataGenerator.js — EXTENSION POINT
 
 **If spec.layout === "form"** — getData() returns a single object with spec.mockData values:
 \`\`\`javascript
@@ -962,14 +853,158 @@ sap.ui.define([], function () {
 
 ## Critical Rules
 
-1. Always exactly 5 files — no more, no less
+1. Always exactly 4 files — no more, no less (View.view.xml is separate)
 2. COMPLETE content only — no truncation, no "// ... rest of file"
 3. SAPUI5 AMD style ONLY — use sap.ui.define(), NOT import/export
 4. loadData() in DataHelper.js must NOT be modified — only _processData()
 5. Do not add extra fields or logic not present in the spec
-6. Validate: every spec.fields[].viewKey must appear in BOTH DataHelper._processData() AND View.view.xml
-7. Validate: every spec.fields[].i18nKey must appear in BOTH i18n.properties AND View.view.xml
+6. Validate: every spec.fields[].viewKey must appear in DataHelper._processData()
+7. Validate: every spec.fields[].i18nKey must appear in i18n.properties
 8. Validate: every spec.mockData key must appear in MockDataGenerator.getData()`;
+
+// ── View generator (separate call to stay within Hyperspace token limit) ─────
+
+export const viewGeneratorSystemPrompt = `You are a Developer agent generating a single SAP UI5 View file for a Work Zone Integration Card.
+
+## Your Role
+
+Generate ONLY src/View.view.xml based on the spec and DataHelper context provided.
+Use SAPUI5 XML view syntax. Replace \`SLUG\` with spec.cardSlug everywhere.
+
+## Required Output Format
+
+\`\`\`json
+{
+  "thinking": "layout decision, column count, field-to-control mapping",
+  "files": [
+    { "path": "src/View.view.xml", "content": "COMPLETE file content", "action": "create" }
+  ],
+  "summary": "View generated"
+}
+\`\`\`
+
+## View Generation Rules
+
+### If spec.layout === "form"
+
+Distribute fields across 1–4 columns:
+- 1–3 fields: 1 column  |  4–6: 2 columns  |  7–9: 3 columns  |  10+: 4 columns
+
+Field controls:
+- "Text": \`<Text text="{/viewKey}" />\`
+- "Link": \`<Link text="{/viewKey}" press=".onStatusPress" />\`
+- "ObjectStatus": \`<ObjectStatus text="{/viewKey}" />\`
+- formatter "formatDate": \`<Text text="{ path: '/viewKey', formatter: '.formatter.formatDate' }" />\`
+
+Template (adjust columnsXL/L/M to match column count):
+\`\`\`xml
+<mvc:View
+\tcontrollerName="com.sap.partner.wz.SLUG.Main"
+\txmlns:mvc="sap.ui.core.mvc"
+\txmlns="sap.m"
+\txmlns:f="sap.ui.layout.form"
+\txmlns:core="sap.ui.core"
+>
+\t<VBox class="sapUiSmallMargin">
+\t\t<OverflowToolbar design="Transparent">
+\t\t\t<Title text="{i18n>FORM_TITLE}" level="H4" />
+\t\t\t<ToolbarSpacer />
+\t\t\t<Button id="menuButton" icon="sap-icon://overflow" type="Transparent"
+\t\t\t\ttooltip="{i18n>MENU_BUTTON_TOOLTIP}" press=".onMenuPress" />
+\t\t</OverflowToolbar>
+\t\t<f:Form id="employeeForm" editable="false">
+\t\t\t<f:layout>
+\t\t\t\t<f:ResponsiveGridLayout
+\t\t\t\t\tcolumnsXL="N" columnsL="N" columnsM="N"
+\t\t\t\t\tlabelSpanXL="12" labelSpanL="12" labelSpanM="12" labelSpanS="12"
+\t\t\t\t\temptySpanXL="0" emptySpanL="0" emptySpanM="0"
+\t\t\t\t/>
+\t\t\t</f:layout>
+\t\t\t<f:formContainers>
+\t\t\t\t<f:FormContainer>
+\t\t\t\t\t<f:formElements>
+\t\t\t\t\t\t<f:FormElement label="{i18n>I18N_KEY}">
+\t\t\t\t\t\t\t<f:fields><Text text="{/viewKey}" /></f:fields>
+\t\t\t\t\t\t</f:FormElement>
+\t\t\t\t\t</f:formElements>
+\t\t\t\t</f:FormContainer>
+\t\t\t</f:formContainers>
+\t\t</f:Form>
+\t</VBox>
+</mvc:View>
+\`\`\`
+
+### If spec.layout === "table"
+
+Bind items to \`{/items}\`. One Column per field, one cell per field in ColumnListItem.
+
+- column header: \`<Text text="{i18n>I18N_KEY}" />\`
+- cell default: \`<Text text="{viewKey}" />\`
+- cell with formatter: \`<Text text="{ path: 'viewKey', formatter: '.formatter.formatDate' }" />\`
+
+Template:
+\`\`\`xml
+<mvc:View
+\tcontrollerName="com.sap.partner.wz.SLUG.Main"
+\txmlns:mvc="sap.ui.core.mvc"
+\txmlns="sap.m"
+\txmlns:core="sap.ui.core"
+>
+\t<VBox class="sapUiSmallMargin">
+\t\t<OverflowToolbar design="Transparent">
+\t\t\t<Title text="{i18n>FORM_TITLE}" level="H4" />
+\t\t\t<ToolbarSpacer />
+\t\t\t<Button id="menuButton" icon="sap-icon://overflow" type="Transparent"
+\t\t\t\ttooltip="{i18n>MENU_BUTTON_TOOLTIP}" press=".onMenuPress" />
+\t\t</OverflowToolbar>
+\t\t<Table id="mainTable" items="{/items}" growing="true" growingThreshold="20">
+\t\t\t<columns>
+\t\t\t\t<Column><Text text="{i18n>I18N_KEY}" /></Column>
+\t\t\t</columns>
+\t\t\t<items>
+\t\t\t\t<ColumnListItem>
+\t\t\t\t\t<cells>
+\t\t\t\t\t\t<Text text="{viewKey}" />
+\t\t\t\t\t</cells>
+\t\t\t\t</ColumnListItem>
+\t\t\t</items>
+\t\t</Table>
+\t</VBox>
+</mvc:View>
+\`\`\`
+
+### If spec.layout === "other"
+
+Reason from spec.fields and order description to choose appropriate UI5 controls.
+
+## Critical Rules
+
+1. Exactly 1 file: src/View.view.xml
+2. COMPLETE content — no truncation
+3. Every spec.fields[].viewKey must appear in bindings
+4. Every spec.fields[].i18nKey must appear in labels
+5. SAPUI5 XML syntax only`;
+
+/**
+ * @param {object} spec
+ * @param {string} dataHelperContent — DataHelper.js from Call 1 (for binding consistency)
+ * @returns {string}
+ */
+export function generateViewUserPrompt(spec, dataHelperContent = '') {
+  const specText = JSON.stringify(spec, null, 2);
+  const lines = [
+    '# Integration Card Spec',
+    '',
+    '```json',
+    specText,
+    '```'
+  ];
+  if (dataHelperContent) {
+    lines.push('', '# DataHelper.js (generated in previous call — match viewKey bindings)', '', '```javascript', dataHelperContent, '```');
+  }
+  lines.push('', `Generate src/View.view.xml for all ${spec.fields?.length || 0} fields. Respond with valid JSON.`);
+  return lines.join('\n');
+}
 
 // ── User prompt ───────────────────────────────────────────────────────────────
 
@@ -983,7 +1018,7 @@ sap.ui.define([], function () {
 export function generateUserPrompt(orderDescription, spec, retryCount = 0, errorFeedback = null) {
   const specText = JSON.stringify(spec, null, 2);
 
-  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 5 extension-point source files for this Integration Card.\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, layout = ${spec.layout || 'form'}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/View.view.xml: correct layout (${spec.layout || 'form'}), all fields bound with correct i18n labels\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for layout = ${spec.layout || 'form'}\n\nRespond with valid JSON following the required format.`;
+  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 4 extension-point source files for this Integration Card. (View.view.xml is generated separately.)\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, layout = ${spec.layout || 'form'}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for layout = ${spec.layout || 'form'}\n\nRespond with valid JSON following the required format.`;
 
   if (retryCount > 0 && errorFeedback) {
     prompt += `\n\n# ⚠️ RETRY ${retryCount}\n\nPrevious attempt had issues:\n\n${errorFeedback}\n\nFix these issues in your response.`;
