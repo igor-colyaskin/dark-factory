@@ -847,6 +847,14 @@ function renderSpecReview(state) {
 
   const parts = [];
 
+  // Complex layout warning
+  if ((spec.viewControls || []).length > 3) {
+    parts.push('<div class="spec-warning">');
+    parts.push(`⚠️ Layout contains ${spec.viewControls.length} controls — complex composition. `);
+    parts.push('Recommendation: generate skeleton, then refine the rest via vibe-coding — for complex layouts this is more precise and faster.');
+    parts.push('</div>');
+  }
+
   // ── Patch-spec (edit mode) ─────────────────────────────────────────────────
   if (spec.mode === 'patch') {
     parts.push('<div class="spec-section">');
@@ -908,7 +916,7 @@ function renderSpecReview(state) {
     parts.push('<li><strong>Card:</strong> ' + escapeHtml(spec.cardTitle || spec.cardSlug) + '</li>');
     parts.push('<li><strong>Destination:</strong> ' + escapeHtml(spec.destinationName || '—') + '</li>');
     parts.push('<li><strong>Protocol:</strong> ' + escapeHtml(spec.protocol || '—') + '</li>');
-    parts.push('<li><strong>Layout:</strong> ' + escapeHtml(spec.layout || '—') + '</li>');
+    parts.push('<li><strong>Controls:</strong> ' + escapeHtml((spec.viewControls || []).join(', ') || '—') + '</li>');
     parts.push('<li><strong>Fields:</strong> ' + (spec.fields ? spec.fields.length : 0) + '</li>');
     parts.push('<li><strong>Tests:</strong> ' + (spec.generateTests ? 'Yes' : 'No') + '</li>');
     parts.push('<li><strong>Docs:</strong> ' + (spec.generateDocs ? 'Yes' : 'No') + '</li>');

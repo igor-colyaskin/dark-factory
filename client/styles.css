@@ -1261,6 +1261,16 @@ body {
   margin-bottom: 14px;
 }
 
+.spec-warning {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-left: 3px solid #e8a317;
+  background: rgba(232, 163, 23, 0.08);
+  color: var(--vscode-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .spec-section {
   margin-bottom: 12px;
   padding-bottom: 10px;
