@@ -1093,4 +1093,4 @@ ${dataHelperContent}
 Generate DataHelper.qunit.js with 4 QUnit modules as specified. Respond with valid JSON.`;
 }
 
-export default { systemPrompt, generateStaticFiles, generateUserPrompt, testGeneratorSystemPrompt, generateTestsUserPrompt };
+export default { systemPrompt, generateStaticFiles, generateUserPrompt, viewGeneratorSystemPrompt, generateViewUserPrompt, testGeneratorSystemPrompt, generateTestsUserPrompt };
