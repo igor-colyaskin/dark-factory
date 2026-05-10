@@ -7,18 +7,79 @@
 
 ## Быстрый статус
 
-## v0.12 Smart Input завершена ✅
+## v0.13 — в работе (roadmap to demo)
 
-**Последняя выпущенная версия:** v0.12 — Smart Input ✅ (сессия 2026-05-10)
-**Cleanup v0.12:** 2258 строк мёртвого кода удалено (сессия 2026-05-10)
-**v0.11.1 cleanup:** DONE (сессия 2026-05-09)
-**v0.11 E2E:** Create → Preview → My Apps → Edit → Import → Delete — всё пройдено ✅
+**Последняя выпущенная версия:** v0.12.1 — bug fixes ✅ (сессия 2026-05-10)
+- UX-003: "Другое" в clarify-вопросах починено
+- Mockserver regex: `entity(.*)` → `.*`
+- css/style.css: пустой файл добавлен в generateStaticFiles
+
+**v0.12:** Smart Input ✅ (сессия 2026-05-10)
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655)
 
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `project_state_v04.md`, `integration_card_template.md`
-2. Следующий приоритет — бэклог: UX-003 (опция "Другое"), TPL-003 (уточнить layout values), или refining следующей фичи
+2. Текущий план — **v0.13 roadmap to demo** (см. ниже)
+3. **ВАЖНО: перед стартом TPL-004 прочитай секцию "Находки сессии 2026-05-10 #2" ниже**
+
+## Находки сессии 2026-05-10 #2 (критично для TPL-004)
+
+### CARDS.md анализ завершён
+37 карточек команды проанализированы (commit eb51eed). Доминирующий паттерн:
+- **55% — sap.m.Table + OData2** (model binding, не oCard.request())
+- `sap.ui.table.Table` — только 1 карточка (TreeTable, не мержена в develop, экзотика)
+- Form pattern: sap.ui.layout.form (object/detail) или VBox layout
+
+### Оба шаблона уже существуют и готовы
+`server/prompts/integration-card/templates/form-rest/` — Simple Form + REST
+`server/prompts/integration-card/templates/table-odata2/` — sap.m.Table + OData2
+
+**НО: developer.js их не использует** — всё ещё на inline T_* строках. Шаблоны подготовлены но не подключены.
+
+### table-odata2 радикально отличается от form-rest
+
+| Аспект | form-rest | table-odata2 |
+|--------|-----------|--------------|
+| Загрузка данных | oCard.request() → DataHelper._processData() | OData2 model binding, metadataLoaded() → _bindTable() |
+| MockServer | setRequests([{path, response}]) | MockServer.simulate() с metadata.xml + EntitySet.json |
+| DataHelper | есть (_processData обязателен) | **нет вообще** |
+| Extension point | _processData(), View FormElements | entity set name в _bindTable(), Column definitions |
+
+### TPL-004 — пересмотренный подход
+
+**Старый план:** "NonExistentControl" плейсхолдер в промпте LLM.
+**Новый план:** developer.js читает файлы нужного шаблона → заполняет extension points.
+
+Матрица выбора шаблона:
+- `sap.m.SimpleForm + rest` → template: form-rest
+- `sap.m.Table + odata2` → template: table-odata2
+- остальное → LLM генерирует с нуля по аналогии
+
+Architect добавляет `spec.viewControl` (конкретный UI5 класс) + `spec.protocol` уже есть.
+Developer по комбинации viewControl+protocol выбирает шаблон, читает его файлы, заполняет extension points из spec.
+
+### Для vision (UX-008)
+agent-manager.js: `callAgent()` передаёт `content: userPrompt` (строка).
+Для vision нужно изменить на массив: `[{type:"text", text:"..."}, {type:"image_url", url:"data:..."}]`.
+Через options можно передать imageData. Тест: проверить поддержку через Hyperspace LiteLLM.
+
+## v0.13 — Roadmap to demo
+
+Цель: питч тимлиду. Формат: демо + "хочешь попробовать?".
+Подробнее — [`docs/DEMO.md`](docs/DEMO.md).
+
+| # | Задача | Бэклог | Оценка |
+|---|--------|--------|--------|
+| 1 | Загрузка и чтение мокапа (killer feature) | UX-008 | ~5-6 ч |
+| 2 | Ссылки в заказе "как #32" + ID карточек | UX-007 | ~6 ч |
+| 3 | viewControl + dataShape (NonExistentControl pattern) | TPL-004 | ~3-4 ч |
+| 4 | Автовывод slug Архитектором | TPL-002 | ~2 ч |
+| 5 | Split Developer для table layout | INF-002 | ~2 ч |
+| 6 | Импорт папки (без zip) | UX-006 | ~3 ч |
+| 7 | UI polish (EN тексты, VSCode стиль) | UX-009 | ~2-3 ч |
+
+**Итого:** ~23-26 ч. Начинать с UX-008 — сначала проверить vision через Hyperspace.
 
 ## Что v0.12 дала проекту (сессия 2026-05-10)
 
