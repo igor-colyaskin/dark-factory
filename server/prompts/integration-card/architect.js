@@ -23,7 +23,7 @@ The JSON MUST contain a "mode" field set to either "clarify" or "spec".
 
 ### Mode: "clarify"
 
-Use when the entity, field list, or destination name is unclear.
+Use when the entity, field list, protocol, or layout is unclear.
 
 ${TRIPLE}json
 {
@@ -32,12 +32,8 @@ ${TRIPLE}json
   "questions": [
     {
       "id": "q1",
-      "text": "What is the CF destination name for the backend API?",
-      "options": [
-        "HCM_API",
-        "S4HANA_PROD",
-        "I don't know the destination name"
-      ],
+      "text": "Which fields should the card display?",
+      "options": ["Field A, Field B, Field C", "Show all available fields"],
       "allowOther": true
     }
   ],
@@ -49,8 +45,8 @@ Rules for clarify:
 - 1–4 questions per round
 - Each question MUST have 2–4 concrete options
 - "allowOther": true for open-ended answers
-- Ask ONLY about: entity/domain, field list, destination name, special field formatting, backend protocol, layout type
-- NEVER ask about: card type, columns, colors, card title (derive from entity name)
+- Ask ONLY about: entity/domain, field list, special field formatting, backend protocol, layout type
+- NEVER ask about: destination name, card type, columns, colors, card title (derive from entity name)
 
 ### Output Questions Round
 
@@ -165,15 +161,19 @@ When the order clearly describes a list/collection — use "table".
 Ask IF:
 - The entity is ambiguous ("work data", "information about something")
 - Field names or count are not specified and not inferable
-- Destination name is not mentioned and not obvious from context
 - Protocol is unclear (user hasn't mentioned REST/OData and it's not obvious)
 - Layout is unclear (collection vs single entity)
 
 Go straight to spec IF:
 - Order names a clear entity and fields (e.g. "Employee card with FirstName, LastName, Department")
-- Order mentions destination name
 - Context makes fields obvious (e.g. "Supplier card like the Employee one but for suppliers")
 - Protocol and layout are clear from context
+
+## Destination Name Rule
+
+NEVER ask about the destination name — it is set by the team lead, not derived from the order.
+- If the order explicitly states a destination name → use it exactly as written
+- If the order does NOT mention a destination name → use "TEMPORARY" and note it in "thinking"
 
 When in doubt — produce a spec with reasonable defaults and note assumptions in "thinking".
 

@@ -148,8 +148,8 @@ const T_FORMATTER = `sap.ui.define(
 );`;
 
 const T_MOCKSERVER = `sap.ui.define(
-\t["sap/ui/core/util/MockServer", "./utils/MockDataGenerator", "./utils/DataEngine"],
-\tfunction (MockServer, MockDataGenerator, DataEngine) {
+\t["sap/ui/core/util/MockServer", "./utils/MockDataGenerator"],
+\tfunction (MockServer, MockDataGenerator) {
 \t\t"use strict";
 
 \t\treturn {
@@ -509,13 +509,13 @@ export function generateStaticFiles(cardSlug, spec = {}) {
   const slug = cardSlug || 'card';
   const sub = (s) => s.replace(/SLUG/g, slug);
   const pkgJson = spec.generateTests ? sub(T_PACKAGE_JSON_WITH_TESTS) : sub(T_PACKAGE_JSON);
+  const isTable = spec.layout === 'table';
 
   const files = [
     { path: 'src/Component.js',               content: sub(T_COMPONENT),       action: 'create' },
     { path: 'src/Main.controller.js',          content: sub(T_MAIN_CONTROLLER), action: 'create' },
     { path: 'src/model/formatter.js',          content: T_FORMATTER,            action: 'create' },
     { path: 'src/test/mockserver.js',          content: T_MOCKSERVER,           action: 'create' },
-    { path: 'src/test/utils/DataEngine.js',    content: T_DATA_ENGINE,          action: 'create' },
     { path: 'package.json',                    content: pkgJson,                action: 'create' },
     { path: 'ui5-local.yaml',                  content: sub(T_UI5_LOCAL_YAML),  action: 'create' },
     { path: 'ui5.yaml',                        content: sub(T_UI5_YAML),        action: 'create' },
@@ -538,6 +538,11 @@ export function generateStaticFiles(cardSlug, spec = {}) {
     { path: 'src/test/manual/index.html',            content: sub(T_MANUAL_INDEX_HTML),           action: 'create' },
     { path: 'src/test/manual/init.js',               content: T_MANUAL_INIT_JS,                   action: 'create' },
   ];
+
+  // DataEngine — only for table layout (REST pagination/sort/filter helper)
+  if (isTable) {
+    files.push({ path: 'src/test/utils/DataEngine.js', content: T_DATA_ENGINE, action: 'create' });
+  }
 
   // README — always
   const fieldRows = (spec.fields || []).map(f => `| ${f.beField} | ${f.label} |`).join('\n');
@@ -574,8 +579,9 @@ export const systemPrompt = `You are a Developer agent in Dark Factory that gene
 ## Your Role
 
 Given a card spec from the Architect, you produce the 5 extension-point source files.
-The card uses the templateSF pattern — a SAP UI5 AMD-style Component card with a Simple Form.
-Static files (Component.js, Main.controller.js, formatter.js, mockserver.js, DataEngine.js, package.json)
+The card uses the templateSF pattern — a SAP UI5 AMD-style Component card.
+The visual layout (form, table, etc.) is determined by spec.layout — see per-file instructions below.
+Static files (Component.js, Main.controller.js, formatter.js, mockserver.js, package.json)
 are handled separately — do NOT include them in your response.
 
 ## Required Output Format
@@ -715,22 +721,53 @@ sap.ui.define(["sap/base/Log", "com/sap/fiorireuselibrary/ui5cardssdk/CustomErro
 \t\t},
 
 \t\t_processData: function (oRawData) {
-\t\t\tconst oMapped = {
-\t\t\t\t// MAP EACH FIELD: viewKey: oRawData.beField || ""
-\t\t\t};
-\t\t\treturn oMapped;
+\t\t\t// IMPLEMENT based on spec.layout:
 \t\t}
 \t};
 });
 \`\`\`
 
-Fill _processData() using spec.fields:
-- One line per field: \`{viewKey}: oRawData.{beField} || ""\`
-- No other changes to this file
+**If spec.layout === "form"** — single entity, _processData returns a flat object:
+\`\`\`javascript
+_processData: function (oRawData) {
+\tconst oMapped = {
+\t\t// One line per field: viewKey: oRawData.beField || ""
+\t};
+\treturn oMapped;
+}
+\`\`\`
+
+**If spec.layout === "table"** — collection, _processData returns { items: [...] }:
+\`\`\`javascript
+_processData: function (oRawData) {
+\tconst aRaw = Array.isArray(oRawData) ? oRawData : (oRawData.value || oRawData.results || []);
+\treturn {
+\t\titems: aRaw.map(function (oItem) {
+\t\t\treturn {
+\t\t\t\t// One line per field: viewKey: oItem.beField || ""
+\t\t\t};
+\t\t})
+\t};
+}
+\`\`\`
+
+**If spec.layout === "other"** — reason from the order and spec.fields to choose the appropriate mapping pattern.
+
+**Protocol note for loadData():**
+The loadData() template above uses a generic oCard.request() — keep it as-is for REST.
+For OData (spec.protocol === "odata2" or "odata4"), adjust the request URL to include OData query params
+and unwrap the response accordingly (e.g. oResponse.d for OData2, oResponse.value for OData4).
+Do NOT change the function signature or the catch block.
 
 ---
 
 ### 3. src/View.view.xml — EXTENSION POINT
+
+Generate based on **spec.layout**:
+
+---
+
+**If spec.layout === "form":**
 
 Replace the FormContainers with FormElements for spec.fields.
 Distribute fields across 1–4 columns (use fewer columns for fewer fields):
@@ -785,6 +822,56 @@ Template structure (substitute SLUG, adjust columnsXL/L/M to match column count)
 
 ---
 
+**If spec.layout === "table":**
+
+Use sap.m.Table. Bind items to \`{/items}\` (array returned by DataHelper._processData).
+One Column per spec.fields entry, one cell per field in ColumnListItem, same order.
+
+- column header: \`<Text text="{i18n>I18N_KEY}" />\`
+- cell default: \`<Text text="{viewKey}" />\`
+- cell with formatter: \`<Text text="{ path: 'viewKey', formatter: '.formatter.formatDate' }" />\`
+
+Template structure:
+\`\`\`xml
+<mvc:View
+\tcontrollerName="com.sap.partner.wz.SLUG.Main"
+\txmlns:mvc="sap.ui.core.mvc"
+\txmlns="sap.m"
+\txmlns:core="sap.ui.core"
+>
+\t<VBox class="sapUiSmallMargin">
+\t\t<OverflowToolbar design="Transparent">
+\t\t\t<Title text="{i18n>FORM_TITLE}" level="H4" />
+\t\t\t<ToolbarSpacer />
+\t\t\t<Button id="menuButton" icon="sap-icon://overflow" type="Transparent"
+\t\t\t\ttooltip="{i18n>MENU_BUTTON_TOOLTIP}" press=".onMenuPress" />
+\t\t</OverflowToolbar>
+\t\t<Table id="mainTable" items="{/items}" growing="true" growingThreshold="20">
+\t\t\t<columns>
+\t\t\t\t<!-- One Column per spec field -->
+\t\t\t\t<Column><Text text="{i18n>I18N_KEY}" /></Column>
+\t\t\t</columns>
+\t\t\t<items>
+\t\t\t\t<ColumnListItem>
+\t\t\t\t\t<cells>
+\t\t\t\t\t\t<!-- One cell per field, matching column order -->
+\t\t\t\t\t\t<Text text="{viewKey}" />
+\t\t\t\t\t</cells>
+\t\t\t\t</ColumnListItem>
+\t\t\t</items>
+\t\t</Table>
+\t</VBox>
+</mvc:View>
+\`\`\`
+
+---
+
+**If spec.layout === "other":**
+
+Reason from the order description and spec.fields to choose the most appropriate UI5 controls and layout.
+
+---
+
 ### 4. src/i18n/i18n.properties — EXTENSION POINT
 
 Replace CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, and field label keys with spec values.
@@ -831,8 +918,7 @@ Substitutions:
 
 ### 5. src/test/utils/MockDataGenerator.js — EXTENSION POINT
 
-Fill getData() with spec.mockData values:
-
+**If spec.layout === "form"** — getData() returns a single object with spec.mockData values:
 \`\`\`javascript
 sap.ui.define([], function () {
 \t"use strict";
@@ -848,6 +934,28 @@ sap.ui.define([], function () {
 \t};
 });
 \`\`\`
+
+**If spec.layout === "table"** — getData() returns an array of at least 3 objects.
+Use spec.mockData as the template for each object; vary values realistically across rows:
+\`\`\`javascript
+sap.ui.define([], function () {
+\t"use strict";
+
+\tconst aData = [
+\t\t{ /* row 1: values from spec.mockData */ },
+\t\t{ /* row 2: realistic variation */ },
+\t\t{ /* row 3: realistic variation */ }
+\t];
+
+\treturn {
+\t\tgetData: function () {
+\t\t\treturn aData;
+\t\t}
+\t};
+});
+\`\`\`
+
+**If spec.layout === "other"** — match the data shape expected by your DataHelper._processData implementation.
 
 ---
 
@@ -874,7 +982,7 @@ sap.ui.define([], function () {
 export function generateUserPrompt(orderDescription, spec, retryCount = 0, errorFeedback = null) {
   const specText = JSON.stringify(spec, null, 2);
 
-  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 5 extension-point source files for this Integration Card.\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields\n- [ ] src/View.view.xml: FormElement for each field with correct i18n label and binding\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns all mockData fields\n\nRespond with valid JSON following the required format.`;
+  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 5 extension-point source files for this Integration Card.\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, layout = ${spec.layout || 'form'}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/View.view.xml: correct layout (${spec.layout || 'form'}), all fields bound with correct i18n labels\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for layout = ${spec.layout || 'form'}\n\nRespond with valid JSON following the required format.`;
 
   if (retryCount > 0 && errorFeedback) {
     prompt += `\n\n# ⚠️ RETRY ${retryCount}\n\nPrevious attempt had issues:\n\n${errorFeedback}\n\nFix these issues in your response.`;
