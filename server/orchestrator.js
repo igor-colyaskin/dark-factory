@@ -130,6 +130,9 @@ class Orchestrator {
     // v0.11: edit mode
     this.editMode = false;
     this.editSlug = null;
+    // UX-008: vision pre-pass
+    this.imageData = null;
+    this.visionAnalysis = null;
   }
 
   // Subscribe to state changes
@@ -201,6 +204,9 @@ class Orchestrator {
       // v0.11
       editMode: this.editMode,
       editSlug: this.editSlug,
+      // UX-008
+      imageData: this.imageData,
+      visionAnalysis: this.visionAnalysis,
     };
   }
 
@@ -277,12 +283,14 @@ class Orchestrator {
   }
 
   // Start processing order
-  async startOrder(orderDescription) {
+  async startOrder(orderDescription, imageData = null) {
     if (this.state !== STATES.IDLE) {
       throw new Error(`Cannot start order in state: ${this.state}`);
     }
 
     this.orderDescription = orderDescription;
+    this.imageData = imageData;
+    this.visionAnalysis = null;
     this.referenceSpec = await this.resolveReferenceSpec(orderDescription);
 
     await this.transition(STATES.ORDERING);
@@ -294,6 +302,11 @@ class Orchestrator {
     });
 
     return this.getState();
+  }
+
+  setVisionAnalysis(analysis) {
+    this.visionAnalysis = analysis;
+    this.notifyListeners();
   }
 
   // Handle agent completion
@@ -663,6 +676,8 @@ class Orchestrator {
     this.verificationReport = null;
     this.editMode = false;
     this.editSlug = null;
+    this.imageData = null;
+    this.visionAnalysis = null;
 
     await this.saveState();
     this.notifyListeners();
