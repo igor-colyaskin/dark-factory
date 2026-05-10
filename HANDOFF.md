@@ -17,33 +17,36 @@
 **Сделано:**
 - UX-008 ✅ Vision pre-pass + upload validation
 - INF-002 ✅ Developer split (View.view.xml отдельно) + bug fix default export
-- TPL-004 частично: папки переименованы (`template-rest/`, `template-odata2/`)
+- TPL-004 ✅ protocol + viewControls[] — layout удалён, предупреждение при > 3 контролах
 
 **Осталось до демо:**
 
 | # | ID | Задача | Оценка |
 |---|----|--------|--------|
-| 1 | TPL-004 | protocol + viewControl → убрать layout | ~2-3 ч |
-| 2 | TPL-002 | Автовывод slug | ~2 ч |
-| 3 | UX-007 | ID карточек + ссылки "как #32" | ~6 ч |
-| 4 | UX-006 | Импорт папки | ~3 ч |
-| 5 | UX-009 | UI polish | ~2-3 ч |
+| 1 | TPL-002 | Автовывод slug | ~2 ч |
+| 2 | UX-007 | ID карточек + ссылки "как #32" | ~6 ч |
+| 3 | UX-006 | Импорт папки | ~3 ч |
+| 4 | UX-009 | UI polish | ~2-3 ч |
 
 ---
 
-## Находки последней сессии (2026-05-10 #4)
+## Находки последней сессии (2026-05-10 #5)
 
-**Bug fix INF-002:** `viewGeneratorSystemPrompt` и `generateViewUserPrompt` были named exports но не попали в default export `developer.js` → View.view.xml не генерировался (условие `typeof ... === 'string'` всегда false).
+**TPL-004 закрыт:**
+- `spec.layout` удалён везде → `spec.viewControls: string[]`
+- Архитектор выводит массив из заказа/мокапа; protocol всегда спрашивает явно
+- Developer выбирает DataHelper shape и View structure по массиву контролов
+- Предупреждение в Spec Review при `viewControls.length > 3` (amber banner)
+- Проверено: SimpleForm, Table, sap.ui.table.Table, FilterBar+Table, 5 контролов — всё корректно
 
-**UX-008 закрыт:**
-- Подтверждено: vision через Hyperspace работает (Gemini 2.5 Flash)
-- Upload: валидация PNG/JPG/WEBP, max 5 MB на клиенте; hint рядом с кнопкой
-- Мокап разбирается корректно, спецификация правильная; колонки View не совпадают с мокапом (ограничение Vision, не баг)
+**Дообсуждены архитектурные решения:**
+- `viewControls` — массив (не строка): поддерживает multi-control layouts
+- Порог > 3: предупреждение про вайб-кодинг, не hard block
+- Условная видимость контролов — дополнительный сигнал сложности (для будущих версий)
 
-**TPL-004 — важно:**
-Описание задачи в HANDOFF прошлой сессии расходилось с backlog.md.
-Актуальное описание + архитектурное решение теперь только в **[`docs/backlog.md`](docs/backlog.md) → TPL-004**.
-Выбрана упрощённая версия 1 (inline T_* строки, без чтения файлов с диска).
+**Коммиты:**
+- `0a039b8` feat(tpl-004): server — layout → viewControls[]
+- `214eff9` feat(tpl-004): UI — Controls field + complex layout warning
 
 ---
 
