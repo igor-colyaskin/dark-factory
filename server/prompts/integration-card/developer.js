@@ -160,7 +160,7 @@ const T_MOCKSERVER = `sap.ui.define(
 \t\t\t\t\toMockServer.setRequests([
 \t\t\t\t\t\t{
 \t\t\t\t\t\t\tmethod: "GET",
-\t\t\t\t\t\t\tpath: new RegExp("entity(.*)"),
+\t\t\t\t\t\t\tpath: new RegExp(".*"),
 \t\t\t\t\t\t\tresponse: function (oXhr) {
 \t\t\t\t\t\t\t\tvar aRawData = MockDataGenerator.getData();
 \t\t\t\t\t\t\t\toXhr.respondJSON(200, {}, JSON.stringify({ aRawData }));
@@ -515,6 +515,7 @@ export function generateStaticFiles(cardSlug, spec = {}) {
     { path: 'src/Component.js',               content: sub(T_COMPONENT),       action: 'create' },
     { path: 'src/Main.controller.js',          content: sub(T_MAIN_CONTROLLER), action: 'create' },
     { path: 'src/model/formatter.js',          content: T_FORMATTER,            action: 'create' },
+    { path: 'src/css/style.css',               content: '',                     action: 'create' },
     { path: 'src/test/mockserver.js',          content: T_MOCKSERVER,           action: 'create' },
     { path: 'package.json',                    content: pkgJson,                action: 'create' },
     { path: 'ui5-local.yaml',                  content: sub(T_UI5_LOCAL_YAML),  action: 'create' },

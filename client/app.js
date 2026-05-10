@@ -758,18 +758,18 @@ function renderClarifySection(state) {
       textarea.className = 'clarify-other-input';
       textarea.rows = 2;
       textarea.placeholder = 'Ваш вариант...';
-      textarea.disabled = true;
+      textarea.style.display = 'none';
 
-      // Enable textarea when "other" is selected
+      // Show and focus textarea when "other" is selected
       radio.addEventListener('change', function () {
-        textarea.disabled = false;
+        textarea.style.display = 'block';
         textarea.focus();
       });
 
-      // Disable textarea when another option is selected
+      // Hide textarea when another radio option is selected
       optionsDiv.addEventListener('change', function (e) {
-        if (e.target.value !== '__other__') {
-          textarea.disabled = true;
+        if (e.target.type === 'radio' && e.target.value !== '__other__') {
+          textarea.style.display = 'none';
           textarea.value = '';
         }
       });
