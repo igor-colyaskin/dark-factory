@@ -36,7 +36,7 @@ NEGOTIATE → REMEMBER → VERIFY → PROFILES → IC
   v0.3        v0.5       v0.7     v0.8      v0.9
 ```
 
-Текущий вектор: углубление IC-профиля (v0.10 ✅ → v0.11 SDK-001+My Apps → Square 2).
+Текущий вектор: углубление IC-профиля (v0.10 ✅ → v0.11 ✅ → v0.11.1 ✅ → v0.12 Smart Input).
 Параллельный горизонт: когда IC достаточно зрел — новый специализированный профиль.
 
 ---
@@ -139,22 +139,14 @@ UX-001: кнопка «Уточнить» на экране Spec Review — но
 
 ## Следующие версии
 
-### v0.11 — SDK-001 + My Apps + Edit mode + Import
+### v0.11 — SDK-001 + My Apps + Edit + Import ✅
+Smart Clone SDK-стабы (6 файлов, полный API). IC pipeline → `cards/{slug}/`.
+My Apps страница: список карточек, Edit / Preview / Import. Delta-Архитектор —
+отдельный промпт для edit mode (видит файлы → патч, не spec с нуля).
 
-**Шаг 1 — SDK-001 (Smart Clone):**
-Полные SDK-стабы для `@sapitpe/ui5cardssdk` — 5 модулей, ~15 методов
-(`Base.controller`, `ErrorHandler`, `StorageUtils`, `CustomError`, `AuthorizationDialog.controller`).
-Новый артефакт (не копия кода SDK), заменяет per-card минимальные стабы единым пакетом.
-Нужен до Import Card: импортированные карточки без полных стабов не пройдут sandbox+tests.
-API surface задокументирован в `docs/API_REVIEW.md`.
-
-**Шаг 2 — My Apps + Edit mode + Import Card:**
-- `workspace/` → `cards/{slug}/` — постоянная папка на карточку
-- `cards-registry.json` — реестр `[{ slug, name, createdAt, lastModified }]`
-- My Apps страница: список карточек, кнопки Edit / Preview / Import Card / + New Card
-- Edit flow: delta-Архитектор (видит файлы + задачу → патч, не spec с нуля) — отдельный промпт
-- Import Card: чужая папка → `cards/{slug}/` → реестр (сценарий: коллега в отпуске + инцидент)
-- GitHub убран из DF-IC полностью
+### v0.11.1 — cleanup ✅
+Удалены 17 мёртвых файлов: Fly.io, GitHub, Local Runner, Verifier-a/b, apps-store,
+nodejs-app профиль и промпты. Settings страница убрана. Сервер минималистичный.
 
 ---
 
@@ -188,12 +180,9 @@ Proto DF зрел настолько, что специализацию можн
 - **Square 2** — рефакторинг plugin contract: IC-специфичное переносится внутрь профиля, combo-commit чистый. Триггер: IC-профиль полностью завершён.
 - **Table pattern** — если анализ ~30 карточек команды покажет порог 50%
 - **Figma/mockup input** — vision-модель извлекает поля из мокапа (v1.0+)
-- **Fly-адаптер для Deployer** — триггер: Fly разблокируют на VDI или появится второй живой Deployer
 - **Agent-to-agent feedback** — тестер → разработчику конкретные претензии
 - **UI backlog:**
-  - Строка Deploy в таблице Manufacturing (время и статус деплоя)
   - Stage descriptions: уникальный текст для каждой стадии pipeline вместо голого спиннера
-  - Опция "Другое" в вопросах архитектора не работает (нет text input при выборе)
 
 ---
 

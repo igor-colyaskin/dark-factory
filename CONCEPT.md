@@ -17,6 +17,8 @@
 | UX-001 | 2026-05-08 | Утверждено | Кнопка «Уточнить» на Spec Review: SPEC_REVIEW → ARCH_WORKING без потери истории, лимит 3 раунда |
 | v0.10 | 2026-05-09 | Утверждено | UX polish + sandbox preview: кнопка «Уточнить» (UX-001), Local Sandbox (VIZ-001), npm test fix |
 | v0.12-arch | 2026-05-09 | Утверждено | My Apps + Edit + Import: cards/{slug}/ storage, delta-Architect, Import Card; GitHub убран из IC |
+| v0.11 | 2026-05-09 | Утверждено | SDK-001 (Smart Clone), My Apps, Edit mode (delta-Architect), Import Card |
+| v0.11.1 | 2026-05-10 | Утверждено | Cleanup: удалены Fly/GitHub/LocalRunner/Verifier-a-b/nodejs-app, Settings убрана |
 
 ## 1. Что такое Dark Factory
 
@@ -86,33 +88,26 @@ Dark Factory (DF) — веб-приложение, реализующее кон
   |  |  IDLE → ORDERING → ARCH_WORKING →            |  |
   |  |  [CLARIFYING →] SPEC_REVIEW →                |  |
   |  |  DEV_WORKING → DEV_CHECK → TEST_RUNNING →    |  |
-  |  |  DELIVERING → DEPLOYING → VERIFYING →        |  |
-  |  |  GITHUB_PUSH → DONE                          |  |
-  |  +-------|----------------|---------------------+  |
-  |          |                |                        |
-  |    +-----v-----+   +------v-----+   +-----------+  |
-  |    |   Agent   |   |     AC     |   | Deployer  |  |
-  |    |  Manager  |   |  Checker   |   | (contract)|  |
-  |    +-----+-----+   +------------+   +----+------+  |
-  |          |                                |        |
-  |          |         +-----------+          |        |
-  |          |         | Apps      |          |        |
-  |          |         | Store     |          |        |
-  |          |         | (persist) |          |        |
-  |          |         +-----+-----+          |        |
-  +----------|---------------|----------------|--------+
-             |               |                |
-             v HTTPS         v file           v deploy contract
-  +---------------+    +-----------+    +----------------+
-  |  Hyperspace   |    |  cards/   |    | Local Runner / |
-  | (LiteLLM API) |    | {slug}/   |    | Fly.io(Area51) |
-  +---------------+    +-----------+    +----------------+
+  |  |  DELIVERING → DEPLOYING → VERIFYING → DONE   |  |
+  |  +-------|-------------------------------------+  |
+  |          |                                        |
+  |    +-----v-----+                                  |
+  |    |   Agent   |                                  |
+  |    |  Manager  |                                  |
+  |    +-----+-----+                                  |
+  |          |                                        |
+  +----------|----------------------------------------+
+             |
+             v HTTPS
+  +---------------+    +-----------+
+  |  Hyperspace   |    |  cards/   |
+  | (LiteLLM API) |    | {slug}/   |
+  +---------------+    +-----------+
 
 
 ### 4.2 Детали компонентов
 Детали каждого компонента — в отдельных документах:
 - **Контракты агентов и оркестратора:** `docs/contracts.md`
-- **Инфраструктура (Fly, run modes, apps store):** `docs/infra.md`
 
 ## 5. Метафора и мотивация
 
