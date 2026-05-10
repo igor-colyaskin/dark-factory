@@ -7,47 +7,45 @@
 
 ## Быстрый статус
 
-## v0.11.1 cleanup завершена ✅
+## v0.12 Smart Input завершена ✅
 
-**Последняя выпущенная версия:** v0.11.1 — cleanup ✅ (сессия 2026-05-09)
-**Docs cleanup:** ROADMAP, CONCEPT, backlog очищены от Fly/GitHub/nodejs-app (сессия 2026-05-10)
+**Последняя выпущенная версия:** v0.12 — Smart Input ✅ (сессия 2026-05-10)
+**v0.11.1 cleanup:** DONE (сессия 2026-05-09)
 **v0.11 E2E:** Create → Preview → My Apps → Edit → Import → Delete — всё пройдено ✅
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655)
 
 ## Что сделать в первую очередь
 
 1. Прочитай память: `ic_roadmap.md`, `project_state_v04.md`, `integration_card_template.md`
-2. **v0.12** — refining-сессия: детализировать scope Smart Input перед реализацией
+2. Следующий приоритет — бэклог: UX-003 (опция "Другое"), TPL-003 (уточнить layout values), или refining следующей фичи
 
-## Баги найдены и исправлены в E2E-сессии (2026-05-09)
+## Что v0.12 дала проекту (сессия 2026-05-10)
 
-**В runtime (app.js / server):**
-- `escapeHtml` и `formatDate` не были определены в `client/app.js` → добавлены в конец файла
-- `verifier-b.js` — статический `import puppeteer-core` крашил сервер при старте (пакет не установлен) → заменён на динамический `import()` внутри `takeScreenshot()`
-- `window.open(url, '_blank')` после `await fetch()` блокировался браузером → паттерн `openPreviewWindow()`: открываем вкладку сразу на клик, пишем splash, потом `win.location.href = url`
+**Ghost fields устранены:**
+- `spec.layout` — Developer теперь генерирует layout-conditional View / DataHelper / MockDataGenerator (form | table | other)
+- `spec.protocol` — Developer получает OData-hint для DataHelper; DataEngine генерируется только для table layout
+- `spec.destinationName` — Архитектор больше не спрашивает; дефолт `TEMPORARY` если не указан в заказе
+- `T_MOCKSERVER` — убран мёртвый импорт DataEngine
 
-**В шаблонах генератора (`developer.js`) — баги LLM:**
-- `mockserver.js`: LLM генерировал generic regex `entity(.*)` вместо реального пути эндпоинта → исправить в промпте: path должен совпадать с `spec.endpoint` (например `employees(.*)`)
-- `manifest.json`: LLM добавлял `"resources": { "css": [...] }` без создания файла → шаблон изменён на `"resources": {}`
-- `index.html`: атрибут `data-sap-ui-xx-waitForTheme="true"` скрывал body пока грузилась тема UI5 → спиннер был невидим → атрибут убран из sandbox-шаблона
+**v0.12 Smart Input:**
+- Архитектор детектирует JSON-блок в тексте заказа (`{...}` или `[{...}]`)
+- Флаттенит все уровни вложенности, скипает метаданные (@, #, __metadata)
+- Авто-выводит: beField, viewKey, i18nKey, label, control, formatter, mockData
+- Авто-определяет: layout (объект→form, массив→table), protocol (OData-маркеры→odata2/4)
+- ≤16 полей → прямо в spec; >16 полей → один clarify-раунд
+- UAT J1–J5: все зелёные
 
-**Preview UX:**
-- Добавлен `openPreviewWindow()` в `client/app.js` — splash-экран (тёмный, 🏭 Dark Factory IC, синий спиннер) показывается сразу при клике, до fetch и до загрузки sandbox
-- `init.js` шаблон — спиннер в `index.html` прячется через `onAfterRendering` делегат (не синхронно)
+**UX:**
+- My Apps: карточки отсортированы по lastModified desc (новые вверху)
+- `cards/{slug}/spec.json` — пишется после каждой генерации (отладка + Delta-Архитектор)
 
-## v0.12 — Smart Input (план)
+**Бэклог (новые пункты из сессии):**
+- TPL-003 — уточнить значения spec.layout до конкретных UI5 контролов (средний)
+- INF-002 — проактивный split Developer для table (низкий)
+- UX-004 ✅ — сортировка My Apps (реализовано)
+- UX-005 ✅ — spec.json в карточке (реализовано)
 
-**Focus:** пользователь вставляет sample JSON от BE → Архитектор парсит поля автоматически,
-clarify-раунд сокращается до минимума.
-
-Форматы для обсуждения:
-- Вставить JSON прямо в заказ → архитектор распознаёт и обрабатывает
-- Отдельное поле UI для "Sample BE response"
-- Комбо: сначала описание, потом архитектор запрашивает sample JSON
-
-Scope v0.12 ещё не детализирован — нужна refining-сессия.
-
----
+**UAT-протокол зафиксирован в памяти:** согласовать список → один сценарий → следующий только после закрытия предыдущего.
 
 **workspace vs workspaces:** разные пайплайны. `workspace/` (ед.ч.) — IC-карточки пишутся в `cards/{slug}/`,
 `workspace/` больше не используется активно для IC (только для non-IC профилей).
