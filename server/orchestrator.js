@@ -592,6 +592,9 @@ class Orchestrator {
       if (cardSlug) {
         cardsRegistry.registerCard({ slug: cardSlug, name: cardName || cardSlug });
         console.log(`[orchestrator] IC card registered: ${cardSlug}`);
+        // Save spec.json next to card source for debugging and delta-architect context
+        const specPath = path.join(__dirname, '..', 'cards', cardSlug, 'spec.json');
+        await fs.writeFile(specPath, JSON.stringify(this.currentSpec, null, 2), 'utf8');
       }
     } catch (err) {
       console.error(`[orchestrator] Failed to archive app: ${err.message}`);

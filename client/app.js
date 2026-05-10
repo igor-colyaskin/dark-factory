@@ -164,7 +164,8 @@ async function loadCards() {
     }
     cardsCache = data;
     empty.style.display = 'none';
-    list.innerHTML = data.map(renderCardItem).join('');
+    const sorted = [...data].sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    list.innerHTML = sorted.map(renderCardItem).join('');
   } catch (e) {
     console.error('Error loading cards:', e);
     list.innerHTML = '<p class="products-error">Failed to load cards.</p>';
