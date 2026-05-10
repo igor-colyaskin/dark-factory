@@ -10,6 +10,7 @@
 ## v0.12 Smart Input завершена ✅
 
 **Последняя выпущенная версия:** v0.12 — Smart Input ✅ (сессия 2026-05-10)
+**Cleanup v0.12:** 2258 строк мёртвого кода удалено (сессия 2026-05-10)
 **v0.11.1 cleanup:** DONE (сессия 2026-05-09)
 **v0.11 E2E:** Create → Preview → My Apps → Edit → Import → Delete — всё пройдено ✅
 **Среда:** корп. VDI (SAP), LLM через Hyperspace (localhost:6655)
@@ -38,6 +39,11 @@
 **UX:**
 - My Apps: карточки отсортированы по lastModified desc (новые вверху)
 - `cards/{slug}/spec.json` — пишется после каждой генерации (отладка + Delta-Архитектор)
+
+**Cleanup (сессия 2026-05-10):**
+Удалены: `scripts/` (16 скриптов), `server/templates/`, `workspaces/`, `.roo/`, `docs/metrics/`,
+`docs/infra.md`, `state/github-tokens.json`, `state/apps.json`, `cards/zip`, `workspace/` content.
+Итого: 2258 строк, сервер стартует чисто.
 
 **Бэклог (новые пункты из сессии):**
 - TPL-003 — уточнить значения spec.layout до конкретных UI5 контролов (средний)
