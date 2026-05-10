@@ -238,11 +238,16 @@ When in doubt — produce a spec with reasonable defaults and note assumptions i
  * @param {object|null} previousSpec — spec produced in a previous round (refinement mode)
  * @returns {string}
  */
-export function generateUserPrompt(orderDescription, clarifyHistory = [], round = 0, maxRounds = 3, referenceSpec = null, previousSpec = null) {
+export function generateUserPrompt(orderDescription, clarifyHistory = [], round = 0, maxRounds = 3, referenceSpec = null, previousSpec = null, visionAnalysis = null) {
   const displayOrder = orderDescription.replace(/^На основе #\d+:\s*/, '').trim() || orderDescription;
 
   if (clarifyHistory.length === 0) {
     const lines = ['## Order', '', displayOrder];
+
+    if (visionAnalysis) {
+      lines.push('', '## Mockup Analysis', '', 'A UI mockup was provided. Vision model extracted the following:', '', visionAnalysis, '',
+        'Use this analysis to pre-fill fields, viewControl, and layout. Skip clarify questions for anything already answered here.');
+    }
 
     if (referenceSpec) {
       lines.push(
@@ -268,6 +273,10 @@ export function generateUserPrompt(orderDescription, clarifyHistory = [], round 
 
   const isLastRound = round >= maxRounds - 1;
   const lines = ['## Order', '', displayOrder, '', '## Clarifications So Far', '', historyText, ''];
+
+  if (visionAnalysis) {
+    lines.push('## Mockup Analysis', '', visionAnalysis, '');
+  }
 
   if (referenceSpec) {
     lines.push('## Reference Card Spec (baseline)', '', referenceSpec, '');

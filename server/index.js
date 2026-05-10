@@ -128,25 +128,25 @@ orchestrator.subscribe((state) => {
 
 // POST endpoint to accept orders
 app.post('/api/order', async (req, res) => {
-  const { description } = req.body;
-  
+  const { description, imageData } = req.body;
+
   if (!description) {
     return res.status(400).json({
       success: false,
       message: 'Order description is required'
     });
   }
-  
+
   try {
     console.log('Received order:', description);
     console.log('Current orchestrator state BEFORE reset:', orchestrator.state);
-    
+
     // Always reset orchestrator before new order to ensure clean state
     await orchestrator.reset();
     console.log('Current orchestrator state AFTER reset:', orchestrator.state);
     sandboxManager.stop();
     // Start order processing
-    await orchestrator.startOrder(description);
+    await orchestrator.startOrder(description, imageData || null);
     console.log('Order started successfully, new state:', orchestrator.state);
     
     res.status(200).json({
@@ -527,6 +527,29 @@ async function runArchitect() {
   const state = orchestrator.getState();
   const profile = orchestrator.profile;
 
+  // Vision pre-pass: run once on first architect call if image was provided
+  if (state.imageData && !state.visionAnalysis) {
+    console.log('Running vision pre-pass...');
+    const visionResult = await agentManager.callVision(state.imageData);
+    if (visionResult.success) {
+      orchestrator.setVisionAnalysis(visionResult.analysis);
+      costTracker.recordEntry({
+        usId: 1,
+        usName: 'Architecture',
+        agent: 'vision',
+        model: 'gemini-2.5-flash',
+        cost: visionResult.cost,
+        time: visionResult.time,
+        tokens: visionResult.usage,
+        status: 'success'
+      });
+      await costTracker.save();
+      console.log('Vision analysis:', visionResult.analysis.substring(0, 200));
+    } else {
+      console.warn('Vision pre-pass failed (non-blocking):', visionResult.error);
+    }
+  }
+
   let systemPrompt, userPrompt;
 
   if (orchestrator.editMode) {
@@ -542,7 +565,8 @@ async function runArchitect() {
       state.clarifyRound,
       state.maxClarifyRounds,
       state.referenceSpec,
-      state.currentSpec
+      state.currentSpec,
+      orchestrator.visionAnalysis
     );
   }
 
