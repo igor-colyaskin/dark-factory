@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, writeFileSync } from 'fs';
 import { rm, readFile, readdir, cp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { promisify } from 'util';
@@ -66,7 +66,7 @@ const PORT = process.env.PORT || 3000;
 const sseClients = [];
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Serve static files from client directory
 app.use(express.static(path.join(__dirname, '../client')));
@@ -364,6 +364,65 @@ app.post('/api/cards/import', upload.single('file'), async (req, res) => {
     res.json({ success: true, slug, name });
   } catch (e) {
     console.error('[Cards] import error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  } finally {
+    rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+});
+
+app.post('/api/cards/import-folder', async (req, res) => {
+  const { files } = req.body;
+  if (!Array.isArray(files) || files.length === 0) {
+    return res.status(400).json({ success: false, message: 'No files provided' });
+  }
+
+  const tmpDir = path.join(tmpdir(), `df-import-folder-${Date.now()}`);
+  try {
+    for (const { path: filePath, content } of files) {
+      if (!filePath || typeof filePath !== 'string' || typeof content !== 'string') continue;
+      // Prevent path traversal
+      const normalized = path.normalize(filePath).replace(/\\/g, '/');
+      if (normalized.startsWith('..') || path.isAbsolute(normalized)) continue;
+      const dest = path.join(tmpDir, normalized);
+      if (!dest.startsWith(tmpDir)) continue;
+      mkdirSync(path.dirname(dest), { recursive: true });
+      writeFileSync(dest, Buffer.from(content, 'base64'));
+    }
+
+    const manifestPath = path.join(tmpDir, 'src', 'manifest.json');
+    if (!existsSync(manifestPath)) {
+      return res.status(400).json({ success: false, message: 'Invalid card: src/manifest.json not found' });
+    }
+
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    const appId = manifest?.['sap.app']?.id || '';
+    const slug = appId.split('.').pop().toLowerCase();
+    let name = manifest?.['sap.app']?.title || slug;
+    const i18nMatch = name.match(/^\{\{([^}]+)\}\}$/);
+    if (i18nMatch) {
+      try {
+        const i18nPath = path.join(path.dirname(manifestPath), 'i18n', 'i18n.properties');
+        const i18n = await readFile(i18nPath, 'utf8');
+        const hit = i18n.match(new RegExp(`^${i18nMatch[1]}=(.+)$`, 'm'));
+        if (hit) name = hit[1].trim();
+      } catch { }
+      if (name.startsWith('{{')) name = slug;
+    }
+
+    if (!slug) {
+      return res.status(400).json({ success: false, message: 'Cannot determine card slug from sap.app.id' });
+    }
+
+    const destPath = path.join(CARDS_DIR, slug);
+    if (existsSync(destPath)) {
+      return res.status(409).json({ success: false, message: `Card "${slug}" already exists` });
+    }
+
+    await cp(tmpDir, destPath, { recursive: true });
+    cardsRegistry.registerCard({ slug, name });
+    res.json({ success: true, slug, name });
+  } catch (e) {
+    console.error('[Cards] import-folder error:', e.message);
     res.status(500).json({ success: false, message: e.message });
   } finally {
     rm(tmpDir, { recursive: true, force: true }).catch(() => {});

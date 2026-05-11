@@ -334,16 +334,25 @@ function handleImportCard() {
 function closeImportModal() {
   document.getElementById('import-modal').style.display = 'none';
   document.getElementById('import-file-input').value = '';
+  document.getElementById('import-folder-input').value = '';
   const err = document.getElementById('import-modal-error');
   err.style.display = 'none';
   err.textContent = '';
 }
 
 async function submitImport() {
-  const fileInput = document.getElementById('import-file-input');
-  const file = fileInput.files[0];
-  if (!file) { showImportError('Выберите zip-файл'); return; }
+  const folderInput = document.getElementById('import-folder-input');
+  const zipInput = document.getElementById('import-file-input');
+  if (folderInput.files.length > 0) {
+    await submitImportFolder(folderInput.files);
+  } else if (zipInput.files[0]) {
+    await submitImportZip(zipInput.files[0]);
+  } else {
+    showImportError('Выберите zip-архив или папку');
+  }
+}
 
+async function submitImportZip(file) {
   const btn = document.getElementById('import-submit-btn');
   btn.disabled = true;
   btn.textContent = 'Импорт...';
@@ -353,6 +362,70 @@ async function submitImport() {
   formData.append('file', file);
   try {
     const res = await fetch('/api/cards/import', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.success) {
+      closeImportModal();
+      loadCards();
+    } else {
+      showImportError(data.message || 'Ошибка импорта');
+    }
+  } catch (e) {
+    showImportError(`Ошибка: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Импортировать';
+  }
+}
+
+async function submitImportFolder(fileList) {
+  const SKIP_DIRS = new Set(['node_modules', '.git']);
+  const SKIP_FILES = new Set(['.DS_Store', 'Thumbs.db']);
+
+  const btn = document.getElementById('import-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Читаю файлы...';
+  document.getElementById('import-modal-error').style.display = 'none';
+
+  const files = [];
+  try {
+    for (const file of fileList) {
+      const parts = file.webkitRelativePath.split('/');
+      if (parts.some(p => SKIP_DIRS.has(p))) continue;
+      if (SKIP_FILES.has(file.name)) continue;
+      const relativePath = parts.slice(1).join('/');
+      if (!relativePath) continue;
+
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      // chunk to avoid call stack overflow on large files
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      }
+      files.push({ path: relativePath, content: btoa(binary) });
+    }
+  } catch (e) {
+    showImportError(`Ошибка чтения файлов: ${e.message}`);
+    btn.disabled = false;
+    btn.textContent = 'Импортировать';
+    return;
+  }
+
+  if (files.length === 0) {
+    showImportError('Папка пуста или все файлы были пропущены');
+    btn.disabled = false;
+    btn.textContent = 'Импортировать';
+    return;
+  }
+
+  btn.textContent = `Импорт (${files.length} файлов)...`;
+
+  try {
+    const res = await fetch('/api/cards/import-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files })
+    });
     const data = await res.json();
     if (data.success) {
       closeImportModal();
