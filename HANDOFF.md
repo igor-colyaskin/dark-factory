@@ -18,35 +18,48 @@
 - UX-008 ✅ Vision pre-pass + upload validation
 - INF-002 ✅ Developer split (View.view.xml отдельно) + bug fix default export
 - TPL-004 ✅ protocol + viewControls[] — layout удалён, предупреждение при > 3 контролах
+- TPL-002 ✅ Автовывод slug + конвенция namespace/папка
+- UX-007 ✅ ID карточек + ссылки #NNN в заказе
 
 **Осталось до демо:**
 
 | # | ID | Задача | Оценка |
 |---|----|--------|--------|
-| 1 | TPL-002 | Автовывод slug | ~2 ч |
-| 2 | UX-007 | ID карточек + ссылки "как #32" | ~6 ч |
-| 3 | UX-006 | Импорт папки | ~3 ч |
-| 4 | UX-009 | UI polish | ~2-3 ч |
+| 1 | UX-006 | Импорт папки | ~3 ч |
+| 2 | UX-009 | UI polish | ~2-3 ч |
 
 ---
 
-## Находки последней сессии (2026-05-10 #5)
+## Находки последней сессии (2026-05-11 #7)
 
-**TPL-004 закрыт:**
-- `spec.layout` удалён везде → `spec.viewControls: string[]`
-- Архитектор выводит массив из заказа/мокапа; protocol всегда спрашивает явно
-- Developer выбирает DataHelper shape и View structure по массиву контролов
-- Предупреждение в Spec Review при `viewControls.length > 3` (amber banner)
-- Проверено: SimpleForm, Table, sap.ui.table.Table, FilterBar+Table, 5 контролов — всё корректно
+**UX-007 закрыт:**
+- `cards-registry.js`: auto-increment `id`, одноразовая миграция в `read()` — существующие карточки получают ID при первом обращении
+- `orchestrator.js`: `resolveReferenceSpec` — парсит `#NNN`, загружает `cards/{slug}/spec.json`; бросает ошибку (не null) если карточка не найдена или нет spec.json
+- `client/app.js`: badge `#N` на карточке (кликабельный, копирует в буфер), `copyCardId()`
+- `client/index.html`: `status-message` перенесён из `manufacturing-block` в `page-order` — был невидим когда родительский блок `display:none`
 
-**Дообсуждены архитектурные решения:**
-- `viewControls` — массив (не строка): поддерживает multi-control layouts
-- Порог > 3: предупреждение про вайб-кодинг, не hard block
-- Условная видимость контролов — дополнительный сигнал сложности (для будущих версий)
+**sandbox-manager.js — skip npm install:**
+- `npm install --prefer-offline` теперь запускается только если `node_modules` не существует
+- Повторные Preview на той же карточке — мгновенные
 
-**Коммиты:**
-- `0a039b8` feat(tpl-004): server — layout → viewControls[]
-- `214eff9` feat(tpl-004): UI — Controls field + complex layout warning
+**TPL-002 закрыт:**
+- `cardSlug` = название папки (единственный источник истины), kebab-case, суффикс `-card`/`-table`
+- Namespace: `cardSlug` с точками → `com.sap.partner.wz.<slug-with-dots>` (дефисы → точки)
+- Import paths: дефисы → слэши → `com/sap/partner/wz/<slug-with-slashes>/...`
+- Архитектор выводит slug из описания, задаёт **обязательный вопрос** `q_slug` в финальном раунде (вместе с tests/docs)
+- Spec Review показывает `Folder: <cardSlug>`
+
+**Баг namespace в View.view.xml — исправлен:**
+- LLM получает `cardNamespace: "pp.points.card"` (предвычисленное, без дефисов) в spec
+- Добавлено в `generateUserPrompt()` и `generateViewUserPrompt()`
+- `viewGeneratorSystemPrompt` обновлён: явное правило использовать `spec.cardNamespace`
+- Статические файлы: умная `sub()` — `com.sap.partner.wz.SLUG` → через `slugDot`, `com/sap/partner/wz/SLUG` → через `slugPath`
+
+**Конвенция зафиксирована в:**
+- `server/prompts/integration-card/architect.js` — правила slug, q_slug в Output Questions Round
+- `server/prompts/integration-card/developer.js` — cardNamespace, sub(), viewGeneratorSystemPrompt
+- `client/app.js` — Folder в Spec Review
+- `docs/contracts.md` — slug convention section
 
 ---
 
@@ -61,11 +74,11 @@
 | `docs/DEMO.md` | план питча тимлиду |
 | `server/index.js` | pipeline wiring, IC workspace, /api/cards, /api/edit |
 | `server/orchestrator.js` | state machine, editMode, archiveApp |
+| `server/sandbox-manager.js` | ui5 serve, skip install if node_modules exists |
 | `server/prompts/integration-card/architect.js` | IC Architect system + user prompt |
 | `server/prompts/integration-card/developer.js` | generateStaticFiles + LLM prompts (split) |
 | `server/prompts/integration-card/delta-architect.js` | edit mode: patch-spec |
 | `server/prompts/integration-card/sdk-stubs/` | SDK-стабы для offline dev/test |
-| `server/sandbox-manager.js` | ui5 serve, один процесс per DF instance |
 | `server/cards-registry.js` | CRUD реестра cards-registry.json |
 
 ---
