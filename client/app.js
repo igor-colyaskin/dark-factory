@@ -520,6 +520,30 @@ function showImportError(msg) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Phase Status Card
+const PHASE_CONFIGS = {
+  ORDERING:     { color: 'amber',  title: 'Submitting order',   message: 'Processing your request…' },
+  ARCH_WORKING: { color: 'amber',  title: 'Architect at work',  message: 'Analyzing requirements and building spec…' },
+  DEV_WORKING:  { color: 'purple', title: 'Developer at work',  message: 'Writing code…' },
+  DEV_CHECK:    { color: 'purple', title: 'Quality check',      message: 'Verifying code quality…' },
+  TEST_RUNNING: { color: 'teal',   title: 'Tester at work',     message: 'Running unit tests…' },
+};
+
+function showPhaseStatus(stateName) {
+  const cfg = PHASE_CONFIGS[stateName];
+  if (!cfg) return;
+  loadingOverlay.style.display = 'none';
+  const el = document.getElementById('phase-status');
+  el.className = `phase-status ps-${cfg.color} visible`;
+  document.getElementById('ps-title').textContent = cfg.title;
+  document.getElementById('ps-message').textContent = cfg.message;
+}
+
+function hidePhaseStatus() {
+  const el = document.getElementById('phase-status');
+  if (el) el.className = 'phase-status';
+}
+
 // Connect to SSE
 function connectSSE() {
   console.log('Connecting to SSE...');
@@ -812,11 +836,12 @@ function updateUI(state) {
       break;
 
     case 'ORDERING':
-      showLoading('Processing your order...');
+      manufacturingBlock.style.display = 'block';
+      showPhaseStatus('ORDERING');
       break;
 
     case 'ARCH_WORKING':
-      showLoading('Architect is analyzing your order...');
+      showPhaseStatus('ARCH_WORKING');
       break;
 
     case 'CLARIFYING':
@@ -841,19 +866,19 @@ function updateUI(state) {
       break;
 
     case 'DEV_WORKING':
-      showLoading('Developer is writing code...');
+      showPhaseStatus('DEV_WORKING');
       break;
 
     case 'DEV_CHECK':
-      showLoading('Checking code quality...');
+      showPhaseStatus('DEV_CHECK');
       break;
 
     case 'TEST_RUNNING':
-      showLoading('Tester is reviewing code...');
+      showPhaseStatus('TEST_RUNNING');
       break;
 
     case 'DELIVERING':
-      showLoading('Preparing your application...');
+      hideLoading();
       break;
 
     case 'DEPLOYING':
@@ -870,12 +895,6 @@ function updateUI(state) {
       if (deployStatusText) deployStatusText.textContent = 'Verifier is checking the app...';
       document.getElementById('deploy-info-message').innerHTML =
         '🔍 Verifier is opening the app, taking a screenshot and checking spec compliance.';
-      break;
-
-    case 'GITHUB_PUSH':
-      hideLoading();
-      deployInfo.style.display = 'block';
-      if (deployStatusText) deployStatusText.textContent = 'Saving source code...';
       break;
 
     case 'DONE':
@@ -1493,6 +1512,7 @@ function showLoading(message = 'Processing...') {
 // Hide Loading
 function hideLoading() {
   loadingOverlay.style.display = 'none';
+  hidePhaseStatus();
 }
 
 // Format Time

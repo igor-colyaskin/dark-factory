@@ -96,7 +96,16 @@
           </div>
 
           <div class="block-content">
-            <!-- Deploy Info (shown during DEPLOYING state) -->
+            <!-- Phase Status Card (shown during working states) -->
+            <div id="phase-status" class="phase-status">
+              <div class="phase-status-header">
+                <div class="ps-spinner"></div>
+                <span id="ps-title" class="ps-title"></span>
+              </div>
+              <div id="ps-message" class="ps-message"></div>
+            </div>
+
+            <!-- Deploy Info (shown during DEPLOYING / VERIFYING states) -->
             <div id="deploy-info" class="deploy-info" style="display: none;">
               <div class="deploy-info-header">
                 <div class="deploy-spinner"></div>

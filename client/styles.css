@@ -486,6 +486,87 @@ body {
   line-height: 1.5;
 }
 
+/* Phase Status Card */
+.phase-status {
+  display: none;
+  margin: 0 0 10px;
+  padding: 12px;
+  border-radius: 4px;
+}
+.phase-status.visible { display: block; }
+
+.phase-status-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ps-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border-width: 2px;
+  border-style: solid;
+  animation: deploy-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.ps-title {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.ps-message {
+  font-size: 11px;
+  color: var(--vscode-text);
+  line-height: 1.5;
+}
+
+/* amber — architect / ordering */
+.phase-status.ps-amber {
+  background: rgba(209, 154, 0, 0.1);
+  border: 1px solid rgba(209, 154, 0, 0.4);
+}
+.phase-status.ps-amber .ps-spinner {
+  border-color: rgba(209, 154, 0, 0.2);
+  border-top-color: #d19a00;
+}
+.phase-status.ps-amber .ps-title { color: #d19a00; }
+
+/* purple — developer */
+.phase-status.ps-purple {
+  background: rgba(152, 118, 214, 0.1);
+  border: 1px solid rgba(152, 118, 214, 0.4);
+}
+.phase-status.ps-purple .ps-spinner {
+  border-color: rgba(152, 118, 214, 0.2);
+  border-top-color: #9876d6;
+}
+.phase-status.ps-purple .ps-title { color: #9876d6; }
+
+/* teal — tester */
+.phase-status.ps-teal {
+  background: rgba(0, 168, 150, 0.1);
+  border: 1px solid rgba(0, 168, 150, 0.4);
+}
+.phase-status.ps-teal .ps-spinner {
+  border-color: rgba(0, 168, 150, 0.2);
+  border-top-color: #00a896;
+}
+.phase-status.ps-teal .ps-title { color: #00a896; }
+
+/* green — delivering / saving */
+.phase-status.ps-green {
+  background: rgba(78, 175, 99, 0.1);
+  border: 1px solid rgba(78, 175, 99, 0.4);
+}
+.phase-status.ps-green .ps-spinner {
+  border-color: rgba(78, 175, 99, 0.2);
+  border-top-color: #4eaf63;
+}
+.phase-status.ps-green .ps-title { color: #4eaf63; }
+
 /* Status Message */
 .status-message {
   margin-top: 10px;
