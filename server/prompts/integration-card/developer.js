@@ -507,7 +507,13 @@ sap.ui.define(
 
 export function generateStaticFiles(cardSlug, spec = {}) {
   const slug = cardSlug || 'card';
-  const sub = (s) => s.replace(/SLUG/g, slug);
+  // Namespace uses dots; slug may contain hyphens (e.g. "employee-details-card" → "employee.details.card")
+  const slugDot = slug.replace(/-/g, '.');
+  const slugPath = slugDot.replace(/\./g, '/');
+  const sub = (s) => s
+    .replace(/com\.sap\.partner\.wz\.SLUG/g, `com.sap.partner.wz.${slugDot}`)
+    .replace(/com\/sap\/partner\/wz\/SLUG/g, `com/sap/partner/wz/${slugPath}`)
+    .replace(/SLUG/g, slug);
   const pkgJson = spec.generateTests ? sub(T_PACKAGE_JSON_WITH_TESTS) : sub(T_PACKAGE_JSON);
   const isTable = (spec.viewControls || []).some(c => /table/i.test(c));
 
@@ -605,10 +611,15 @@ are handled separately — do NOT include them in your response.
 
 ## Namespace Substitution Rule
 
-In ALL files: replace the literal string \`SLUG\` with the value of spec.cardSlug.
-Example: if cardSlug = "employeecard", then:
-- \`com.sap.partner.wz.SLUG\` → \`com.sap.partner.wz.employeecard\`
-- \`com/sap/partner/wz/SLUG\` → \`com/sap/partner/wz/employeecard\`
+Use **spec.cardNamespace** (pre-computed, dots only) for all namespace and path contexts.
+Do NOT use spec.cardSlug directly in namespace or path strings — it may contain hyphens.
+
+- **Namespace** (JS extend, XML controllerName, manifest sap.app.id, i18n bundleName):
+  \`com.sap.partner.wz.\${spec.cardNamespace}\` — e.g. \`com.sap.partner.wz.pp.points.card\`
+- **Module paths** (sap.ui.define, require, resource-roots):
+  replace dots with slashes — e.g. \`com/sap/partner/wz/pp/points/card\`
+- **Package name** (package.json "name"):
+  \`com-sap-partner-wz-\${spec.cardSlug}\` — hyphens preserved, e.g. \`com-sap-partner-wz-pp-points-card\`
 
 ## Files to Generate
 
@@ -869,7 +880,13 @@ export const viewGeneratorSystemPrompt = `You are a Developer agent generating a
 ## Your Role
 
 Generate ONLY src/View.view.xml based on the spec and DataHelper context provided.
-Use SAPUI5 XML view syntax. Replace \`SLUG\` with spec.cardSlug everywhere.
+Use SAPUI5 XML view syntax.
+
+## Namespace Rule
+
+Use **spec.cardNamespace** (pre-computed, dots only) — NEVER spec.cardSlug — in XML namespace contexts.
+- controllerName: \`com.sap.partner.wz.\${spec.cardNamespace}.Main\`
+Example: cardNamespace = "pp.points.card" → \`com.sap.partner.wz.pp.points.card.Main\`
 
 ## Required Output Format
 
@@ -899,7 +916,7 @@ Field controls:
 Template (adjust columnsXL/L/M to match column count):
 \`\`\`xml
 <mvc:View
-\tcontrollerName="com.sap.partner.wz.SLUG.Main"
+\tcontrollerName="com.sap.partner.wz.{cardNamespace}.Main"
 \txmlns:mvc="sap.ui.core.mvc"
 \txmlns="sap.m"
 \txmlns:f="sap.ui.layout.form"
@@ -945,7 +962,7 @@ Bind items to \`{/items}\`. One Column per field, one cell per field in ColumnLi
 Template:
 \`\`\`xml
 <mvc:View
-\tcontrollerName="com.sap.partner.wz.SLUG.Main"
+\tcontrollerName="com.sap.partner.wz.{cardNamespace}.Main"
 \txmlns:mvc="sap.ui.core.mvc"
 \txmlns="sap.m"
 \txmlns:core="sap.ui.core"
@@ -993,7 +1010,9 @@ Wrap in VBox with standard sapUiSmallMargin.
  * @returns {string}
  */
 export function generateViewUserPrompt(spec, dataHelperContent = '') {
-  const specText = JSON.stringify(spec, null, 2);
+  const slug = spec.cardSlug || 'card';
+  const specForLLM = { ...spec, cardNamespace: slug.replace(/-/g, '.') };
+  const specText = JSON.stringify(specForLLM, null, 2);
   const lines = [
     '# Integration Card Spec',
     '',
@@ -1018,9 +1037,13 @@ export function generateViewUserPrompt(spec, dataHelperContent = '') {
  * @returns {string}
  */
 export function generateUserPrompt(orderDescription, spec, retryCount = 0, errorFeedback = null) {
-  const specText = JSON.stringify(spec, null, 2);
+  // Provide pre-computed namespace so LLM doesn't need to convert hyphens to dots
+  const slug = spec.cardSlug || 'card';
+  const specForLLM = { ...spec, cardNamespace: slug.replace(/-/g, '.') };
+  const specText = JSON.stringify(specForLLM, null, 2);
 
-  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 4 extension-point source files for this Integration Card. (View.view.xml is generated separately.)\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${spec.cardSlug || 'SLUG'}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, viewControls = ${JSON.stringify(spec.viewControls || [])}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for viewControls = ${JSON.stringify(spec.viewControls || [])}\n\nRespond with valid JSON following the required format.`;
+  const cardNamespace = (spec.cardSlug || 'card').replace(/-/g, '.');
+  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 4 extension-point source files for this Integration Card. (View.view.xml is generated separately.)\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${cardNamespace}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, viewControls = ${JSON.stringify(spec.viewControls || [])}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for viewControls = ${JSON.stringify(spec.viewControls || [])}\n\nRespond with valid JSON following the required format.`;
 
   if (retryCount > 0 && errorFeedback) {
     prompt += `\n\n# ⚠️ RETRY ${retryCount}\n\nPrevious attempt had issues:\n\n${errorFeedback}\n\nFix these issues in your response.`;

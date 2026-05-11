@@ -51,26 +51,33 @@ Rules for clarify:
 ### Output Questions Round
 
 After the spec data is complete (entity, fields, destination, protocol, viewControls are known),
-ask ONE dedicated clarify round about output options — BEFORE emitting spec mode.
+ask ONE dedicated clarify round — BEFORE emitting spec mode.
 Use EXACTLY this structure and NOTHING else in that round:
 
 ${TRIPLE}json
 {
   "mode": "clarify",
   "questions": [
+    { "id": "q_slug",  "text": "Предлагаемое название папки: \`<derived-slug>\`. Подтвердите или укажите другое.", "options": ["<derived-slug>"], "allowOther": true },
     { "id": "q_tests", "text": "Нужны unit-тесты?", "options": ["Да", "Нет"], "allowOther": false },
     { "id": "q_docs",  "text": "Нужна документация (README + Confluence)?", "options": ["Да", "Нет"], "allowOther": false }
   ],
-  "progress": "Spec готов. Ещё два вопроса об output."
+  "progress": "Spec готов. Три финальных вопроса."
 }
 ${TRIPLE}
+
+Replace \`<derived-slug>\` with the folder name you derived from the order (see cardSlug Rules below).
 
 Rules for output questions:
 - Ask this round ONCE, ONLY after all spec data is collected
 - NEVER mix output questions with spec clarification questions
-- After answers are received, set generateTests/generateDocs in spec accordingly ("Да" → true, "Нет" → false)
-- If the user volunteers output preferences in their order ("нужны тесты") — skip this round and set fields directly
-- If you are on the last allowed round and output questions haven't been asked — set generateTests: false, generateDocs: false and produce spec
+- q_slug answer → use as cardSlug (single source of truth for namespace and imports)
+  - If user selects the suggested option — use it as-is
+  - If user provides "other" text — use that text as cardSlug
+- q_tests / q_docs answers → set generateTests/generateDocs ("Да" → true, "Нет" → false)
+- If the user specified a folder name in their order → skip q_slug, use that name directly
+- If the user volunteers output preferences in their order ("нужны тесты") → set fields directly, still ask q_slug
+- If you are on the last allowed round and this round hasn't been asked — use derived slug, set generateTests: false, generateDocs: false, produce spec
 
 ### Mode: "spec"
 
@@ -80,9 +87,9 @@ ${TRIPLE}json
 {
   "mode": "spec",
   "thinking": "Key decisions (2–3 sentences)",
-  "appSlug": "employeecard",
+  "appSlug": "employee-details-card",
   "spec": {
-    "cardSlug": "employeecard",
+    "cardSlug": "employee-details-card",
     "cardTitle": "Employee Details",
     "cardSubtitle": "HR Information",
     "formTitle": "Employee Details",
@@ -147,11 +154,32 @@ Examples: \`["sap.m.SimpleForm"]\`, \`["sap.m.Table"]\`, \`["sap.m.FilterBar", "
 - control: "Text" (default) | "Link" | "ObjectStatus"
 - formatter (optional): "formatDate" — formats ISO date strings to dd.MM.yyyy
 
-## appSlug Rules
+## appSlug / cardSlug Rules
 
-- Same value as cardSlug: lowercase letters and digits only, no hyphens or dots
-- 3–20 characters, must start with a letter
-- Examples: "employeecard", "supplierinfo", "projectstatus", "vendordetails"
+**cardSlug = folder name. It is the single source of truth.**
+All namespaces and import paths in the card are derived from it:
+- Namespace in manifest: \`com.sap.partner.wz.<cardSlug-with-dots>\` (hyphens → dots)
+  Example: \`due-diligence-assessments-card\` → \`com.sap.partner.wz.due.diligence.assessments.card\`
+- Import paths: \`com/sap/partner/wz/<cardSlug-with-slashes>/...\` (hyphens → slashes)
+  Example: \`com/sap/partner/wz/due/diligence/assessments/card/model/columnConfig\`
+
+**cardTitle is independent** — it is only a display label. A card named "Employee Card" may live
+in folder \`due-diligence-assessments-card\` if the user says so. That is perfectly valid.
+
+**Format:**
+- kebab-case: lowercase letters, digits, and hyphens only — NO dots, NO underscores
+- Must start with a letter, no leading or trailing hyphens, 3–50 characters
+- Suffix convention: \`-card\` for detail/single-entity views; \`-table\` for collection/list views
+
+**Derivation:** extract key words from the order description → kebab-case → apply suffix.
+Examples:
+- "Employee Details card" → \`employee-details-card\`
+- "Due Diligence Assessments" → \`due-diligence-assessments-card\`
+- "Exception Management Table" → \`exception-management-table\`
+- "Compliance Information" → \`compliance-information-card\`
+
+**Always confirm with the user** via q_slug in the Output Questions Round (see above).
+Never silently include cardSlug in spec without user confirmation.
 
 ## mockData Rules
 

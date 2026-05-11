@@ -245,7 +245,7 @@ Deployer-контракта (v0.6). Fly.io-адаптер — Area-51 до ра�
 
 ```json
 {
-  "cardSlug":        "employeecard",
+  "cardSlug":        "employee-details-card",
   "cardTitle":       "Employee Details",
   "cardSubtitle":    "HR Information",
   "formTitle":       "Employee Details",
@@ -260,6 +260,16 @@ Deployer-контракта (v0.6). Fly.io-адаптер — Area-51 до ра�
   "mockData": { "FirstName": "Adam Taylor" }
 }
 ```
+
+#### cardSlug convention (TPL-002)
+
+- **Format:** kebab-case — lowercase letters, digits, hyphens. No dots, no underscores.
+- **Suffix:** `-card` for detail/single-entity views; `-table` for collection/list views.
+- **Namespace derivation:** `cardSlug` hyphens → dots → `com.sap.partner.wz.<slug-with-dots>`
+  - `employee-details-card` → `com.sap.partner.wz.employee.details.card`
+- **Package name:** `com-sap-partner-wz-<cardSlug>` (hyphens preserved)
+- **Source:** `docs/CARDS.md` — dominant convention from the production project.
+- Architect derives from description, shows in Spec Review; user corrects via Refine if needed.
 
 `protocol`: `rest` | `odata2` | `odata4` | `other`
 `viewControls`: array of UI5 class names, e.g. `["sap.m.SimpleForm"]`, `["sap.m.Table"]`, `["sap.m.FilterBar", "sap.m.Table"]`

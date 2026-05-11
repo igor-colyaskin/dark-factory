@@ -2,6 +2,8 @@ import { spawn } from 'child_process';
 import { createServer } from 'net';
 import { promisify } from 'util';
 import { exec } from 'child_process';
+import { existsSync } from 'fs';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -50,8 +52,10 @@ class SandboxManager {
       return { port: this._proc.port };
     }
 
-    console.log('[Sandbox] npm install...');
-    await execAsync('npm install --prefer-offline', { cwd: workspaceDir, timeout: 120000 });
+    if (!existsSync(path.join(workspaceDir, 'node_modules'))) {
+      console.log('[Sandbox] npm install...');
+      await execAsync('npm install --prefer-offline', { cwd: workspaceDir, timeout: 120000 });
+    }
 
     const port = await findFreePort();
     console.log(`[Sandbox] Starting ui5 serve on port ${port}...`);
