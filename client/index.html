@@ -193,7 +193,6 @@
             <div class="success-message">
               <div class="success-icon">✓</div>
               <h3>Application Successfully Created!</h3>
-              <p>Your application has been built and is ready to use.</p>
             </div>
 
             <div class="pickup-stats">
@@ -247,29 +246,16 @@
               </div>
             </div>
 
-            <!-- Deploy Error Section (shown if publicUrl is missing) -->
-            <div id="deploy-error-section" class="deploy-error-section" style="display: none;">
-              <div class="error-message">
-                <div class="error-icon">⚠️</div>
-                <h4>Deploy Failed</h4>
-                <p>Unable to deploy your application to the cloud. You can still download the source code.</p>
-              </div>
-            </div>
-
-            <!-- Verification Report (shown after DONE) -->
+            <!-- Verification Report (shown after DONE, collapsed by default) -->
             <div id="verification-report" class="verification-report" style="display: none;"></div>
 
-            <!-- VIZ-001: IC sandbox preview -->
-            <div id="sandbox-preview" style="display: none; margin-top: 1rem;">
-              <button id="sandbox-preview-btn" class="btn btn-primary" onclick="handleSandboxPreview()">
+            <!-- VIZ-001: IC sandbox preview + new order — one action row -->
+            <div class="pickup-actions">
+              <button id="sandbox-preview-btn" class="btn btn-primary" style="display:none;" onclick="handleSandboxPreview()">
                 ▶ Preview Card
               </button>
-            </div>
-
-            <div class="new-order-section">
-              <p>Want to create another application?</p>
               <button id="new-order-btn" class="btn btn-outline">
-                Create New Order
+                + New Order
               </button>
             </div>
           </div>

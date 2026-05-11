@@ -45,7 +45,6 @@ const publicUrlSection = document.getElementById('public-url-section');
 const publicUrlLink = document.getElementById('public-url-link');
 const openPublicBtn = document.getElementById('open-public-btn');
 const copyUrlBtn = document.getElementById('copy-url-btn');
-const deployErrorSection = document.getElementById('deploy-error-section');
 const deployInfo = document.getElementById('deploy-info');
 const deployStatusText = document.getElementById('deploy-status-text');
 
@@ -1070,15 +1069,13 @@ function renderSpecReview(state) {
   }
 
   // ── Regular spec ──────────────────────────────────────────────────────────
+  parts.push('<div class="spec-top-row">');
+
+  // Left column: Summary + IC fields
   parts.push('<div class="spec-section">');
   parts.push('<h4>Summary</h4>');
-  parts.push('<p>' + escapeHtml(spec.summary) + '</p>');
-  parts.push('</div>');
-
-  // IC profile: show card-specific fields
+  if (spec.summary) parts.push('<p>' + escapeHtml(spec.summary) + '</p>');
   if (spec.cardSlug) {
-    parts.push('<div class="spec-section">');
-    parts.push('<h4>Integration Card</h4>');
     parts.push('<ul>');
     parts.push('<li><strong>Card:</strong> ' + escapeHtml(spec.cardTitle || spec.cardSlug) + '</li>');
     parts.push('<li><strong>Folder:</strong> <code>' + escapeHtml(spec.cardSlug) + '</code></li>');
@@ -1089,10 +1086,10 @@ function renderSpecReview(state) {
     parts.push('<li><strong>Tests:</strong> ' + (spec.generateTests ? 'Yes' : 'No') + '</li>');
     parts.push('<li><strong>Docs:</strong> ' + (spec.generateDocs ? 'Yes' : 'No') + '</li>');
     parts.push('</ul>');
-    parts.push('</div>');
   }
+  parts.push('</div>');
 
-  // Clarifications (Q&A history)
+  // Right column: Clarifications
   if (state.clarifyHistory && state.clarifyHistory.length > 0) {
     parts.push('<div class="spec-section">');
     parts.push('<h4>Clarifications</h4>');
@@ -1109,6 +1106,8 @@ function renderSpecReview(state) {
     parts.push('</ul>');
     parts.push('</div>');
   }
+
+  parts.push('</div>'); // .spec-top-row
 
   // Features
   if (spec.features && spec.features.length > 0) {
@@ -1388,8 +1387,6 @@ function showPickupBlock(state) {
     publicUrlSection.style.display = 'block';
     publicUrlLink.href = state.publicUrl;
     publicUrlLink.textContent = state.publicUrl;
-    deployErrorSection.style.display = 'none';
-
 
     // Generate QR code — skip for localhost (only useful on the same machine)
     const qrCanvas = document.getElementById('qr-canvas');
@@ -1407,20 +1404,15 @@ function showPickupBlock(state) {
       });
     }
   } else {
-    // No public URL - show error section
     publicUrlSection.style.display = 'none';
-    deployErrorSection.style.display = 'block';
   }
 
   // VIZ-001: show Preview button for IC cards (identified by cardSlug in spec)
-  const sandboxSection = document.getElementById('sandbox-preview');
-  if (sandboxSection) {
-    sandboxSection.style.display = state.currentSpec?.cardSlug ? 'block' : 'none';
-    const btn = document.getElementById('sandbox-preview-btn');
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '▶ Preview Card';
-    }
+  const previewBtn = document.getElementById('sandbox-preview-btn');
+  if (previewBtn) {
+    previewBtn.style.display = state.currentSpec?.cardSlug ? '' : 'none';
+    previewBtn.disabled = false;
+    previewBtn.textContent = '▶ Preview Card';
   }
 }
 
@@ -1456,12 +1448,16 @@ function renderVerificationReport(state) {
   }
 
   container.innerHTML = `
-    <div class="vr-header">
-      <span class="vr-title">Verification</span>
-      <span class="vr-verdict ${verdictClass}">${verdictLabel}</span>
-    </div>
-    ${featuresHtml}
-    ${visionHtml}
+    <details class="vr-details">
+      <summary class="vr-summary">
+        <span class="vr-title">Verification</span>
+        <span class="vr-verdict ${verdictClass}">${verdictLabel}</span>
+      </summary>
+      <div class="vr-body">
+        ${featuresHtml}
+        ${visionHtml}
+      </div>
+    </details>
   `;
   container.style.display = 'block';
 }
