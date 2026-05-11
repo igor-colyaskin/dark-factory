@@ -193,13 +193,13 @@ function renderCardItem(card) {
         <span class="app-card-date">${created}</span>
       </div>
       <div class="app-card-order" style="font-size:0.85em;color:var(--text-muted)">
-        ${slug} &bull; изменено ${modified}
+        ${slug} &bull; modified ${modified}
       </div>
       <div class="app-card-actions">
-        <button class="btn btn-sm btn-secondary" onclick="handleEditCard('${slug}')">Редактировать</button>
+        <button class="btn btn-sm btn-secondary" onclick="handleEditCard('${slug}')">Edit</button>
         <button class="btn btn-sm btn-secondary" onclick="handleCloneCard('${slug}')">Clone</button>
         <button class="btn btn-sm btn-primary" onclick="handlePreviewCard('${slug}')">Preview</button>
-        <button class="btn btn-sm btn-danger-outline" onclick="handleDeleteCard('${slug}', '${name}')">Стереть</button>
+        <button class="btn btn-sm btn-danger-outline" onclick="handleDeleteCard('${slug}', '${name}')">Delete</button>
       </div>
     </div>
   `;
@@ -223,7 +223,7 @@ function openPreviewWindow() {
     <div class="title">Dark Factory IC</div>
     <div class="sub">Integration Card Preview</div>
     <div class="spinner"></div>
-    <div class="hint">Запускаем sandbox, загружаем карточку…</div>
+    <div class="hint">Starting sandbox, loading card…</div>
   </div>
   </body></html>`);
   win.document.close();
@@ -241,18 +241,18 @@ async function handlePreviewCard(slug) {
       win.location.href = data.url;
     } else {
       win.close();
-      alert(`Ошибка preview: ${data.message}`);
+      alert(`Preview error: ${data.message}`);
     }
   } catch (e) {
     win.close();
-    alert(`Ошибка: ${e.message}`);
+    alert(`Error: ${e.message}`);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Preview'; }
   }
 }
 
 async function handleDeleteCard(slug, name) {
-  if (!confirm(`Удалить карточку "${name}" (${slug})?\n\nФайлы в cards/${slug}/ будут удалены. Отменить нельзя.`)) return;
+  if (!confirm(`Delete "${name}" (${slug})?\n\nFiles in cards/${slug}/ will be deleted. This cannot be undone.`)) return;
   try {
     const res = await fetch(`/api/cards/${encodeURIComponent(slug)}`, { method: 'DELETE' });
     const data = await res.json();
@@ -265,10 +265,10 @@ async function handleDeleteCard(slug, name) {
         document.getElementById('products-empty').style.display = 'block';
       }
     } else {
-      alert(`Не удалось удалить: ${data.message}`);
+      alert(`Failed to delete: ${data.message}`);
     }
   } catch (e) {
-    alert(`Ошибка: ${e.message}`);
+    alert(`Error: ${e.message}`);
   }
 }
 
@@ -290,7 +290,7 @@ function handleEditCard(slug) {
   specReviewSection.style.display = 'none';
 
   const title = document.getElementById('order-title');
-  if (title) title.textContent = `✏️ Редактирование`;
+  if (title) title.textContent = `✏️ Editing`;
 
   const banner = document.getElementById('edit-mode-banner');
   if (banner) {
@@ -300,13 +300,13 @@ function handleEditCard(slug) {
 
   const input = document.getElementById('order-input');
   if (input) {
-    input.placeholder = 'Опишите что нужно изменить (например: добавить поле Department, изменить заголовок карточки)…';
+    input.placeholder = 'Describe what to change (e.g. add Department field, change card title)…';
     input.value = '';
     input.focus();
   }
 
   const btn = document.getElementById('submit-order-btn');
-  if (btn) btn.textContent = 'Применить изменение';
+  if (btn) btn.textContent = 'Apply changes';
 }
 
 function cancelEditMode() {
@@ -352,12 +352,12 @@ async function submitClone() {
   const errEl = document.getElementById('clone-modal-error');
 
   if (!newSlug) {
-    errEl.textContent = 'Введите новый slug';
+    errEl.textContent = 'Enter new slug';
     errEl.style.display = 'block';
     return;
   }
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(newSlug)) {
-    errEl.textContent = 'Slug должен быть kebab-case (только строчные буквы, цифры, дефисы)';
+    errEl.textContent = 'Slug must be kebab-case (lowercase letters, digits, hyphens)';
     errEl.style.display = 'block';
     return;
   }
@@ -386,7 +386,7 @@ async function submitClone() {
       handleCloneCard(sourceSlug);
       document.getElementById('clone-new-slug').value = newSlug;
       const e2 = document.getElementById('clone-modal-error');
-      e2.textContent = data.message || 'Ошибка клонирования';
+      e2.textContent = data.message || 'Clone failed';
       e2.style.display = 'block';
     }
   } catch (e) {
@@ -394,7 +394,7 @@ async function submitClone() {
     handleCloneCard(sourceSlug);
     document.getElementById('clone-new-slug').value = newSlug;
     const e2 = document.getElementById('clone-modal-error');
-    e2.textContent = `Ошибка: ${e.message}`;
+    e2.textContent = `Error: ${e.message}`;
     e2.style.display = 'block';
   } finally {
     btn.disabled = false;
@@ -419,14 +419,14 @@ async function submitImport() {
   } else if (zipInput.files[0]) {
     await submitImportZip(zipInput.files[0]);
   } else {
-    showImportError('Выберите zip-архив или папку');
+    showImportError('Select a ZIP file or folder');
   }
 }
 
 async function submitImportZip(file) {
   const btn = document.getElementById('import-submit-btn');
   btn.disabled = true;
-  btn.textContent = 'Импорт...';
+  btn.textContent = 'Importing...';
   document.getElementById('import-modal-error').style.display = 'none';
 
   const formData = new FormData();
@@ -438,13 +438,13 @@ async function submitImportZip(file) {
       closeImportModal();
       loadCards();
     } else {
-      showImportError(data.message || 'Ошибка импорта');
+      showImportError(data.message || 'Import failed');
     }
   } catch (e) {
-    showImportError(`Ошибка: ${e.message}`);
+    showImportError(`Error: ${e.message}`);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Импортировать';
+    btn.textContent = 'Import';
   }
 }
 
@@ -454,7 +454,7 @@ async function submitImportFolder(fileList) {
 
   const btn = document.getElementById('import-submit-btn');
   btn.disabled = true;
-  btn.textContent = 'Читаю файлы...';
+  btn.textContent = 'Reading files...';
   document.getElementById('import-modal-error').style.display = 'none';
 
   const files = [];
@@ -476,20 +476,20 @@ async function submitImportFolder(fileList) {
       files.push({ path: relativePath, content: btoa(binary) });
     }
   } catch (e) {
-    showImportError(`Ошибка чтения файлов: ${e.message}`);
+    showImportError(`Error reading files: ${e.message}`);
     btn.disabled = false;
-    btn.textContent = 'Импортировать';
+    btn.textContent = 'Import';
     return;
   }
 
   if (files.length === 0) {
-    showImportError('Папка пуста или все файлы были пропущены');
+    showImportError('Folder is empty or all files were skipped');
     btn.disabled = false;
-    btn.textContent = 'Импортировать';
+    btn.textContent = 'Import';
     return;
   }
 
-  btn.textContent = `Импорт (${files.length} файлов)...`;
+  btn.textContent = `Importing (${files.length} files)...`;
 
   try {
     const res = await fetch('/api/cards/import-folder', {
@@ -502,13 +502,13 @@ async function submitImportFolder(fileList) {
       closeImportModal();
       loadCards();
     } else {
-      showImportError(data.message || 'Ошибка импорта');
+      showImportError(data.message || 'Import failed');
     }
   } catch (e) {
-    showImportError(`Ошибка: ${e.message}`);
+    showImportError(`Error: ${e.message}`);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Импортировать';
+    btn.textContent = 'Import';
   }
 }
 
@@ -756,7 +756,7 @@ async function handleCopyUrl() {
 
     // Change button text temporarily
     const originalText = copyUrlBtn.textContent;
-    copyUrlBtn.textContent = '✓ Скопировано';
+    copyUrlBtn.textContent = '✓ Copied';
     copyUrlBtn.disabled = true;
 
     // Restore after 2 seconds
@@ -837,7 +837,7 @@ function updateUI(state) {
       showStatus('Spec is ready for review', 'info');
       // Update spec-review title for edit mode
       const srTitle = document.getElementById('spec-review-title');
-      if (srTitle) srTitle.textContent = state.editMode ? `Редактирование: ${state.editSlug}` : 'Spec Review';
+      if (srTitle) srTitle.textContent = state.editMode ? `Editing: ${state.editSlug}` : 'Spec Review';
       break;
 
     case 'DEV_WORKING':
@@ -867,15 +867,15 @@ function updateUI(state) {
     case 'VERIFYING':
       hideLoading();
       deployInfo.style.display = 'block';
-      if (deployStatusText) deployStatusText.textContent = 'Верификатор проверяет приложение...';
+      if (deployStatusText) deployStatusText.textContent = 'Verifier is checking the app...';
       document.getElementById('deploy-info-message').innerHTML =
-        '🔍 Верификатор открывает приложение, делает скриншот и анализирует соответствие spec.';
+        '🔍 Verifier is opening the app, taking a screenshot and checking spec compliance.';
       break;
 
     case 'GITHUB_PUSH':
       hideLoading();
       deployInfo.style.display = 'block';
-      if (deployStatusText) deployStatusText.textContent = 'Сохраняю исходный код...';
+      if (deployStatusText) deployStatusText.textContent = 'Saving source code...';
       break;
 
     case 'DONE':
@@ -952,12 +952,12 @@ function renderClarifySection(state) {
       radio.value = '__other__';
 
       const span = document.createElement('span');
-      span.textContent = 'Другое:';
+      span.textContent = 'Other:';
 
       const textarea = document.createElement('textarea');
       textarea.className = 'clarify-other-input';
       textarea.rows = 2;
-      textarea.placeholder = 'Ваш вариант...';
+      textarea.placeholder = 'Your option...';
       textarea.style.display = 'none';
 
       // Show and focus textarea when "other" is selected
@@ -1006,12 +1006,12 @@ function renderSpecReview(state) {
   // ── Patch-spec (edit mode) ─────────────────────────────────────────────────
   if (spec.mode === 'patch') {
     parts.push('<div class="spec-section">');
-    parts.push('<h4>Что изменится</h4>');
-    parts.push('<p>' + escapeHtml(spec.changeSummary || 'Нет описания') + '</p>');
+    parts.push('<h4>What changes</h4>');
+    parts.push('<p>' + escapeHtml(spec.changeSummary || 'No description') + '</p>');
     parts.push('</div>');
 
     if (spec.fieldsAdded?.length > 0) {
-      parts.push('<div class="spec-section"><h4>Добавить поля</h4><ul>');
+      parts.push('<div class="spec-section"><h4>Add fields</h4><ul>');
       spec.fieldsAdded.forEach(f => {
         parts.push(`<li><strong>${escapeHtml(f.label)}</strong> — ${escapeHtml(f.beField)} (${escapeHtml(f.control || 'Text')})</li>`);
       });
@@ -1019,13 +1019,13 @@ function renderSpecReview(state) {
     }
 
     if (spec.fieldsRemoved?.length > 0) {
-      parts.push('<div class="spec-section"><h4>Удалить поля</h4><ul>');
+      parts.push('<div class="spec-section"><h4>Remove fields</h4><ul>');
       spec.fieldsRemoved.forEach(f => parts.push(`<li>${escapeHtml(f)}</li>`));
       parts.push('</ul></div>');
     }
 
     if (spec.fieldsModified?.length > 0) {
-      parts.push('<div class="spec-section"><h4>Изменить поля</h4><ul>');
+      parts.push('<div class="spec-section"><h4>Modify fields</h4><ul>');
       spec.fieldsModified.forEach(f => {
         parts.push(`<li><strong>${escapeHtml(f.beField)}</strong>: ${escapeHtml(JSON.stringify(f))}</li>`);
       });
@@ -1033,7 +1033,7 @@ function renderSpecReview(state) {
     }
 
     if (spec.specChanges && Object.keys(spec.specChanges).length > 0) {
-      parts.push('<div class="spec-section"><h4>Изменить свойства карточки</h4><ul>');
+      parts.push('<div class="spec-section"><h4>Change card properties</h4><ul>');
       Object.entries(spec.specChanges).forEach(([k, v]) => {
         parts.push(`<li><strong>${escapeHtml(k)}:</strong> ${escapeHtml(String(v))}</li>`);
       });
@@ -1041,7 +1041,7 @@ function renderSpecReview(state) {
     }
 
     if (spec.filesToModify?.length > 0) {
-      parts.push('<div class="spec-section"><h4>Файлы для изменения</h4><ul>');
+      parts.push('<div class="spec-section"><h4>Files to modify</h4><ul>');
       spec.filesToModify.forEach(f => parts.push(`<li><code>${escapeHtml(f)}</code></li>`));
       parts.push('</ul></div>');
     }
@@ -1076,11 +1076,11 @@ function renderSpecReview(state) {
   // Clarifications (Q&A history)
   if (state.clarifyHistory && state.clarifyHistory.length > 0) {
     parts.push('<div class="spec-section">');
-    parts.push('<h4>Уточнения</h4>');
+    parts.push('<h4>Clarifications</h4>');
     parts.push('<ul class="spec-qa-list">');
     state.clarifyHistory.forEach(function (round) {
       if (round.refine) {
-        parts.push('<li><em>Уточнение:</em> ' + escapeHtml(round.message) + '</li>');
+        parts.push('<li><em>Refinement:</em> ' + escapeHtml(round.message) + '</li>');
         return;
       }
       round.questions.forEach(function (q) {
@@ -1094,7 +1094,7 @@ function renderSpecReview(state) {
   // Features
   if (spec.features && spec.features.length > 0) {
     parts.push('<div class="spec-section">');
-    parts.push('<h4>Что будет сделано</h4>');
+    parts.push('<h4>What will be built</h4>');
     parts.push('<ul class="spec-features-list">');
     spec.features.forEach(function (f) {
       parts.push('<li>✓ ' + escapeHtml(f) + '</li>');
@@ -1106,7 +1106,7 @@ function renderSpecReview(state) {
   // Screens
   if (spec.screens && spec.screens.length > 0) {
     parts.push('<div class="spec-section">');
-    parts.push('<h4>Экраны</h4>');
+    parts.push('<h4>Screens</h4>');
     parts.push('<ul>');
     spec.screens.forEach(function (s) {
       parts.push('<li>' + escapeHtml(s) + '</li>');
@@ -1118,7 +1118,7 @@ function renderSpecReview(state) {
   // Constraints
   if (spec.constraints && spec.constraints.length > 0) {
     parts.push('<div class="spec-section">');
-    parts.push('<h4>Ограничения</h4>');
+    parts.push('<h4>Constraints</h4>');
     parts.push('<ul>');
     spec.constraints.forEach(function (c) {
       parts.push('<li>' + escapeHtml(c) + '</li>');
@@ -1130,7 +1130,7 @@ function renderSpecReview(state) {
   // Warnings
   if (spec.warnings && spec.warnings.length > 0) {
     parts.push('<div class="spec-section spec-warnings">');
-    parts.push('<h4>Предупреждения</h4>');
+    parts.push('<h4>Warnings</h4>');
     spec.warnings.forEach(function (w) {
       parts.push('<div class="spec-warning-item">⚠ ' + escapeHtml(w) + '</div>');
     });
@@ -1253,7 +1253,7 @@ function handleRefineToggle() {
 async function handleSubmitRefine() {
   const message = refineInput.value.trim();
   if (!message) {
-    showStatus('Введите текст уточнения', 'error');
+    showStatus('Enter refinement text', 'error');
     return;
   }
 
@@ -1267,12 +1267,12 @@ async function handleSubmitRefine() {
     const result = await response.json();
 
     if (!result.success) {
-      showStatus(result.message || 'Ошибка при отправке уточнения', 'error');
+      showStatus(result.message || 'Failed to submit refinement', 'error');
     }
     // UI reset happens via SSE state update (ARCH_WORKING)
   } catch (error) {
     console.error('Error submitting refine:', error);
-    showStatus('Ошибка при отправке уточнения', 'error');
+    showStatus('Failed to submit refinement', 'error');
   }
 }
 
@@ -1438,7 +1438,7 @@ function renderVerificationReport(state) {
 
   container.innerHTML = `
     <div class="vr-header">
-      <span class="vr-title">Верификация</span>
+      <span class="vr-title">Verification</span>
       <span class="vr-verdict ${verdictClass}">${verdictLabel}</span>
     </div>
     ${featuresHtml}
@@ -1451,7 +1451,7 @@ function renderVerificationReport(state) {
 async function handleSandboxPreview() {
   const btn = document.getElementById('sandbox-preview-btn');
   btn.disabled = true;
-  btn.textContent = 'Запускаю...';
+  btn.textContent = 'Starting...';
   const win = openPreviewWindow();
   try {
     const res = await fetch('/api/sandbox/start', { method: 'POST' });
@@ -1461,12 +1461,11 @@ async function handleSandboxPreview() {
       btn.textContent = '▶ Preview Card';
     } else {
       win.close();
-      btn.textContent = '⚠ Ошибка';
-      console.error('[Preview]', data.message);
+      btn.textContent = '⚠ Error';
     }
   } catch (e) {
     win.close();
-    btn.textContent = '⚠ Ошибка';
+    btn.textContent = '⚠ Error';
     console.error('[Preview]', e.message);
   } finally {
     btn.disabled = false;

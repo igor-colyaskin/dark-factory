@@ -52,8 +52,8 @@
 
           <!-- Edit mode banner -->
           <div id="edit-mode-banner" style="display:none;background:var(--accent-bg,#e8f0fe);border:1px solid var(--accent-border,#c0d0f8);border-radius:6px;padding:8px 12px;margin:0 16px 8px;display:none;flex-direction:row;align-items:center;gap:8px;font-size:0.9em;">
-            ✏️ Редактирование карточки: <strong id="edit-mode-card-name"></strong>
-            <button onclick="cancelEditMode()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1em;line-height:1;" title="Отмена">×</button>
+            ✏️ Editing: <strong id="edit-mode-card-name"></strong>
+            <button onclick="cancelEditMode()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1em;line-height:1;" title="Cancel">×</button>
           </div>
 
           <div class="block-content">
@@ -140,7 +140,7 @@
               <div id="clarify-progress" class="clarify-progress"></div>
               <div id="clarify-questions" class="clarify-questions"></div>
               <button id="submit-answers-btn" class="btn btn-primary">
-                Ответить
+                Submit
               </button>
             </div>
 
@@ -150,17 +150,17 @@
               <div id="spec-content" class="spec-content"></div>
               <div id="refine-area" class="refine-area" style="display: none;">
                 <textarea id="refine-input" class="refine-input" rows="3"
-                  placeholder="Опишите что изменить (например: добавить поле phone, изменить destination на HR_API)…"></textarea>
+                  placeholder="Describe what to change (e.g. add phone field, change destination to HR_API)…"></textarea>
               </div>
               <div class="spec-actions">
                 <button id="cancel-order-btn" class="btn btn-secondary">
                   Cancel
                 </button>
                 <button id="refine-btn" class="btn btn-secondary">
-                  Уточнить
+                  Refine
                 </button>
                 <button id="submit-refine-btn" class="btn btn-primary" style="display: none;">
-                  Отправить
+                  Submit
                 </button>
                 <button id="start-dev-btn" class="btn btn-success">
                   ▶ Start
@@ -301,12 +301,12 @@
   <!-- Delete Confirmation Modal (legacy — not used for IC cards) -->
   <div id="delete-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
-      <h3 class="modal-title">Удалить?</h3>
+      <h3 class="modal-title">Delete?</h3>
       <p class="modal-app-info" id="delete-modal-info"></p>
       <div id="delete-modal-error" class="modal-error" style="display: none;"></div>
       <div class="modal-actions">
-        <button id="delete-cancel-btn" class="btn btn-secondary">Отмена</button>
-        <button id="delete-confirm-btn" class="btn btn-danger">Да, удалить</button>
+        <button id="delete-cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button id="delete-confirm-btn" class="btn btn-danger">Yes, delete</button>
       </div>
     </div>
   </div>
@@ -314,27 +314,27 @@
   <!-- Import Card Modal -->
   <div id="import-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
-      <h3 class="modal-title">Импортировать карточку</h3>
+      <h3 class="modal-title">Import card</h3>
 
       <div style="margin-bottom:10px;">
-        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">ZIP-архив</label>
+        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">ZIP archive</label>
         <input type="file" id="import-file-input" accept=".zip" style="width:100%;">
       </div>
 
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--text-muted);font-size:0.8em;">
-        <hr style="flex:1;border:none;border-top:1px solid var(--vscode-border);">или<hr style="flex:1;border:none;border-top:1px solid var(--vscode-border);">
+        <hr style="flex:1;border:none;border-top:1px solid var(--vscode-border);">or<hr style="flex:1;border:none;border-top:1px solid var(--vscode-border);">
       </div>
 
       <div style="margin-bottom:12px;">
-        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">Папка карточки</label>
+        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">Card folder</label>
         <input type="file" id="import-folder-input" webkitdirectory style="width:100%;">
-        <div style="font-size:0.75em;color:var(--text-muted);margin-top:3px;">node_modules и .git будут пропущены автоматически</div>
+        <div style="font-size:0.75em;color:var(--text-muted);margin-top:3px;">node_modules and .git are skipped automatically</div>
       </div>
 
       <div id="import-modal-error" class="modal-error" style="display: none;"></div>
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeImportModal()">Отмена</button>
-        <button id="import-submit-btn" class="btn btn-primary" onclick="submitImport()">Импортировать</button>
+        <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+        <button id="import-submit-btn" class="btn btn-primary" onclick="submitImport()">Import</button>
       </div>
     </div>
   </div>
