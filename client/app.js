@@ -197,6 +197,7 @@ function renderCardItem(card) {
       </div>
       <div class="app-card-actions">
         <button class="btn btn-sm btn-secondary" onclick="handleEditCard('${slug}')">Редактировать</button>
+        <button class="btn btn-sm btn-secondary" onclick="handleCloneCard('${slug}')">Clone</button>
         <button class="btn btn-sm btn-primary" onclick="handlePreviewCard('${slug}')">Preview</button>
         <button class="btn btn-sm btn-danger-outline" onclick="handleDeleteCard('${slug}', '${name}')">Стереть</button>
       </div>
@@ -329,6 +330,76 @@ function cancelEditMode() {
 
 function handleImportCard() {
   document.getElementById('import-modal').style.display = 'flex';
+}
+
+function handleCloneCard(slug) {
+  document.getElementById('clone-source-slug').textContent = slug;
+  document.getElementById('clone-new-slug').value = '';
+  const err = document.getElementById('clone-modal-error');
+  err.style.display = 'none';
+  err.textContent = '';
+  document.getElementById('clone-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('clone-new-slug').focus(), 50);
+}
+
+function closeCloneModal() {
+  document.getElementById('clone-modal').style.display = 'none';
+}
+
+async function submitClone() {
+  const sourceSlug = document.getElementById('clone-source-slug').textContent;
+  const newSlug = document.getElementById('clone-new-slug').value.trim();
+  const errEl = document.getElementById('clone-modal-error');
+
+  if (!newSlug) {
+    errEl.textContent = 'Введите новый slug';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(newSlug)) {
+    errEl.textContent = 'Slug должен быть kebab-case (только строчные буквы, цифры, дефисы)';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('clone-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Cloning...';
+  errEl.style.display = 'none';
+  closeCloneModal();
+  showLoading('Cloning card…');
+
+  try {
+    const res = await fetch(`/api/cards/${encodeURIComponent(sourceSlug)}/clone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newSlug })
+    });
+    const data = await res.json();
+    if (data.success) {
+      hideLoading();
+      loadCards();
+      showStatus(`Cloned → ${newSlug}`, 'success');
+    } else {
+      hideLoading();
+      // Reopen modal to show error
+      handleCloneCard(sourceSlug);
+      document.getElementById('clone-new-slug').value = newSlug;
+      const e2 = document.getElementById('clone-modal-error');
+      e2.textContent = data.message || 'Ошибка клонирования';
+      e2.style.display = 'block';
+    }
+  } catch (e) {
+    hideLoading();
+    handleCloneCard(sourceSlug);
+    document.getElementById('clone-new-slug').value = newSlug;
+    const e2 = document.getElementById('clone-modal-error');
+    e2.textContent = `Ошибка: ${e.message}`;
+    e2.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Clone';
+  }
 }
 
 function closeImportModal() {

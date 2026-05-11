@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import { mkdirSync, existsSync, writeFileSync } from 'fs';
-import { rm, readFile, readdir, cp } from 'fs/promises';
+import { rm, readFile, readdir, writeFile, cp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { promisify } from 'util';
 import AdmZip from 'adm-zip';
@@ -72,7 +72,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../client')));
 
 // SPA fallback: serve index.html for client-side routes
-app.get('/settings', (req, res) => {
+app.get(['/settings', '/my-apps'], (req, res) => {
   res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 
@@ -305,6 +305,75 @@ app.post('/api/cards/:slug/preview', async (req, res) => {
     res.json({ success: true, url: `http://localhost:${port}/test/manual/index.html` });
   } catch (e) {
     console.error('[Cards] preview error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/cards/:slug/clone', async (req, res) => {
+  const { slug } = req.params;
+  const { newSlug } = req.body;
+
+  if (!newSlug || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(newSlug)) {
+    return res.status(400).json({ success: false, message: 'Invalid slug format' });
+  }
+
+  const sourceDir = path.join(CARDS_DIR, slug);
+  const destDir = path.join(CARDS_DIR, newSlug);
+
+  if (!existsSync(sourceDir)) {
+    return res.status(404).json({ success: false, message: `Card "${slug}" not found` });
+  }
+  if (existsSync(destDir)) {
+    return res.status(409).json({ success: false, message: `Card "${newSlug}" already exists` });
+  }
+
+  try {
+    await cp(sourceDir, destDir, { recursive: true });
+
+    const oldDot = slug.replace(/-/g, '.');
+    const newDot = newSlug.replace(/-/g, '.');
+    const oldSlash = slug.replace(/-/g, '/');
+    const newSlash = newSlug.replace(/-/g, '/');
+
+    // Longest forms first to avoid partial matches
+    const replacements = [
+      [`com.sap.partner.wz.${oldDot}`, `com.sap.partner.wz.${newDot}`],
+      [`com/sap/partner/wz/${oldSlash}`, `com/sap/partner/wz/${newSlash}`],
+      [slug, newSlug],
+    ];
+
+    const TEXT_EXTS = new Set(['.js', '.xml', '.json', '.yaml', '.yml', '.md', '.html', '.css', '.txt']);
+    const SKIP_DIRS = new Set(['node_modules', '.git']);
+
+    async function processDir(dir) {
+      const entries = await readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          if (!SKIP_DIRS.has(entry.name)) await processDir(path.join(dir, entry.name));
+        } else if (entry.isFile() && TEXT_EXTS.has(path.extname(entry.name).toLowerCase())) {
+          const filePath = path.join(dir, entry.name);
+          try {
+            let content = await readFile(filePath, 'utf8');
+            let changed = false;
+            for (const [from, to] of replacements) {
+              if (content.includes(from)) { content = content.split(from).join(to); changed = true; }
+            }
+            if (changed) await writeFile(filePath, content, 'utf8');
+          } catch { /* skip non-utf8 binary */ }
+        }
+      }
+    }
+
+    await processDir(destDir);
+
+    const sourceEntry = cardsRegistry.readRegistry().find(e => e.slug === slug);
+    const name = sourceEntry?.name ? `${sourceEntry.name} (clone)` : newSlug;
+    cardsRegistry.registerCard({ slug: newSlug, name });
+
+    res.json({ success: true, slug: newSlug, name });
+  } catch (e) {
+    console.error('[Cards] clone error:', e.message);
+    if (existsSync(destDir)) await rm(destDir, { recursive: true, force: true }).catch(() => {});
     res.status(500).json({ success: false, message: e.message });
   }
 });
