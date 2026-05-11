@@ -182,9 +182,13 @@ function renderCardItem(card) {
   const modified = formatDate(card.lastModified);
   const slug = escapeHtml(card.slug);
   const name = escapeHtml(card.name);
+  const idBadge = card.id
+    ? `<span class="app-card-number" title="Click to copy #${card.id}" onclick="copyCardId(${card.id})" style="cursor:pointer">#${card.id}</span>`
+    : '';
   return `
     <div class="app-card" data-card-slug="${slug}">
       <div class="app-card-header">
+        ${idBadge}
         <span class="app-card-id">${name}</span>
         <span class="app-card-date">${created}</span>
       </div>
@@ -914,6 +918,7 @@ function renderSpecReview(state) {
     parts.push('<h4>Integration Card</h4>');
     parts.push('<ul>');
     parts.push('<li><strong>Card:</strong> ' + escapeHtml(spec.cardTitle || spec.cardSlug) + '</li>');
+    parts.push('<li><strong>Folder:</strong> <code>' + escapeHtml(spec.cardSlug) + '</code></li>');
     parts.push('<li><strong>Destination:</strong> ' + escapeHtml(spec.destinationName || '—') + '</li>');
     parts.push('<li><strong>Protocol:</strong> ' + escapeHtml(spec.protocol || '—') + '</li>');
     parts.push('<li><strong>Controls:</strong> ' + escapeHtml((spec.viewControls || []).join(', ') || '—') + '</li>');
@@ -1360,6 +1365,15 @@ function formatTime(seconds) {
 
 // ============================================================================
 // ── Utilities ─────────────────────────────────────────────────────────────────
+
+async function copyCardId(id) {
+  try {
+    await navigator.clipboard.writeText(`#${id}`);
+    showStatus(`#${id} copied`, 'success');
+  } catch {
+    showStatus('Failed to copy', 'error');
+  }
+}
 
 function escapeHtml(str) {
   if (str == null) return '';

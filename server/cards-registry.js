@@ -8,7 +8,15 @@ const REGISTRY_PATH = path.join(__dirname, '../cards-registry.json');
 function read() {
 	if (!existsSync(REGISTRY_PATH)) return [];
 	try {
-		return JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
+		const entries = JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
+		// One-time migration: assign sequential IDs to entries that don't have one
+		let maxId = entries.reduce((m, e) => e.id ? Math.max(m, e.id) : m, 0);
+		let dirty = false;
+		for (const e of entries) {
+			if (!e.id) { e.id = ++maxId; dirty = true; }
+		}
+		if (dirty) writeFileSync(REGISTRY_PATH, JSON.stringify(entries, null, 2), 'utf8');
+		return entries;
 	} catch {
 		return [];
 	}
@@ -30,7 +38,8 @@ export function registerCard({ slug, name }) {
 		entries[existing].lastModified = now;
 		entries[existing].name = name || entries[existing].name;
 	} else {
-		entries.push({ slug, name: name || slug, createdAt: now, lastModified: now });
+		const newId = entries.reduce((m, e) => e.id ? Math.max(m, e.id) : m, 0) + 1;
+		entries.push({ id: newId, slug, name: name || slug, createdAt: now, lastModified: now });
 	}
 	write(entries);
 }

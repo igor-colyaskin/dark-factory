@@ -274,12 +274,25 @@ class Orchestrator {
   }
 
   /**
-   * Detect "На основе #N:" prefix, look up the referenced app and read its SPEC.md.
+   * Detect #NNN in the order, find the card by id, return its spec.json as a string.
    * Non-blocking: returns null on any failure so the order proceeds normally.
-   * @returns {Promise<string|null>} spec content or null
+   * @returns {Promise<string|null>}
    */
   async resolveReferenceSpec(orderDescription) {
-    return null; // appsStore removed — reference feature not supported in IC profile
+    const match = orderDescription.match(/#(\d+)/);
+    if (!match) return null;
+    const refId = parseInt(match[1], 10);
+    const entries = cardsRegistry.readRegistry();
+    const entry = entries.find(e => e.id === refId);
+    if (!entry) {
+      throw new Error(`Card #${refId} not found`);
+    }
+    const specPath = path.join(__dirname, '../cards', entry.slug, 'spec.json');
+    try {
+      return await fs.readFile(specPath, 'utf-8');
+    } catch {
+      throw new Error(`Card #${refId} (${entry.slug}) has no spec.json — cannot use as reference`);
+    }
   }
 
   // Start processing order
