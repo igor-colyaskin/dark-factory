@@ -35,26 +35,26 @@
 **Синхронизация документации (начало сессии):**
 - CONCEPT.md §8, ROADMAP.md, backlog.md EDT-001, memory/project_state_v04.md, memory/ic_roadmap.md — все приведены в соответствие с реальным состоянием v0.13
 
-**UX-009 итерация — UI polish (не закоммичено):**
+**UX-009 итерация — UI polish (закоммичено ✅):**
 
 Pickup-блок:
-- Убран `deploy-error-section` (предупреждение «Deploy Failed») — для IC-карточек deployer:none, секция никогда не была нужна. Удалено из HTML, JS, CSS.
+- Убран `deploy-error-section` — для IC deployer:none секция никогда не была нужна
 - Убран вспомогательный текст под «Application Successfully Created!»
-- Preview Card + New Order объединены в один ряд `.pickup-actions`; обёртка `#sandbox-preview` удалена, кнопка `#sandbox-preview-btn` показывается/скрывается напрямую
+- Preview Card + New Order объединены в один ряд `.pickup-actions`
 
 Verification-блок:
-- Теперь `<details>/<summary>` — схлопнут по умолчанию; verdict виден в заголовке; стрелка ▶ показывает состояние
+- `<details>/<summary>` — схлопнут по умолчанию; verdict виден в заголовке; стрелка ▶
 - Исправлено выравнивание: стрелка + «Verification» слева (gap), verdict — `margin-left: auto`
 
 Spec Review:
-- Блок «Integration Card» (заголовок) удалён; IC-поля (Card, Folder, Destination, Protocol, Controls, Fields, Tests, Docs) перенесены в левую колонку под Summary
-- Горизонтальный layout: левая колонка = Summary + IC-поля, правая = Clarifications (`.spec-top-row` flex)
+- Блок «Integration Card» (заголовок секции) удалён; IC-поля остались в левой колонке под Summary
+- Горизонтальный layout: `.spec-top-row` flex — [Summary + IC-поля | Clarifications]
 
-Status message (MessageStrip):
-- Исправлена скобка-артефакт: `border-radius: 6px` → `border-radius: 0 4px 4px 0` (левая сторона квадратная, скруглённый `border-left` давал визуальный `(`)
+Status message:
+- `border-radius: 0 4px 4px 0` — убирает визуальный артефакт «(» от скруглённого `border-left`
 
 Total-строка таблицы:
-- `padding: 8px 10px` → `padding: 8px 10px 12px` (нижнее поле выровнено с боковыми)
+- `padding-bottom: 12px` (было 8px) — балансирует с боковыми полями 10px
 
 **Стратегия демо — UI (без изменений):**
 - Главная страница будет иметь три тайла: Generate / Clone / Import (UX-009 будущая итерация)
