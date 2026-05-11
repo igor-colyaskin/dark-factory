@@ -21,56 +21,45 @@
 - TPL-002 ✅ Автовывод slug + конвенция namespace/папка
 - UX-007 ✅ ID карточек + ссылки #NNN в заказе
 - UX-006 ✅ Импорт папки (webkitdirectory + /api/cards/import-folder)
+- EDT-001 ✅ Clone card — детерминированный rename без LLM
+- UX-009 ✅ UI polish — английский, max-width 960px, phase status cards
 
 **Осталось до демо:**
 
-| # | ID | Задача | Оценка |
-|---|----|--------|--------|
-| 1 | EDT-001 | Rename slug через Edit (детерминированный, без LLM) | ~2-3 ч |
-| 2 | UX-009 | UI polish | ~2-3 ч |
+Формальный бэклог закрыт. Идём по UX-009 итеративно — Игорь запускает, замечает, правим.
 
 ---
 
-## Находки последней сессии (2026-05-11 #7)
+## Находки последней сессии (2026-05-11 #9)
 
-**UX-007 закрыт:**
-- `cards-registry.js`: auto-increment `id`, одноразовая миграция в `read()` — существующие карточки получают ID при первом обращении
-- `orchestrator.js`: `resolveReferenceSpec` — парсит `#NNN`, загружает `cards/{slug}/spec.json`; бросает ошибку (не null) если карточка не найдена или нет spec.json
-- `client/app.js`: badge `#N` на карточке (кликабельный, копирует в буфер), `copyCardId()`
-- `client/index.html`: `status-message` перенесён из `manufacturing-block` в `page-order` — был невидим когда родительский блок `display:none`
+**Синхронизация документации (начало сессии):**
+- CONCEPT.md §8, ROADMAP.md, backlog.md EDT-001, memory/project_state_v04.md, memory/ic_roadmap.md — все приведены в соответствие с реальным состоянием v0.13
 
-**UX-006 закрыт:**
-- Import modal: два input — zip и folder (`webkitdirectory`), кнопка «Импортировать» определяет тип автоматически
-- `submitImportFolder()`: фильтрует `node_modules`/`.git`, читает файлы как base64, отправляет JSON
-- `/api/cards/import-folder`: записывает в tmpDir, валидирует `src/manifest.json`, копирует в `cards/{slug}/`
-- `express.json` лимит увеличен до 10mb
+**UX-009 итерация — UI polish (не закоммичено):**
 
-**EDT-001 — обнаружен и добавлен в backlog:**
-- Rename slug через Edit: delta-architect видит задачу, но возвращает `files: []` — ничего не меняется
-- Предлагаемый подход: детерминированный server-side rename (find-and-replace трёх форм namespace), без LLM
+Pickup-блок:
+- Убран `deploy-error-section` (предупреждение «Deploy Failed») — для IC-карточек deployer:none, секция никогда не была нужна. Удалено из HTML, JS, CSS.
+- Убран вспомогательный текст под «Application Successfully Created!»
+- Preview Card + New Order объединены в один ряд `.pickup-actions`; обёртка `#sandbox-preview` удалена, кнопка `#sandbox-preview-btn` показывается/скрывается напрямую
 
-**sandbox-manager.js — skip npm install:**
-- `npm install --prefer-offline` теперь запускается только если `node_modules` не существует
-- Повторные Preview на той же карточке — мгновенные
+Verification-блок:
+- Теперь `<details>/<summary>` — схлопнут по умолчанию; verdict виден в заголовке; стрелка ▶ показывает состояние
+- Исправлено выравнивание: стрелка + «Verification» слева (gap), verdict — `margin-left: auto`
 
-**TPL-002 закрыт:**
-- `cardSlug` = название папки (единственный источник истины), kebab-case, суффикс `-card`/`-table`
-- Namespace: `cardSlug` с точками → `com.sap.partner.wz.<slug-with-dots>` (дефисы → точки)
-- Import paths: дефисы → слэши → `com/sap/partner/wz/<slug-with-slashes>/...`
-- Архитектор выводит slug из описания, задаёт **обязательный вопрос** `q_slug` в финальном раунде (вместе с tests/docs)
-- Spec Review показывает `Folder: <cardSlug>`
+Spec Review:
+- Блок «Integration Card» (заголовок) удалён; IC-поля (Card, Folder, Destination, Protocol, Controls, Fields, Tests, Docs) перенесены в левую колонку под Summary
+- Горизонтальный layout: левая колонка = Summary + IC-поля, правая = Clarifications (`.spec-top-row` flex)
 
-**Баг namespace в View.view.xml — исправлен:**
-- LLM получает `cardNamespace: "pp.points.card"` (предвычисленное, без дефисов) в spec
-- Добавлено в `generateUserPrompt()` и `generateViewUserPrompt()`
-- `viewGeneratorSystemPrompt` обновлён: явное правило использовать `spec.cardNamespace`
-- Статические файлы: умная `sub()` — `com.sap.partner.wz.SLUG` → через `slugDot`, `com/sap/partner/wz/SLUG` → через `slugPath`
+Status message (MessageStrip):
+- Исправлена скобка-артефакт: `border-radius: 6px` → `border-radius: 0 4px 4px 0` (левая сторона квадратная, скруглённый `border-left` давал визуальный `(`)
 
-**Конвенция зафиксирована в:**
-- `server/prompts/integration-card/architect.js` — правила slug, q_slug в Output Questions Round
-- `server/prompts/integration-card/developer.js` — cardNamespace, sub(), viewGeneratorSystemPrompt
-- `client/app.js` — Folder в Spec Review
-- `docs/contracts.md` — slug convention section
+Total-строка таблицы:
+- `padding: 8px 10px` → `padding: 8px 10px 12px` (нижнее поле выровнено с боковыми)
+
+**Стратегия демо — UI (без изменений):**
+- Главная страница будет иметь три тайла: Generate / Clone / Import (UX-009 будущая итерация)
+- My Apps — только управление существующими; кнопки создания уберём (UX-009 будущая итерация)
+- Текущий приоритет — итеративный UX-009 по мере обнаружения во время прогонов
 
 ---
 
@@ -83,7 +72,7 @@
 | `docs/contracts.md` | контракты агентов, IC spec fields |
 | `docs/log.md` | архив решений и закрытых фаз |
 | `docs/DEMO.md` | план питча тимлиду |
-| `server/index.js` | pipeline wiring, IC workspace, /api/cards, /api/edit |
+| `server/index.js` | pipeline wiring, IC workspace, /api/cards, /api/edit, /api/cards/:slug/clone |
 | `server/orchestrator.js` | state machine, editMode, archiveApp |
 | `server/sandbox-manager.js` | ui5 serve, skip install if node_modules exists |
 | `server/prompts/integration-card/architect.js` | IC Architect system + user prompt |
@@ -91,6 +80,9 @@
 | `server/prompts/integration-card/delta-architect.js` | edit mode: patch-spec |
 | `server/prompts/integration-card/sdk-stubs/` | SDK-стабы для offline dev/test |
 | `server/cards-registry.js` | CRUD реестра cards-registry.json |
+| `client/app.js` | UI логика, PHASE_CONFIGS, showPhaseStatus |
+| `client/index.html` | разметка, #phase-status div |
+| `client/styles.css` | стили, .phase-status варианты цветов |
 
 ---
 

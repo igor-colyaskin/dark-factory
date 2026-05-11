@@ -7,20 +7,14 @@
 
 ## Edit Mode
 
-### [EDT-001] Переименование slug через Edit
-**Источник:** сессия 2026-05-11 #7 — обнаружен в ходе тестирования импорта папки
-**Суть:** Пользователь просит переименовать папку/slug карточки через Edit.
-Delta-architect правильно определяет `filesToModify`, но возвращает `files: []` — developer'у нечего записывать.
-Переименование slug — сквозное изменение: namespace (dotted), import paths (slashed), package.json, ui5.yaml, реестр, папка.
+### [EDT-001] ✅ Clone card (без LLM)
+**Реализован:** сессия 2026-05-11 #8
+**Суть:** Clone — отдельная workspace-операция, не через Edit/delta-architect.
+`POST /api/cards/:slug/clone` — `cp` + детерминированный find-and-replace трёх форм namespace (kebab/dot/slash) по всем текстовым файлам. Rename папки, обновление реестра.
+UI: кнопка Clone на карточке в My Apps + модалка с полем new slug + валидация kebab-case.
+SPA fix: `/my-apps` добавлен в Express SPA fallback (был 404 после рестарта).
 
-**Предлагаемый подход (без LLM):**
-- `delta-architect.js`: при запросе на rename slug → `specChanges: { cardSlug: "new-slug" }`, `files: []`
-- `server/index.js`: при `specChanges.cardSlug` в patch-spec → запустить `renameCardSlug()` вместо developer
-- `renameCardSlug()`: проход по всем текстовым файлам, замена трёх строковых форм (kebab, dot, slash), rename папки, update registry + spec.json
-
-**Риск:** нестандартные namespace-паттерны в импортированных картах. Гарантированно работает только для карт DF-конвенции.
-**Оценка:** ~2-3 ч
-**Приоритет:** высокий — **до демо**
+**Решение по rename-via-Edit (оригинальная постановка):** отдельный rename через Edit нецелесообразен — LLM не справляется со сквозным переименованием. Clone покрывает нужду: скопировал → переименовал → доработал через Edit.
 
 ---
 
