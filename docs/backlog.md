@@ -5,7 +5,24 @@
 
 ---
 
-## IC Template
+## Edit Mode
+
+### [EDT-001] Переименование slug через Edit
+**Источник:** сессия 2026-05-11 #7 — обнаружен в ходе тестирования импорта папки
+**Суть:** Пользователь просит переименовать папку/slug карточки через Edit.
+Delta-architect правильно определяет `filesToModify`, но возвращает `files: []` — developer'у нечего записывать.
+Переименование slug — сквозное изменение: namespace (dotted), import paths (slashed), package.json, ui5.yaml, реестр, папка.
+
+**Предлагаемый подход (без LLM):**
+- `delta-architect.js`: при запросе на rename slug → `specChanges: { cardSlug: "new-slug" }`, `files: []`
+- `server/index.js`: при `specChanges.cardSlug` в patch-spec → запустить `renameCardSlug()` вместо developer
+- `renameCardSlug()`: проход по всем текстовым файлам, замена трёх строковых форм (kebab, dot, slash), rename папки, update registry + spec.json
+
+**Риск:** нестандартные namespace-паттерны в импортированных картах. Гарантированно работает только для карт DF-конвенции.
+**Оценка:** ~2-3 ч
+**Приоритет:** высокий — **до демо**
+
+---
 
 ### [TPL-001] Проверить и исправить меню «три точки» в шаблонах
 **Источник:** рабочий проект, сессия 2026-05-08

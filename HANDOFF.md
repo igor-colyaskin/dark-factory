@@ -20,12 +20,13 @@
 - TPL-004 ✅ protocol + viewControls[] — layout удалён, предупреждение при > 3 контролах
 - TPL-002 ✅ Автовывод slug + конвенция namespace/папка
 - UX-007 ✅ ID карточек + ссылки #NNN в заказе
+- UX-006 ✅ Импорт папки (webkitdirectory + /api/cards/import-folder)
 
 **Осталось до демо:**
 
 | # | ID | Задача | Оценка |
 |---|----|--------|--------|
-| 1 | UX-006 | Импорт папки | ~3 ч |
+| 1 | EDT-001 | Rename slug через Edit (детерминированный, без LLM) | ~2-3 ч |
 | 2 | UX-009 | UI polish | ~2-3 ч |
 
 ---
@@ -37,6 +38,16 @@
 - `orchestrator.js`: `resolveReferenceSpec` — парсит `#NNN`, загружает `cards/{slug}/spec.json`; бросает ошибку (не null) если карточка не найдена или нет spec.json
 - `client/app.js`: badge `#N` на карточке (кликабельный, копирует в буфер), `copyCardId()`
 - `client/index.html`: `status-message` перенесён из `manufacturing-block` в `page-order` — был невидим когда родительский блок `display:none`
+
+**UX-006 закрыт:**
+- Import modal: два input — zip и folder (`webkitdirectory`), кнопка «Импортировать» определяет тип автоматически
+- `submitImportFolder()`: фильтрует `node_modules`/`.git`, читает файлы как base64, отправляет JSON
+- `/api/cards/import-folder`: записывает в tmpDir, валидирует `src/manifest.json`, копирует в `cards/{slug}/`
+- `express.json` лимит увеличен до 10mb
+
+**EDT-001 — обнаружен и добавлен в backlog:**
+- Rename slug через Edit: delta-architect видит задачу, но возвращает `files: []` — ничего не меняется
+- Предлагаемый подход: детерминированный server-side rename (find-and-replace трёх форм namespace), без LLM
 
 **sandbox-manager.js — skip npm install:**
 - `npm install --prefer-offline` теперь запускается только если `node_modules` не существует
