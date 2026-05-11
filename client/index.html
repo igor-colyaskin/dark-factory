@@ -44,16 +44,48 @@
     <main class="workspace">
       <!-- Page: Order -->
       <div id="page-order" class="page">
+
+        <!-- HUB: entry point tiles (visible when IDLE) -->
+        <div id="hub-section">
+          <div class="hub-tiles">
+            <button class="hub-tile" onclick="handleGenerateTile()">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <div class="hub-tile-label">Generate</div>
+              <div class="hub-tile-desc">Create a new card from description</div>
+            </button>
+            <button class="hub-tile" onclick="handleCloneTile()">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <div class="hub-tile-label">Clone</div>
+              <div class="hub-tile-desc">Copy and customize an existing card</div>
+            </button>
+            <button class="hub-tile" onclick="handleImportTile()">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                <line x1="12" y1="11" x2="12" y2="17"/>
+                <polyline points="9 14 12 11 15 14"/>
+              </svg>
+              <div class="hub-tile-label">Import</div>
+              <div class="hub-tile-desc">Import a card from ZIP or folder</div>
+            </button>
+          </div>
+        </div>
+
         <!-- BLOCK 1: ORDER -->
-        <section id="order-block" class="block order-block">
-          <div class="block-header">
+        <section id="order-block" class="block order-block" style="display:none;">
+          <div class="block-header" style="display:flex;align-items:center;gap:10px;">
+            <button id="order-back-btn" class="btn-back" onclick="cancelEditMode(); showHub()" title="Back to hub">←</button>
             <h2 id="order-title">📝 Order</h2>
           </div>
 
           <!-- Edit mode banner -->
           <div id="edit-mode-banner" style="display:none;background:var(--accent-bg,#e8f0fe);border:1px solid var(--accent-border,#c0d0f8);border-radius:6px;padding:8px 12px;margin:0 16px 8px;display:none;flex-direction:row;align-items:center;gap:8px;font-size:0.9em;">
             ✏️ Editing: <strong id="edit-mode-card-name"></strong>
-            <button onclick="cancelEditMode()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1em;line-height:1;" title="Cancel">×</button>
+            <button onclick="cancelEditMode(); showHub()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1em;line-height:1;" title="Cancel">×</button>
           </div>
 
           <div class="block-content">
@@ -70,7 +102,7 @@
                   📎 Mockup
                   <input type="file" id="mockup-file-input" accept=".png,.jpg,.jpeg,.webp" style="display:none;">
                 </label>
-                <span style="font-size:0.8em;color:var(--text-muted)">PNG, JPG, WEBP · max 5 MB</span>
+                <span style="font-size:0.8em;color:var(--text-muted);margin-left:10px;">PNG, JPG, WEBP · max 5 MB</span>
               </div>
               <span id="mockup-error" style="display:none;font-size:0.8em;color:#c00;margin-top:4px;display:block"></span>
 
@@ -181,7 +213,7 @@
         </section>
 
         <!-- Status Messages (outside all blocks so always visible) -->
-        <div id="status-message" class="status-message"></div>
+        <div id="status-message" class="status-message" style="display:none;"></div>
 
         <!-- BLOCK 3: PICKUP (hidden initially) -->
         <section id="pickup-block" class="block pickup-block" style="display: none;">
@@ -252,7 +284,7 @@
             <!-- VIZ-001: IC sandbox preview + new order — one action row -->
             <div class="pickup-actions">
               <button id="sandbox-preview-btn" class="btn btn-primary" style="display:none;" onclick="handleSandboxPreview()">
-                ▶ Preview Card
+                Preview Card
               </button>
               <button id="new-order-btn" class="btn btn-outline">
                 + New Order
@@ -266,12 +298,8 @@
       <!-- Page: Products -->
       <div id="page-products" class="page" style="display: none;">
         <section class="block products-block">
-          <div class="block-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div class="block-header">
             <h2>📦 My Apps</h2>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-sm btn-secondary" onclick="handleImportCard()">↑ Import</button>
-              <button class="btn btn-sm btn-primary" onclick="switchTab('order')">+ New Card</button>
-            </div>
           </div>
           <div class="block-content">
             <div id="products-list"></div>

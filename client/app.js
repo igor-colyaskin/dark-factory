@@ -150,6 +150,31 @@ function switchTab(tabName, { updateUrl = true } = {}) {
   }
 }
 
+// ── Hub ───────────────────────────────────────────────────────────────────────
+
+function showHub() {
+  document.getElementById('hub-section').style.display = 'block';
+  document.getElementById('order-block').style.display = 'none';
+}
+
+function hideHub() {
+  document.getElementById('hub-section').style.display = 'none';
+  document.getElementById('order-block').style.display = 'block';
+}
+
+function handleGenerateTile() {
+  hideHub();
+  orderInput.focus();
+}
+
+function handleCloneTile() {
+  switchTab('products');
+}
+
+function handleImportTile() {
+  handleImportCard();
+}
+
 // ── IC Cards (My Apps) ────────────────────────────────────────────────────────
 
 let cardsCache = [];
@@ -278,6 +303,7 @@ function handleEditCard(slug) {
   editingName = card?.name || slug;
 
   switchTab('order');
+  hideHub();
 
   // Reset order page to clean input state (previous order may have left it in display mode)
   orderForm.style.display = 'flex';
@@ -729,6 +755,10 @@ function updateOrderBlockAfterSubmit(orderText) {
     orderTitle.textContent = '📝 Your Order';
   }
 
+  // Hide back button (order in progress)
+  const backBtn = document.getElementById('order-back-btn');
+  if (backBtn) backBtn.style.display = 'none';
+
   // Hide form
   const orderForm = document.getElementById('order-form');
   if (orderForm) {
@@ -815,6 +845,11 @@ function updateUI(state) {
   specReviewSection.style.display = 'none';
   deployInfo.style.display = 'none';
 
+  // Hide hub whenever we enter an active state
+  if (state.state !== 'IDLE') {
+    hideHub();
+  }
+
   switch (state.state) {
     case 'IDLE':
       hideLoading();
@@ -825,12 +860,18 @@ function updateUI(state) {
       orderForm.style.display = 'flex';
       var orderDisplay = document.getElementById('order-display');
       if (orderDisplay) orderDisplay.style.display = 'none';
-      // Apply prefill from "Повторить с изменениями"
+      // Restore back button
+      var backBtn = document.getElementById('order-back-btn');
+      if (backBtn) backBtn.style.display = '';
+      // Apply prefill from "Repeat with changes" — show form directly
       if (pendingOrderPrefill) {
+        hideHub();
         orderInput.value = pendingOrderPrefill;
         pendingOrderPrefill = null;
         orderInput.focus();
         orderInput.setSelectionRange(orderInput.value.length, orderInput.value.length);
+      } else {
+        showHub();
       }
       break;
 
@@ -1412,7 +1453,7 @@ function showPickupBlock(state) {
   if (previewBtn) {
     previewBtn.style.display = state.currentSpec?.cardSlug ? '' : 'none';
     previewBtn.disabled = false;
-    previewBtn.textContent = '▶ Preview Card';
+    previewBtn.textContent = 'Preview Card';
   }
 }
 

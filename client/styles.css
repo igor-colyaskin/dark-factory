@@ -929,11 +929,12 @@ details[open] .vr-summary::before {
 .btn-secondary {
   background: var(--vscode-active-bg);
   color: var(--vscode-text);
-  border: 1px solid var(--vscode-border);
+  border: 1px solid #606065;
 }
 
 .btn-secondary:hover:not(:disabled) {
   background: var(--vscode-hover-bg);
+  border-color: #858585;
 }
 
 .btn-outline {
@@ -1079,6 +1080,8 @@ details[open] .vr-summary::before {
 .btn-sm {
   padding: 4px 12px;
   font-size: 11px;
+  min-width: 58px;
+  text-align: center;
 }
 
 .btn-danger-outline {
@@ -1131,6 +1134,37 @@ details[open] .vr-summary::before {
   margin: 0;
   line-height: 1.5;
   color: var(--vscode-text);
+}
+
+/* File inputs — dark theme */
+input[type="file"] {
+  background: var(--vscode-editor-bg);
+  color: var(--vscode-text);
+  border: 1px solid #606065;
+  border-radius: 4px;
+  padding: 7px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--vscode-active-bg);
+  color: var(--vscode-text);
+  border: 1px solid #606065;
+  border-radius: 3px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.15s;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--vscode-hover-bg);
 }
 
 /* Modal Overlay */
@@ -1468,6 +1502,90 @@ details[open] .vr-summary::before {
   justify-content: flex-end;
   padding-top: 10px;
   border-top: 1px solid var(--vscode-border);
+}
+
+/* Back button in order block header */
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--vscode-text);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px 8px;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.btn-back:hover {
+  color: var(--vscode-accent);
+  background: var(--vscode-hover-bg);
+}
+
+/* Hub tiles */
+#hub-section {
+  padding-top: 30vh;
+  padding-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hub-tiles {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.hub-tile {
+  flex: 1;
+  max-width: 260px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 20px;
+  background: var(--vscode-sidebar-bg);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  color: var(--vscode-text-secondary);
+}
+
+.hub-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Generate — amber */
+.hub-tile:nth-child(1) { border-color: #d19a00; }
+.hub-tile:nth-child(1) svg { color: #d19a00; }
+.hub-tile:nth-child(1):hover { background: rgba(209, 154, 0, 0.07); }
+
+/* Clone — purple */
+.hub-tile:nth-child(2) { border-color: #9876d6; }
+.hub-tile:nth-child(2) svg { color: #9876d6; }
+.hub-tile:nth-child(2):hover { background: rgba(152, 118, 214, 0.07); }
+
+/* Import — teal */
+.hub-tile:nth-child(3) { border-color: #00a896; }
+.hub-tile:nth-child(3) svg { color: #00a896; }
+.hub-tile:nth-child(3):hover { background: rgba(0, 168, 150, 0.07); }
+
+.hub-tile-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--vscode-text);
+}
+
+.hub-tile-desc {
+  font-size: 11px;
+  color: var(--vscode-text-secondary);
+  text-align: center;
+  line-height: 1.4;
 }
 
 /* Responsive */
