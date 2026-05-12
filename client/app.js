@@ -431,6 +431,7 @@ function closeImportModal() {
   document.getElementById('import-modal').style.display = 'none';
   document.getElementById('import-file-input').value = '';
   document.getElementById('import-folder-input').value = '';
+  document.getElementById('import-path-input').value = '';
   const err = document.getElementById('import-modal-error');
   err.style.display = 'none';
   err.textContent = '';
@@ -439,12 +440,41 @@ function closeImportModal() {
 async function submitImport() {
   const folderInput = document.getElementById('import-folder-input');
   const zipInput = document.getElementById('import-file-input');
-  if (folderInput.files.length > 0) {
+  const pathInput = document.getElementById('import-path-input').value.trim();
+  if (pathInput) {
+    await submitImportPath(pathInput);
+  } else if (folderInput.files.length > 0) {
     await submitImportFolder(folderInput.files);
   } else if (zipInput.files[0]) {
     await submitImportZip(zipInput.files[0]);
   } else {
-    showImportError('Select a ZIP file or folder');
+    showImportError('Select a ZIP file, folder, or enter a local path');
+  }
+}
+
+async function submitImportPath(sourcePath) {
+  const btn = document.getElementById('import-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Importing...';
+  document.getElementById('import-modal-error').style.display = 'none';
+  try {
+    const res = await fetch('/api/cards/import-path', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourcePath })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeImportModal();
+      loadCards();
+    } else {
+      showImportError(data.message || 'Import failed');
+    }
+  } catch (e) {
+    showImportError(`Error: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Import';
   }
 }
 
@@ -491,7 +521,13 @@ async function submitImportFolder(fileList) {
       const relativePath = parts.slice(1).join('/');
       if (!relativePath) continue;
 
-      const buffer = await file.arrayBuffer();
+      let buffer;
+      try {
+        buffer = await file.arrayBuffer();
+      } catch (readErr) {
+        console.warn('Skipping unreadable file:', relativePath, readErr.message);
+        continue;
+      }
       const bytes = new Uint8Array(buffer);
       let binary = '';
       // chunk to avoid call stack overflow on large files

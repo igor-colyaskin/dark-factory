@@ -500,6 +500,54 @@ app.post('/api/cards/import-folder', async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+app.post('/api/cards/import-path', async (req, res) => {
+  const { sourcePath } = req.body;
+  if (!sourcePath || typeof sourcePath !== 'string') {
+    return res.status(400).json({ success: false, message: 'sourcePath is required' });
+  }
+
+  const normalized = path.resolve(sourcePath);
+  const manifestPath = path.join(normalized, 'src', 'manifest.json');
+
+  if (!existsSync(manifestPath)) {
+    return res.status(400).json({ success: false, message: 'Invalid card: src/manifest.json not found at that path' });
+  }
+
+  try {
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    const slug = path.basename(normalized);
+    let name = manifest?.['sap.app']?.title || slug;
+    const i18nMatch = name.match(/^\{\{([^}]+)\}\}$/);
+    if (i18nMatch) {
+      try {
+        const i18nPath = path.join(path.dirname(manifestPath), 'i18n', 'i18n.properties');
+        const i18n = await readFile(i18nPath, 'utf8');
+        const hit = i18n.match(new RegExp(`^${i18nMatch[1]}=(.+)$`, 'm'));
+        if (hit) name = hit[1].trim();
+      } catch { }
+      if (name.startsWith('{{')) name = slug;
+    }
+
+    if (!slug) {
+      return res.status(400).json({ success: false, message: 'Cannot determine card slug from sap.app.id' });
+    }
+
+    const destPath = path.join(CARDS_DIR, slug);
+    if (existsSync(destPath)) {
+      return res.status(409).json({ success: false, message: `Card "${slug}" already exists` });
+    }
+
+    await cp(normalized, destPath, { recursive: true });
+    cardsRegistry.registerCard({ slug, name });
+    res.json({ success: true, slug, name });
+  } catch (e) {
+    console.error('[Cards] import-path error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ── Edit Card (v0.11) ─────────────────────────────────────────────────────────
 
 app.post('/api/edit/:slug', async (req, res) => {

@@ -354,6 +354,16 @@
         <div style="font-size:0.75em;color:var(--text-muted);margin-top:3px;">node_modules and .git are skipped automatically</div>
       </div>
 
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--text-muted);font-size:0.8em;">
+        <hr style="flex:1;border:none;border-top:1px solid var(--vscode-border);">or<hr style="flex:1;border:none;border-top:1px solid var(--vscode-border);">
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">Local path on server</label>
+        <input type="text" id="import-path-input" placeholder="C:\projects\my-card" style="width:100%;box-sizing:border-box;">
+        <div style="font-size:0.75em;color:var(--text-muted);margin-top:3px;">Folder is read by the server directly — no file upload</div>
+      </div>
+
       <div id="import-modal-error" class="modal-error" style="display: none;"></div>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
