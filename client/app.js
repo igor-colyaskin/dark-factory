@@ -581,6 +581,139 @@ function showImportError(msg) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Chronicle ─────────────────────────────────────────────────────────────────
+
+let chronicleGenerateResult = null;
+
+function handleChronicleTile() {
+  const select = document.getElementById('chronicle-card-select');
+  select.innerHTML = '';
+  (cardsCache || []).forEach(card => {
+    const opt = document.createElement('option');
+    opt.value = card.slug;
+    opt.textContent = card.name || card.slug;
+    select.appendChild(opt);
+  });
+  document.getElementById('chronicle-git-info').style.display = 'none';
+  document.getElementById('chronicle-versions').style.display = 'none';
+  document.getElementById('chronicle-preview').style.display = 'none';
+  document.getElementById('chronicle-apply-btn').style.display = 'none';
+  document.getElementById('chronicle-generate-btn').style.display = '';
+  document.getElementById('chronicle-modal-error').style.display = 'none';
+  chronicleGenerateResult = null;
+  document.getElementById('chronicle-modal').style.display = 'flex';
+  if (select.options.length > 0) chronicleLoadInfo();
+}
+
+async function chronicleLoadInfo() {
+  const slug = document.getElementById('chronicle-card-select').value;
+  if (!slug) return;
+  try {
+    const res = await fetch(`/api/chronicle/info?slug=${encodeURIComponent(slug)}`);
+    const data = await res.json();
+    if (!data.success) return;
+
+    // Git info
+    if (data.branch) {
+      document.getElementById('chronicle-branch').textContent = data.branch;
+      document.getElementById('chronicle-last-tag').textContent = data.lastTag || '(none)';
+      document.getElementById('chronicle-commits').innerHTML = (data.commits || [])
+        .map(c => `<div>${c}</div>`).join('') || '<div style="color:var(--text-muted)">No new commits since last tag</div>';
+      document.getElementById('chronicle-git-info').style.display = 'block';
+    }
+
+    // File versions
+    const v = data.versions;
+    const lines = [
+      v.manifest  ? `manifest.json &nbsp;&nbsp; applicationVersion: <b>${v.manifest}</b>` : null,
+      v.package   ? `package.json &nbsp;&nbsp;&nbsp; version: <b>${v.package}</b>` : null,
+      v.readme    ? `README.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; last version: <b>${v.readme}</b>` : null,
+    ].filter(Boolean);
+    document.getElementById('chronicle-versions-list').innerHTML =
+      lines.map(l => `<div style="font-family:monospace;margin-bottom:2px;">${l}</div>`).join('');
+    document.getElementById('chronicle-versions').style.display = lines.length ? 'block' : 'none';
+  } catch { /* ignore */ }
+}
+
+async function chronicleGenerate() {
+  const slug = document.getElementById('chronicle-card-select').value;
+  const newVersion = document.getElementById('chronicle-new-version').value.trim();
+
+  if (!slug || !newVersion) {
+    showChronicleError('Select a card and enter the new version');
+    return;
+  }
+
+  const btn = document.getElementById('chronicle-generate-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  document.getElementById('chronicle-modal-error').style.display = 'none';
+  document.getElementById('chronicle-preview').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/chronicle/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, newVersion })
+    });
+    const data = await res.json();
+    if (!data.success) { showChronicleError(data.message); return; }
+
+    chronicleGenerateResult = data;
+    document.getElementById('chronicle-preview-summary').textContent = data.summary;
+    document.getElementById('chronicle-preview-row').textContent = data.changelogRow;
+    document.getElementById('chronicle-preview-files').innerHTML =
+      `Will update: manifest.json → <b>${newVersion}</b>, package.json → <b>${newVersion}</b>, README.md (new row), confluence.md`;
+    document.getElementById('chronicle-preview').style.display = 'block';
+    document.getElementById('chronicle-apply-btn').style.display = '';
+    btn.style.display = 'none';
+  } catch (e) {
+    showChronicleError(`Error: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate';
+  }
+}
+
+async function chronicleApply() {
+  if (!chronicleGenerateResult) return;
+  const { summary, changelogRow, confluenceSection, newVersion, date } = chronicleGenerateResult;
+  const slug = document.getElementById('chronicle-card-select').value;
+
+  const btn = document.getElementById('chronicle-apply-btn');
+  btn.disabled = true;
+  btn.textContent = 'Applying…';
+
+  try {
+    const res = await fetch('/api/chronicle/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, newVersion, changelogRow, confluenceSection, date })
+    });
+    const data = await res.json();
+    if (!data.success) { showChronicleError(data.message); return; }
+    closeChronicleModal();
+  } catch (e) {
+    showChronicleError(`Error: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Apply';
+  }
+}
+
+function closeChronicleModal() {
+  document.getElementById('chronicle-modal').style.display = 'none';
+  chronicleGenerateResult = null;
+}
+
+function showChronicleError(msg) {
+  const el = document.getElementById('chronicle-modal-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Phase Status Card
 const PHASE_CONFIGS = {
   ORDERING:     { color: 'amber',  title: 'Submitting order',   message: 'Processing your request…' },

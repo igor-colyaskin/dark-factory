@@ -72,6 +72,14 @@
               <div class="hub-tile-label">Import</div>
               <div class="hub-tile-desc">Import a card from ZIP or folder</div>
             </button>
+            <button class="hub-tile" onclick="handleChronicleTile()">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <div class="hub-tile-label">Chronicle</div>
+              <div class="hub-tile-desc">Update docs and version across files</div>
+            </button>
           </div>
         </div>
 
@@ -387,6 +395,53 @@
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeCloneModal()">Cancel</button>
         <button id="clone-submit-btn" class="btn btn-primary" onclick="submitClone()">Clone</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chronicle Modal -->
+  <div id="chronicle-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="min-width:420px;max-width:560px;">
+      <h3 class="modal-title">Chronicle</h3>
+
+      <div style="margin-bottom:10px;">
+        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">Card</label>
+        <select id="chronicle-card-select" style="width:100%;box-sizing:border-box;" onchange="chronicleLoadInfo()"></select>
+      </div>
+
+      <div id="chronicle-git-info" style="display:none;background:var(--block-bg);border:1px solid var(--vscode-border);border-radius:4px;padding:10px;margin-bottom:10px;font-size:0.8em;">
+        <div style="display:flex;gap:16px;margin-bottom:8px;">
+          <span>Branch: <b id="chronicle-branch">—</b></span>
+          <span>Last tag: <b id="chronicle-last-tag">—</b></span>
+        </div>
+        <div style="color:var(--text-muted);margin-bottom:4px;">Commits since last tag:</div>
+        <div id="chronicle-commits" style="font-family:monospace;font-size:0.9em;color:var(--text-foreground);"></div>
+      </div>
+
+      <div id="chronicle-versions" style="display:none;background:var(--block-bg);border:1px solid var(--vscode-border);border-radius:4px;padding:10px;margin-bottom:10px;font-size:0.8em;">
+        <div style="color:var(--text-muted);margin-bottom:6px;">Current versions:</div>
+        <div id="chronicle-versions-list"></div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">New version</label>
+        <input type="text" id="chronicle-new-version" placeholder="0.0.2" style="width:160px;box-sizing:border-box;">
+      </div>
+
+      <div id="chronicle-preview" style="display:none;margin-bottom:12px;">
+        <div style="color:var(--text-muted);font-size:0.85em;margin-bottom:6px;">Preview:</div>
+        <div style="background:var(--block-bg);border:1px solid var(--vscode-border);border-radius:4px;padding:10px;font-size:0.8em;">
+          <div style="margin-bottom:4px;"><b>Summary:</b> <span id="chronicle-preview-summary"></span></div>
+          <div style="margin-bottom:4px;"><b>Changelog row:</b> <span id="chronicle-preview-row"></span></div>
+          <div style="color:var(--text-muted);margin-top:8px;font-size:0.9em;" id="chronicle-preview-files"></div>
+        </div>
+      </div>
+
+      <div id="chronicle-modal-error" class="modal-error" style="display: none;"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeChronicleModal()">Cancel</button>
+        <button id="chronicle-generate-btn" class="btn btn-primary" onclick="chronicleGenerate()">Generate</button>
+        <button id="chronicle-apply-btn" class="btn btn-primary" style="display:none;" onclick="chronicleApply()">Apply</button>
       </div>
     </div>
   </div>
