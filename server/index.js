@@ -17,6 +17,7 @@ import { resolveProfile, setActiveProfile, getAvailableProfiles, getActiveProfil
 import { validateEnvOrExit } from './env-validator.js';
 import sandboxManager from './sandbox-manager.js';
 import deltaArchitect from './prompts/integration-card/delta-architect.js';
+import { buildChroniclePrompt } from './prompts/integration-card/chronicle.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -544,6 +545,214 @@ app.post('/api/cards/import-path', async (req, res) => {
     console.error('[Cards] import-path error:', e.message);
     res.status(500).json({ success: false, message: e.message });
   }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Chronicle (DOC-001) ───────────────────────────────────────────────────────
+
+const REPO_ROOT = path.join(__dirname, '..');
+
+function readVersionFromManifest(content) {
+  try {
+    return JSON.parse(content)?.['sap.app']?.applicationVersion?.version || null;
+  } catch { return null; }
+}
+
+function readVersionFromPackage(content) {
+  try {
+    return JSON.parse(content)?.version || null;
+  } catch { return null; }
+}
+
+function readLastVersionFromReadme(content) {
+  // Looks for a markdown table row: | version | date | ... |
+  const match = content.match(/\|\s*([\d.]+)\s*\|/g);
+  if (!match) return null;
+  return match[match.length - 1].match(/[\d.]+/)?.[0] || null;
+}
+
+function bumpManifestVersion(content, newVersion) {
+  const obj = JSON.parse(content);
+  if (obj?.['sap.app']?.applicationVersion) {
+    obj['sap.app'].applicationVersion.version = newVersion;
+  }
+  return JSON.stringify(obj, null, 2);
+}
+
+function bumpPackageVersion(content, newVersion) {
+  const obj = JSON.parse(content);
+  obj.version = newVersion;
+  return JSON.stringify(obj, null, 2);
+}
+
+function insertReadmeRow(content, newVersion, changelogRow, date) {
+  const newRow = `| ${newVersion} | ${date} | ${changelogRow} |`;
+  const tableHeader = '| Version | Date | Changes |';
+  const tableSep = '|---------|------|---------|';
+
+  if (content.includes('## Version History')) {
+    // Table exists — append row after last table row
+    const lines = content.split('\n');
+    let lastTableLine = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim().startsWith('|')) lastTableLine = i;
+    }
+    if (lastTableLine >= 0) {
+      lines.splice(lastTableLine + 1, 0, newRow);
+      return lines.join('\n');
+    }
+  }
+  // No table — append section at end
+  const section = `\n## Version History\n\n${tableHeader}\n${tableSep}\n${newRow}\n`;
+  return content.trimEnd() + section;
+}
+
+app.get('/api/chronicle/info', async (req, res) => {
+  const { slug } = req.query;
+  if (!slug) return res.status(400).json({ success: false, message: 'slug required' });
+
+  const cardPath = path.join(CARDS_DIR, slug);
+  if (!existsSync(cardPath)) {
+    return res.status(404).json({ success: false, message: `Card "${slug}" not found` });
+  }
+
+  const versions = {};
+  try {
+    const mf = await readFile(path.join(cardPath, 'src', 'manifest.json'), 'utf8');
+    versions.manifest = readVersionFromManifest(mf);
+  } catch { versions.manifest = null; }
+
+  try {
+    const pk = await readFile(path.join(cardPath, 'package.json'), 'utf8');
+    versions.package = readVersionFromPackage(pk);
+  } catch { versions.package = null; }
+
+  try {
+    const rm = await readFile(path.join(cardPath, 'README.md'), 'utf8');
+    versions.readme = readLastVersionFromReadme(rm);
+  } catch { versions.readme = null; }
+
+  // Git info: branch + last tag + commits since tag
+  let branch = null, lastTag = null, commits = [];
+  try {
+    const { stdout: b } = await execAsync('git rev-parse --abbrev-ref HEAD', { cwd: cardPath });
+    branch = b.trim();
+    try {
+      const { stdout: t } = await execAsync('git describe --tags --abbrev=0', { cwd: cardPath });
+      lastTag = t.trim();
+    } catch { lastTag = null; }
+
+    const range = lastTag ? `${lastTag}..HEAD` : 'HEAD';
+    const { stdout: log } = await execAsync(`git log ${range} --oneline`, { cwd: cardPath });
+    commits = log.trim() ? log.trim().split('\n') : [];
+  } catch { /* no git repo */ }
+
+  res.json({ success: true, versions, branch, lastTag, commits });
+});
+
+app.post('/api/chronicle/generate', async (req, res) => {
+  const { slug, newVersion } = req.body;
+  if (!slug || !newVersion) {
+    return res.status(400).json({ success: false, message: 'slug and newVersion required' });
+  }
+
+  const cardPath = path.join(CARDS_DIR, slug);
+  if (!existsSync(cardPath)) {
+    return res.status(404).json({ success: false, message: `Card "${slug}" not found` });
+  }
+
+  // Determine range: last tag → HEAD
+  let lastTag = null, gitLog = '';
+  try {
+    try {
+      const { stdout: t } = await execAsync('git describe --tags --abbrev=0', { cwd: cardPath });
+      lastTag = t.trim();
+    } catch { lastTag = null; }
+
+    const range = lastTag ? `${lastTag}..HEAD` : 'HEAD';
+    const { stdout } = await execAsync(`git log ${range} --oneline`, { cwd: cardPath });
+    gitLog = stdout.trim();
+  } catch (e) {
+    return res.status(400).json({ success: false, message: `git log failed: ${e.message}` });
+  }
+
+  if (!gitLog) {
+    return res.status(400).json({ success: false, message: 'No new commits since last tag' });
+  }
+
+  const fromRef = lastTag || 'beginning';
+  const currentDate = new Date().toISOString().split('T')[0];
+  const { system, user } = buildChroniclePrompt({ cardName: slug, fromRef, toRef: 'HEAD', newVersion, gitLog, currentDate });
+
+  let llmResult;
+  try {
+    llmResult = await agentManager.callAgent('developer', system, user, { max_tokens: 1024, temperature: 0.3 });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: `LLM error: ${e.message}` });
+  }
+
+  const { summary, changelogRow, confluenceSection } = llmResult.content;
+
+  res.json({
+    success: true,
+    gitLog,
+    summary,
+    changelogRow,
+    confluenceSection,
+    newVersion,
+    date: currentDate
+  });
+});
+
+app.post('/api/chronicle/apply', async (req, res) => {
+  const { slug, newVersion, changelogRow, confluenceSection, date } = req.body;
+  if (!slug || !newVersion || !changelogRow) {
+    return res.status(400).json({ success: false, message: 'slug, newVersion, changelogRow required' });
+  }
+
+  const cardPath = path.join(CARDS_DIR, slug);
+  if (!existsSync(cardPath)) {
+    return res.status(404).json({ success: false, message: `Card "${slug}" not found` });
+  }
+
+  const applied = [];
+
+  // manifest.json
+  try {
+    const mfPath = path.join(cardPath, 'src', 'manifest.json');
+    const content = await readFile(mfPath, 'utf8');
+    await writeFile(mfPath, bumpManifestVersion(content, newVersion), 'utf8');
+    applied.push('src/manifest.json');
+  } catch { /* file may not exist */ }
+
+  // package.json
+  try {
+    const pkPath = path.join(cardPath, 'package.json');
+    const content = await readFile(pkPath, 'utf8');
+    await writeFile(pkPath, bumpPackageVersion(content, newVersion), 'utf8');
+    applied.push('package.json');
+  } catch { /* file may not exist */ }
+
+  // README.md
+  try {
+    const rmPath = path.join(cardPath, 'README.md');
+    const content = existsSync(rmPath) ? await readFile(rmPath, 'utf8') : '';
+    await writeFile(rmPath, insertReadmeRow(content, newVersion, changelogRow, date), 'utf8');
+    applied.push('README.md');
+  } catch (e) {
+    return res.status(500).json({ success: false, message: `README update failed: ${e.message}` });
+  }
+
+  // confluence.md
+  try {
+    const cfPath = path.join(cardPath, 'confluence.md');
+    const existing = existsSync(cfPath) ? await readFile(cfPath, 'utf8') : '';
+    await writeFile(cfPath, existing.trimEnd() + '\n\n' + (confluenceSection || ''), 'utf8');
+    applied.push('confluence.md');
+  } catch { /* optional */ }
+
+  res.json({ success: true, applied });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
