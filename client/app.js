@@ -641,7 +641,6 @@ async function chronicleLoadInfo() {
     }
 
     // File versions
-    const v = data.versions;
     const lines = [
       v.manifest  ? `manifest.json &nbsp;&nbsp; applicationVersion: <b>${v.manifest}</b>` : null,
       v.package   ? `package.json &nbsp;&nbsp;&nbsp; version: <b>${v.package}</b>` : null,
