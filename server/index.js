@@ -635,16 +635,18 @@ app.get('/api/chronicle/info', async (req, res) => {
 
   // Git info: last card-scoped tag + commits since tag
   let lastTag = null, commits = [];
-  try {
+  if (existsSync(path.join(cardPath, '.git'))) {
     try {
       const { stdout: t } = await execAsync(`git describe --tags --match "${slug}@*" --abbrev=0`, { cwd: cardPath });
       lastTag = t.trim();
     } catch { lastTag = null; }
 
-    const range = lastTag ? `${lastTag}..HEAD` : 'HEAD';
-    const { stdout: log } = await execAsync(`git log ${range} --oneline`, { cwd: cardPath });
-    commits = log.trim() ? log.trim().split('\n') : [];
-  } catch { /* no git repo */ }
+    try {
+      const range = lastTag ? `${lastTag}..HEAD` : 'HEAD';
+      const { stdout: log } = await execAsync(`git log ${range} --oneline`, { cwd: cardPath });
+      commits = log.trim() ? log.trim().split('\n') : [];
+    } catch { /* ignore */ }
+  }
 
   res.json({ success: true, versions, lastTag, commits });
 });
@@ -658,6 +660,10 @@ app.post('/api/chronicle/generate', async (req, res) => {
   const cardPath = path.join(CARDS_DIR, slug);
   if (!existsSync(cardPath)) {
     return res.status(404).json({ success: false, message: `Card "${slug}" not found` });
+  }
+
+  if (!existsSync(path.join(cardPath, '.git'))) {
+    return res.status(400).json({ success: false, message: 'Card has no git repository' });
   }
 
   // Determine range: last card-scoped tag → HEAD

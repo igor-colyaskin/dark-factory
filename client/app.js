@@ -585,7 +585,11 @@ function showImportError(msg) {
 
 let chronicleGenerateResult = null;
 
-function handleChronicleTile() {
+async function handleChronicleTile() {
+  if (!cardsCache || cardsCache.length === 0) {
+    const data = await fetch('/api/cards').then(r => r.json()).catch(() => []);
+    if (Array.isArray(data)) cardsCache = data;
+  }
   const select = document.getElementById('chronicle-card-select');
   select.innerHTML = '';
   (cardsCache || []).forEach(card => {
