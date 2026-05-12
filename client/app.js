@@ -625,6 +625,16 @@ async function chronicleLoadInfo() {
       document.getElementById('chronicle-git-info').style.display = 'block';
     }
 
+    // Suggest next patch version from tag (e.g. slug@1.0.0 → 1.0.1)
+    if (data.lastTag) {
+      const ver = data.lastTag.replace(/^[^@]+@/, '');
+      const parts = ver.split('.');
+      if (parts.length === 3) {
+        parts[2] = String(Number(parts[2]) + 1);
+        document.getElementById('chronicle-new-version').value = parts.join('.');
+      }
+    }
+
     // File versions
     const v = data.versions;
     const lines = [
