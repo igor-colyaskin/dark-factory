@@ -51,10 +51,16 @@ mock-данные, тесты, sandbox preview — за ~1 минуту вмес
                    [DEMO: clone → открываем, видим чистый rename, ~2 мин]
                    Punch line: «Детерминированно. Без LLM. Без ошибок.»
 
-4. Горизонт       «Сегодня — карточки. Но рутинная воспроизводимая
+4. Block 3        Mini-intro: «Карточка готова, правки внесены.
+   Chronicle      Следующая боль — документация: версии разъезжаются
+                   по manifest, package.json, README. Обычно — руками.»
+                   [DEMO: cherry-pick 3 коммитов → Chronicle tile → From auto → Generate → Apply, ~2 мин]
+                   Punch line: «Одна кнопка. Все файлы. Версии согласованы.»
+
+5. Горизонт       «Сегодня — карточки. Но рутинная воспроизводимая
                    работа есть везде.» (~30 сек)
 
-5. Закрытие       «Это уже работает — я использую сам.
+6. Закрытие       «Это уже работает — я использую сам.
                    Следующий шаг — предложить команде.
                    Как смотришь?»
                    Throwaway (с улыбкой):
@@ -63,8 +69,8 @@ mock-данные, тесты, sandbox preview — за ~1 минуту вмес
                    не высосанная из пальца.»
 ```
 
-**Цепочка для демо:** generate → import той же карточки → clone.
-Единый нарратив, не нужны реальные данные из проекта.
+**Цепочка для демо:** generate → import → clone → chronicle.
+Единый нарратив жизненного цикла: создал → переиспользовал → задокументировал.
 
 **Namespace-ошибки:** не во вступлении — в mini-intro к Block 2 (Clone),
 после того как тимлид увидел сгенерированную карточку.
@@ -136,6 +142,84 @@ mock-данные, тесты, sandbox preview — за ~1 минуту вмес
 Показываем: namespace переименован детерминированно, без LLM, без ошибок.
 
 **Когда использовать:** если A подвёл, или как быстрый второй акт.
+
+---
+
+### Сценарий C — Chronicle (~2 мин)
+
+**Нарратив:** *«Карточка готова, правки внесены. Следующая боль — документация:
+версии разъезжаются по manifest, package.json, README. Обычно это ручная работа.»*
+
+#### Подготовка (до демо)
+
+```bash
+# Сбросить ветку demo/chronicle-live на стартовое состояние
+cd c:/Users/C5353238/projects/dark-factory/cards/employee-directory
+git reset --hard "employee-directory@0.0.1"
+```
+
+Убедиться что файлы карточки показывают "старые" версии — для контраста.
+
+#### Во время демо — пошагово
+
+**VS Code layout:**
+```
+┌──────────────┬─────────────────────┬──────────────┐
+│ Git Graph    │  Simple Browser     │  README.md   │
+│ (карточка)   │  localhost:3000     │  (preview)   │
+└──────────────┴─────────────────────┴──────────────┘
+│  Terminal                                          │
+└────────────────────────────────────────────────────┘
+```
+
+**Шаг 1 — показываем старое состояние (20 сек)**
+- Explorer → `README.md` карточки — видна текущая версия, нет новых строк
+- *«Версия зафиксирована. Теперь представим — работа недели внесена»*
+
+**Шаг 2 — cherry-pick (30 сек)**
+- В терминале:
+```bash
+git cherry-pick demo/fix-description demo/ux-search demo/feat-phone
+```
+- Git Graph обновился — три новых коммита с читаемыми сообщениями
+- *«Три правки. Теперь — Chronicle»*
+
+**Шаг 3 — Chronicle tile (1 мин)**
+- Кликаем тайл **Chronicle** в DF
+- Диалог автоматически показывает:
+  ```
+  Card:    Employee Directory
+  From:    employee-directory@0.0.1
+  Commits: feat: add phone number column to employee table
+           ux: improve search placeholder and no-data message
+           fix: improve card about dialog description
+
+  Current versions:
+    manifest.json   applicationVersion: 1.0.0
+    package.json    version: 1.0.0
+    README.md       last version: 1.0
+
+  New version: [ 1.0.1 ]  ← подставлено автоматически
+  [ Generate ]
+  ```
+- *«Он сам нашёл тег, сам нашёл коммиты, сам предложил версию»*
+- Жмём **Generate** (~10 сек) → видим preview: summary + changelog row
+- Жмём **Apply**
+
+**Шаг 4 — верификация (20 сек)**
+- Explorer → `README.md`: новая строка в `## Version History` с версией и описанием изменений
+- *«Документация дополнилась. Версии согласованы везде.»*
+
+**Punch line:** *«Одна кнопка. Все файлы. Без ручной синхронизации.»*
+
+---
+
+#### Сброс для повторного прогона
+
+```bash
+cd c:/Users/C5353238/projects/dark-factory/cards/employee-directory
+git reset --hard "employee-directory@0.0.1"
+```
 
 ### Что не показывать в питче
 
