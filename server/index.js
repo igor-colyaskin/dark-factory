@@ -633,13 +633,11 @@ app.get('/api/chronicle/info', async (req, res) => {
     versions.readme = readLastVersionFromReadme(rm);
   } catch { versions.readme = null; }
 
-  // Git info: branch + last tag + commits since tag
-  let branch = null, lastTag = null, commits = [];
+  // Git info: last card-scoped tag + commits since tag
+  let lastTag = null, commits = [];
   try {
-    const { stdout: b } = await execAsync('git rev-parse --abbrev-ref HEAD', { cwd: cardPath });
-    branch = b.trim();
     try {
-      const { stdout: t } = await execAsync('git describe --tags --abbrev=0', { cwd: cardPath });
+      const { stdout: t } = await execAsync(`git describe --tags --match "${slug}@*" --abbrev=0`, { cwd: cardPath });
       lastTag = t.trim();
     } catch { lastTag = null; }
 
@@ -648,7 +646,7 @@ app.get('/api/chronicle/info', async (req, res) => {
     commits = log.trim() ? log.trim().split('\n') : [];
   } catch { /* no git repo */ }
 
-  res.json({ success: true, versions, branch, lastTag, commits });
+  res.json({ success: true, versions, lastTag, commits });
 });
 
 app.post('/api/chronicle/generate', async (req, res) => {
@@ -662,11 +660,11 @@ app.post('/api/chronicle/generate', async (req, res) => {
     return res.status(404).json({ success: false, message: `Card "${slug}" not found` });
   }
 
-  // Determine range: last tag → HEAD
+  // Determine range: last card-scoped tag → HEAD
   let lastTag = null, gitLog = '';
   try {
     try {
-      const { stdout: t } = await execAsync('git describe --tags --abbrev=0', { cwd: cardPath });
+      const { stdout: t } = await execAsync(`git describe --tags --match "${slug}@*" --abbrev=0`, { cwd: cardPath });
       lastTag = t.trim();
     } catch { lastTag = null; }
 

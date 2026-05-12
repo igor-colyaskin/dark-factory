@@ -614,8 +614,7 @@ async function chronicleLoadInfo() {
     if (!data.success) return;
 
     // Git info
-    if (data.branch) {
-      document.getElementById('chronicle-branch').textContent = data.branch;
+    if (data.commits !== undefined) {
       document.getElementById('chronicle-last-tag').textContent = data.lastTag || '(none)';
       document.getElementById('chronicle-commits').innerHTML = (data.commits || [])
         .map(c => `<div>${c}</div>`).join('') || '<div style="color:var(--text-muted)">No new commits since last tag</div>';
