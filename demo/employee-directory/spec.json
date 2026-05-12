@@ -1,0 +1,66 @@
+{
+  "cardSlug": "employee-directory",
+  "cardTitle": "Employee Directory",
+  "cardSubtitle": "Department Filter",
+  "formTitle": "Employee Directory",
+  "destinationName": "TEMPORARY",
+  "protocol": "rest",
+  "viewControls": [
+    "sap.m.SearchField",
+    "sap.m.Table"
+  ],
+  "generateTests": false,
+  "generateDocs": false,
+  "fields": [
+    {
+      "beField": "EmployeeId",
+      "viewKey": "employeeId",
+      "i18nKey": "EMPLOYEE_ID",
+      "label": "ID сотрудника",
+      "control": "Text"
+    },
+    {
+      "beField": "FirstName",
+      "viewKey": "firstName",
+      "i18nKey": "FIRST_NAME",
+      "label": "Имя",
+      "control": "Text"
+    },
+    {
+      "beField": "LastName",
+      "viewKey": "lastName",
+      "i18nKey": "LAST_NAME",
+      "label": "Фамилия",
+      "control": "Text"
+    },
+    {
+      "beField": "Department",
+      "viewKey": "department",
+      "i18nKey": "DEPARTMENT",
+      "label": "Департамент",
+      "control": "Text"
+    },
+    {
+      "beField": "Position",
+      "viewKey": "position",
+      "i18nKey": "POSITION",
+      "label": "Должность",
+      "control": "Text"
+    },
+    {
+      "beField": "Email",
+      "viewKey": "email",
+      "i18nKey": "EMAIL",
+      "label": "Email",
+      "control": "Link"
+    }
+  ],
+  "mockData": {
+    "EmployeeId": "EMP-004721",
+    "FirstName": "Алексей",
+    "LastName": "Смирнов",
+    "Department": "Финансы",
+    "Position": "Старший аналитик",
+    "Email": "a.smirnov@company.com"
+  }
+}

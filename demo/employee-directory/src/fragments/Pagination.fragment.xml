@@ -1,0 +1,63 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+>
+	<OverflowToolbar
+		id="otFooter"
+		design="Transparent"
+	>
+		<HBox
+			width="120px"
+			id="pageNumberSelect"
+			alignItems="Center"
+		>
+			<Label
+				id="itemsPerPageLabel"
+				text="Show:"
+				class="sapUiSmallMarginEnd"
+			/>
+			<Select
+				id="itemsPerPageSelect"
+				selectedKey="{configModel>/itemsPerPage}"
+				change=".onPageQuantityChanged"
+			>
+				<items>
+					<core:Item id="item10" key="10" text="10" />
+					<core:Item id="item20" key="20" text="20" />
+					<core:Item id="item30" key="30" text="30" />
+				</items>
+			</Select>
+		</HBox>
+
+		<ToolbarSpacer id="spacerLeft" />
+
+		<HBox
+			id="easyPeasyPaginator"
+			alignItems="Center"
+		>
+			<Button
+				id="prevPageBtn"
+				icon="sap-icon://navigation-left-arrow"
+				type="Transparent"
+				enabled="{= ${configModel>/currentPage} > 0 }"
+				press=".onPrevPage"
+			/>
+			<Text
+				id="pageInfoText"
+				text="{= ${configModel>/currentPage} + 1 } / {configModel>/totalPages}"
+				class="sapUiSmallMarginBeginEnd"
+			/>
+			<Button
+				id="nextPageBtn"
+				icon="sap-icon://navigation-right-arrow"
+				type="Transparent"
+				enabled="{= ${configModel>/currentPage} + 1 &lt; ${configModel>/totalPages} }"
+				press=".onNextPage"
+			/>
+		</HBox>
+
+		<ToolbarSpacer id="spacerRight" />
+
+		<HBox width="120px" id="footerRightPadding" />
+	</OverflowToolbar>
+</core:FragmentDefinition>

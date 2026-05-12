@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>com.sap.partner.wz.employee.directory</title>
+	<style>
+		#df-loading {
+			position: fixed; inset: 0;
+			display: flex; align-items: center; justify-content: center;
+			background: #fff; z-index: 9999;
+		}
+		#df-loading::after {
+			content: '';
+			width: 40px; height: 40px;
+			border: 3px solid #e0e0e0;
+			border-top-color: #0070f2;
+			border-radius: 50%;
+			animation: df-spin 0.8s linear infinite;
+		}
+		@keyframes df-spin { to { transform: rotate(360deg); } }
+	</style>
+	<script id="sap-ui-bootstrap"
+		src="https://ui5.sap.com/resources/sap-ui-integration.js"
+		data-sap-ui-theme="sap_horizon"
+		data-sap-ui-compatVersion="edge"
+		data-sap-ui-language="en_US"
+		data-sap-ui-libs="sap.ui.core"
+		data-sap-ui-async="true"
+		data-sap-ui-resource-roots='{ "com.sap.partner.wz.employee.directory": "../../", "com.sap.fiorireuselibrary.ui5cardssdk": "../unit/sdk-stubs/resources/com/sap/fiorireuselibrary/ui5cardssdk" }'
+		data-sap-ui-on-init="module:com/sap/partner/wz/employee/directory/test/manual/init">
+	</script>
+</head>
+<body class="sapUiBody sapUiSizeCompact" style="margin:1rem">
+	<div id="df-loading"></div>
+	<div id="content" style="margin:1rem"></div>
+</body>
+</html>

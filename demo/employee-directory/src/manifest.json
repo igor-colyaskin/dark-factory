@@ -1,0 +1,63 @@
+{
+  "_version": "1.15.0",
+  "sap.app": {
+    "id": "com.sap.partner.wz.employee.directory",
+    "type": "card",
+    "i18n": "i18n/i18n.properties",
+    "title": "{{CARD_TITLE}}",
+    "subTitle": "{{CARD_SUBTITLE}}",
+    "applicationVersion": { "version": "1.0.0" },
+    "tags": {
+      "keywords": ["Component", "PartnerBench", "employee-directory"]
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "phone": true, "tablet": true },
+    "icons": { "icon": "sap-icon://technical-object" }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "com.sap.partner.wz.employee.directory.View",
+      "type": "XML",
+      "async": true,
+      "id": "app"
+    },
+    "dependencies": {
+      "minUI5Version": "1.38",
+      "libs": {
+        "sap.m": {},
+        "com.sap.fiorireuselibrary.ui5cardssdk": {}
+      }
+    },
+    "resourceRoots": {
+      "com.sap.fiorireuselibrary.ui5cardssdk": "./resources/com/sap/fiorireuselibrary/ui5cardssdk"
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": { "bundleName": "com.sap.partner.wz.employee.directory.i18n.i18n" }
+      }
+    },
+    "resources": { "css": [{ "uri": "css/style.css", "id": "" }] }
+  },
+  "sap.card": {
+    "type": "Component",
+    "designtime": "dt/configuration",
+    "requiredHeight": "13rem",
+    "configuration": {
+      "destinations": {
+        "mydestination": { "name": "TEMPORARY" }
+      },
+      "parameters": {
+        "buildWorkZoneUrl": { "value": "dummy" },
+        "target": { "value": "_self" },
+        "showRetryButton": { "value": true },
+        "showNavigateBackButton": { "value": true },
+        "showDownloadLogsButton": { "value": true },
+        "showMaintenanceMode": { "value": false }
+      }
+    }
+  },
+  "sap.platform.mobilecards": { "compatible": true }
+}
