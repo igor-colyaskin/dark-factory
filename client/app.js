@@ -625,14 +625,19 @@ async function chronicleLoadInfo() {
       document.getElementById('chronicle-git-info').style.display = 'block';
     }
 
-    // Suggest next patch version from tag (e.g. slug@1.0.0 → 1.0.1)
-    if (data.lastTag) {
-      const ver = data.lastTag.replace(/^[^@]+@/, '');
-      const parts = ver.split('.');
-      if (parts.length === 3) {
-        parts[2] = String(Number(parts[2]) + 1);
-        document.getElementById('chronicle-new-version').value = parts.join('.');
-      }
+    // Suggest next patch version — max of tag + file versions, then patch+1
+    const tagVer = data.lastTag ? data.lastTag.replace(/^[^@]+@/, '') : null;
+    const v = data.versions;
+    const candidates = [tagVer, v.manifest, v.package, v.readme]
+      .filter(Boolean)
+      .map(s => { const p = String(s).split('.').map(Number); return [p[0]||0, p[1]||0, p[2]||0]; });
+    if (candidates.length) {
+      const max = candidates.reduce((a, b) =>
+        a[0] !== b[0] ? (a[0] > b[0] ? a : b) :
+        a[1] !== b[1] ? (a[1] > b[1] ? a : b) :
+        (a[2] > b[2] ? a : b)
+      );
+      document.getElementById('chronicle-new-version').value = `${max[0]}.${max[1]}.${max[2] + 1}`;
     }
 
     // File versions
