@@ -401,36 +401,36 @@
 
   <!-- Chronicle Modal -->
   <div id="chronicle-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="min-width:420px;max-width:560px;">
+    <div class="modal-content">
       <h3 class="modal-title">Chronicle</h3>
 
-      <div style="margin-bottom:10px;">
-        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">Card</label>
-        <select id="chronicle-card-select" style="width:100%;box-sizing:border-box;" onchange="chronicleLoadInfo()"></select>
+      <div class="ch-field">
+        <label class="ch-label">Card</label>
+        <select id="chronicle-card-select" class="ch-select" onchange="chronicleLoadInfo()"></select>
       </div>
 
-      <div id="chronicle-git-info" style="display:none;background:var(--block-bg);border:1px solid var(--vscode-border);border-radius:4px;padding:10px;margin-bottom:10px;font-size:0.8em;">
-        <div style="margin-bottom:8px;">From: <b id="chronicle-last-tag">—</b></div>
-        <div style="color:var(--text-muted);margin-bottom:4px;">Commits:</div>
-        <div id="chronicle-commits" style="font-family:monospace;font-size:0.9em;color:var(--text-foreground);"></div>
+      <div id="chronicle-git-info" class="ch-info-block" style="display:none;">
+        <div class="ch-from">From: <b id="chronicle-last-tag">—</b></div>
+        <div class="ch-muted">Commits:</div>
+        <div id="chronicle-commits" class="ch-commits"></div>
       </div>
 
-      <div id="chronicle-versions" style="display:none;background:var(--block-bg);border:1px solid var(--vscode-border);border-radius:4px;padding:10px;margin-bottom:10px;font-size:0.8em;">
-        <div style="color:var(--text-muted);margin-bottom:6px;">Current versions:</div>
+      <div id="chronicle-versions" class="ch-info-block" style="display:none;">
+        <div class="ch-muted">Current versions:</div>
         <div id="chronicle-versions-list"></div>
       </div>
 
-      <div style="margin-bottom:12px;">
-        <label style="font-size:0.85em;color:var(--text-muted);display:block;margin-bottom:4px;">New version</label>
-        <input type="text" id="chronicle-new-version" placeholder="0.0.2" style="width:160px;box-sizing:border-box;">
+      <div class="ch-field">
+        <label class="ch-label">New version</label>
+        <input type="text" id="chronicle-new-version" class="ch-version-input" placeholder="0.0.2">
       </div>
 
-      <div id="chronicle-preview" style="display:none;margin-bottom:12px;">
-        <div style="color:var(--text-muted);font-size:0.85em;margin-bottom:6px;">Preview:</div>
-        <div style="background:var(--block-bg);border:1px solid var(--vscode-border);border-radius:4px;padding:10px;font-size:0.8em;">
-          <div style="margin-bottom:4px;"><b>Summary:</b> <span id="chronicle-preview-summary"></span></div>
-          <div style="margin-bottom:4px;"><b>Changelog row:</b> <span id="chronicle-preview-row"></span></div>
-          <div style="color:var(--text-muted);margin-top:8px;font-size:0.9em;" id="chronicle-preview-files"></div>
+      <div id="chronicle-preview" class="ch-field" style="display:none;">
+        <div class="ch-preview-header">Preview:</div>
+        <div class="ch-info-block" style="margin-bottom:0;">
+          <div class="ch-preview-row"><b>Summary:</b> <span id="chronicle-preview-summary"></span></div>
+          <div class="ch-preview-row"><b>Changelog row:</b> <span id="chronicle-preview-row"></span></div>
+          <div class="ch-preview-files" id="chronicle-preview-files"></div>
         </div>
       </div>
 
@@ -439,6 +439,18 @@
         <button class="btn btn-secondary" onclick="closeChronicleModal()">Cancel</button>
         <button id="chronicle-generate-btn" class="btn btn-primary" onclick="chronicleGenerate()">Generate</button>
         <button id="chronicle-apply-btn" class="btn btn-primary" style="display:none;" onclick="chronicleApply()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chronicle docs reminder -->
+  <div id="chronicle-docs-reminder" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 420px;">
+      <h3 class="modal-title">Version updated</h3>
+      <p style="margin: 12px 0 8px;">Reminder: check <strong>confluence.html</strong> — endpoint URL, responsible person, and other placeholders may need updating.</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="document.getElementById('chronicle-docs-reminder').style.display='none'">Skip</button>
+        <button class="btn btn-primary" onclick="document.getElementById('chronicle-docs-reminder').style.display='none'">Done</button>
       </div>
     </div>
   </div>

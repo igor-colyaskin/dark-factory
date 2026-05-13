@@ -220,7 +220,6 @@ function renderCardItem(card) {
         ${slug} &bull; modified ${modified}
       </div>
       <div class="app-card-actions">
-        <button class="btn btn-sm btn-secondary" onclick="handleEditCard('${slug}')">Edit</button>
         <button class="btn btn-sm btn-secondary" onclick="handleCloneCard('${slug}')">Clone</button>
         <button class="btn btn-sm btn-primary" onclick="handlePreviewCard('${slug}')">Preview</button>
         <button class="btn btn-sm btn-danger-outline" onclick="handleDeleteCard('${slug}', '${name}')">Delete</button>
@@ -710,6 +709,7 @@ async function chronicleApply() {
     const data = await res.json();
     if (!data.success) { showChronicleError(data.message); return; }
     closeChronicleModal();
+    document.getElementById('chronicle-docs-reminder').style.display = 'flex';
   } catch (e) {
     showChronicleError(`Error: ${e.message}`);
   } finally {
