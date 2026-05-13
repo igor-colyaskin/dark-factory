@@ -1245,6 +1245,77 @@ input[type="file"]::file-selector-button:hover {
   justify-content: flex-end;
 }
 
+/* Chronicle modal */
+#chronicle-modal .modal-content { min-width: 420px; max-width: 560px; }
+
+.ch-field {
+  margin-bottom: 12px;
+}
+
+.ch-label {
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.ch-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ch-info-block {
+  background: var(--block-bg);
+  border: 1px solid var(--vscode-border);
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 12px;
+  font-size: 0.8em;
+}
+
+.ch-from {
+  margin-bottom: 8px;
+  font-size: 0.9em;
+}
+
+.ch-muted {
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.ch-commits {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9em;
+  color: var(--text-foreground);
+  background: var(--vscode-bg);
+  border-radius: 3px;
+  padding: 6px 8px;
+  margin-top: 4px;
+}
+
+.ch-preview-header {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.ch-preview-row {
+  margin-bottom: 4px;
+}
+
+.ch-preview-files {
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-size: 0.9em;
+}
+
+.ch-version-input {
+  width: 160px;
+  box-sizing: border-box;
+}
+
 .btn-danger {
   background: var(--vscode-error);
   color: white;
@@ -1532,9 +1603,11 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .hub-tiles {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  justify-content: center;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .hub-tile {
@@ -1575,6 +1648,11 @@ input[type="file"]::file-selector-button:hover {
 .hub-tile:nth-child(3) svg { color: #00a896; }
 .hub-tile:nth-child(3):hover { background: rgba(0, 168, 150, 0.07); }
 
+/* Chronicle — blue */
+.hub-tile:nth-child(4) { border-color: #4a9eff; }
+.hub-tile:nth-child(4) svg { color: #4a9eff; }
+.hub-tile:nth-child(4):hover { background: rgba(74, 158, 255, 0.07); }
+
 .hub-tile-label {
   font-size: 15px;
   font-weight: 600;
@@ -1586,6 +1664,7 @@ input[type="file"]::file-selector-button:hover {
   color: var(--vscode-text-secondary);
   text-align: center;
   line-height: 1.4;
+  min-height: 2.8em;
 }
 
 /* Responsive */
