@@ -128,6 +128,13 @@ mock-данные, тесты, sandbox preview — за ~1 минуту вмес
 
 **Punch line:** *«Это заняло 90 секунд. Вручную — полтора часа.»*
 
+**Что показать после sandbox preview:**
+- Открываем `confluence.html` → это готовый HTML для Confluence Source Editor
+- Открываем в браузере: видны все секции, таблицы, `??????` — placeholders для ручного заполнения
+- *«Confluence-страница сгенерирована. Paste в Source Editor — и готово. Business Requirements, Technical Requirements, Compliance — всё на месте. Что не знаем — помечено `??????`.»*
+- Открываем `README.md` для разработчика — Data Sources, поля, версия
+- *«Два документа за 0 усилий. Раньше это откладывали до последнего.»*
+
 **Риски:** LLM медленный / плохой результат → fallback (сценарий B).
 
 **TODO:**

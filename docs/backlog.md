@@ -174,17 +174,27 @@ LLM генерирует summary и changelogRow. Apply обновляет manif
 
 ---
 
-### [DOC-002] README + confluence.md при генерации карточки
-**Источник:** устное обсуждение 2026-05-12
+### [DOC-003] Chronicle → предложить обновить confluence.html
+**Источник:** устное обсуждение 2026-05-13 #15
+**Суть:** После Apply в Chronicle спросить пользователя: «Обновить Version History в confluence.html?»
+Если да — дописать строку в таблицу Version History (найти секцию по `<h3>` + `Version History`, добавить `<tr>`) — не перегенерировать весь файл, чтобы не затирать ручные правки `??????`.
+**Почему важно:** коллега поменяет URL в DataHelper и не вспомнит про confluence. Одно касание держит документацию синхронизированной.
+**Приоритет:** высокий — **до демо**
+
+---
+
+### [DOC-002] ✅ README + confluence.html при генерации карточки
+**Реализован:** сессии 2026-05-12 #14 + 2026-05-13 #15
 **Суть:** Карточка без документации — незаконченный продукт. Именно это колет тимлида.
-При генерации карточки автоматически создавать README.md и confluence.md.
+При генерации карточки автоматически создаются README.md и confluence.html.
 
 **Саб-таски:**
-- [ ] DOC-002-1 README: заголовок, описание карточки (из spec), таблица `## Version History` с первой строкой v1.0.0
-- [ ] DOC-002-2 Confluence: проанализировать что должно быть в confluence.md — структура, поля, разметка (Confluence wiki markup); зафиксировать шаблон
-- [ ] DOC-002-3 Confluence: реализовать генерацию confluence.md по шаблону из DOC-002-2
+- [x] DOC-002-1 README: Technical Details + Data Sources (Type/Method/URL + fields) + Version History v1.0.0
+- [x] DOC-002-2 Confluence: HTML-формат для Confluence Source Editor (paste → Save → готово)
+- [x] DOC-002-3 Confluence: генерируется всегда, полная структура: Card Information, Technical Requirements, BE Response Fields, Compliance Requirements, Governance/Lifecycle, Development/Deployment, Version History
+- [x] DOC-002-4 ~15 полей заполняются из спека/хардкода, остальные — `??????` (placeholder)
 
-**Приоритет:** высокий — **до демо** (~3 ч)
+**Приоритет:** высокий — **до демо** ✅
 
 ---
 
@@ -262,6 +272,16 @@ git cherry-pick demo/fix-description demo/ux-search demo/feat-phone
 ---
 
 ## Infrastructure
+
+### [INF-003] Edit mode — полноценная реализация
+**Источник:** устное обсуждение 2026-05-13 #15
+**Суть:** Текущий Edit mode сломан: Developer не получает текущие файлы → генерирует с нуля вместо точечных правок.
+Правильное решение: отдельный `generateEditUserPrompt(orderDescription, patchSpec, currentFiles)` — передаёт содержимое `filesToModify`, Developer видит существующий код и вносит только нужные изменения.
+Кнопка Edit временно убрана из UI до реализации.
+**Базовые сценарии для покрытия:** перевод mock-данных, добавление/удаление поля, смена заголовка, изменение фильтров.
+**Приоритет:** средний — **после демо**
+
+---
 
 ### [INF-002] ✅ Проактивный split Developer-вызова
 **Реализован:** сессия 2026-05-10 #3 + bug fix в сессии #4
