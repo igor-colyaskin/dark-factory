@@ -512,9 +512,11 @@ async function submitImportFolder(fileList) {
   document.getElementById('import-modal-error').style.display = 'none';
 
   const files = [];
+  let folderName = null;
   try {
     for (const file of fileList) {
       const parts = file.webkitRelativePath.split('/');
+      if (!folderName) folderName = parts[0];
       if (parts.some(p => SKIP_DIRS.has(p))) continue;
       if (SKIP_FILES.has(file.name)) continue;
       const relativePath = parts.slice(1).join('/');
@@ -555,7 +557,7 @@ async function submitImportFolder(fileList) {
     const res = await fetch('/api/cards/import-folder', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files })
+      body: JSON.stringify({ files, folderName })
     });
     const data = await res.json();
     if (data.success) {

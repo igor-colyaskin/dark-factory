@@ -441,7 +441,7 @@ app.post('/api/cards/import', upload.single('file'), async (req, res) => {
 });
 
 app.post('/api/cards/import-folder', async (req, res) => {
-  const { files } = req.body;
+  const { files, folderName } = req.body;
   if (!Array.isArray(files) || files.length === 0) {
     return res.status(400).json({ success: false, message: 'No files provided' });
   }
@@ -466,7 +466,9 @@ app.post('/api/cards/import-folder', async (req, res) => {
 
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
     const appId = manifest?.['sap.app']?.id || '';
-    const slug = appId.split('.').pop().toLowerCase();
+    const slug = (folderName && /^[a-z0-9][a-z0-9-]*$/.test(folderName))
+      ? folderName
+      : appId.split('.').pop().toLowerCase();
     let name = manifest?.['sap.app']?.title || slug;
     const i18nMatch = name.match(/^\{\{([^}]+)\}\}$/);
     if (i18nMatch) {
