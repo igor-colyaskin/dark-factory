@@ -86,13 +86,17 @@ class SandboxManager {
   }
 
   stop() {
-    if (!this._proc) return Promise.resolve();
+    // Always try to kill the default port — handles stale processes from previous server sessions
+    const killByPort = execAsync(`npx kill-port ${PORT_RANGE_START}`).catch(() => {});
+    if (!this._proc) return killByPort;
     const { child, pid } = this._proc;
     console.log(`[Sandbox] Stopping pid ${pid}`);
     this._proc = null;
-    // taskkill /T kills the entire process tree (shell → npm → ui5 serve)
-    return execAsync(`taskkill /F /T /PID ${pid}`)
-      .catch(() => { try { child.kill('SIGTERM'); } catch {} });
+    return Promise.all([
+      execAsync(`taskkill /F /T /PID ${pid}`)
+        .catch(() => { try { child.kill('SIGTERM'); } catch {} }),
+      killByPort
+    ]);
   }
 
   getStatus() {
