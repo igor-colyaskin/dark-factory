@@ -17,7 +17,7 @@
 Активные задачи до демо:
 - DEMO-001 Fixture-карточка ✅
 - DEMO-002 3 именованных тега на demo/chronicle-source ✅
-- DEMO-004 Сценарий Block 1 (Generate) — **следующая сессия**
+- DEMO-004 Сценарий Block 1 (Generate) ✅ — Eintopf + BE response таблица, прогнан
 - DEMO-005 Сценарий Block 2 (Clone) — **следующая сессия**
 - DOC-001 Chronicle ✅
 - DOC-002 README + confluence.html при генерации ✅

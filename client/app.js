@@ -601,6 +601,7 @@ async function handleChronicleTile() {
   document.getElementById('chronicle-versions').style.display = 'none';
   document.getElementById('chronicle-preview').style.display = 'none';
   document.getElementById('chronicle-apply-btn').style.display = 'none';
+  document.getElementById('chronicle-apply-btn').disabled = false;
   document.getElementById('chronicle-generate-btn').style.display = '';
   document.getElementById('chronicle-modal-error').style.display = 'none';
   chronicleGenerateResult = null;
@@ -627,7 +628,7 @@ async function chronicleLoadInfo() {
     // Suggest next patch version — max of tag + file versions, then patch+1
     const tagVer = data.lastTag ? data.lastTag.replace(/^[^@]+@/, '') : null;
     const v = data.versions;
-    const candidates = [tagVer, v.manifest, v.package, v.readme]
+    const candidates = [tagVer, v.manifest, v.package, v.readme, v.confluence]
       .filter(Boolean)
       .map(s => { const p = String(s).split('.').map(Number); return [p[0]||0, p[1]||0, p[2]||0]; });
     if (candidates.length) {
@@ -641,9 +642,10 @@ async function chronicleLoadInfo() {
 
     // File versions
     const lines = [
-      v.manifest  ? `manifest.json &nbsp;&nbsp; applicationVersion: <b>${v.manifest}</b>` : null,
-      v.package   ? `package.json &nbsp;&nbsp;&nbsp; version: <b>${v.package}</b>` : null,
-      v.readme    ? `README.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; last version: <b>${v.readme}</b>` : null,
+      v.manifest   ? `manifest.json &nbsp;&nbsp; applicationVersion: <b>${v.manifest}</b>` : null,
+      v.package    ? `package.json &nbsp;&nbsp;&nbsp; version: <b>${v.package}</b>` : null,
+      v.readme     ? `README.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; last version: <b>${v.readme}</b>` : null,
+      v.confluence ? `wiki.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; last version: <b>${v.confluence}</b>` : null,
     ].filter(Boolean);
     document.getElementById('chronicle-versions-list').innerHTML =
       lines.map(l => `<div style="font-family:monospace;margin-bottom:2px;">${l}</div>`).join('');
@@ -679,10 +681,14 @@ async function chronicleGenerate() {
     document.getElementById('chronicle-preview-summary').textContent = data.summary;
     document.getElementById('chronicle-preview-row').textContent = data.changelogRow;
     document.getElementById('chronicle-preview-files').innerHTML =
-      `Will update: manifest.json → <b>${newVersion}</b>, package.json → <b>${newVersion}</b>, README.md (new row), confluence.md`;
+      `Will update: manifest.json → <b>${newVersion}</b>, package.json → <b>${newVersion}</b>, README.md (new row), wiki.html (new row)`;
     document.getElementById('chronicle-preview').style.display = 'block';
-    document.getElementById('chronicle-apply-btn').style.display = '';
+    const applyBtn = document.getElementById('chronicle-apply-btn');
+    applyBtn.style.display = '';
+    applyBtn.disabled = true;
     btn.style.display = 'none';
+    // Show docs reminder before Apply — user must acknowledge before applying
+    document.getElementById('chronicle-docs-reminder').style.display = 'flex';
   } catch (e) {
     showChronicleError(`Error: ${e.message}`);
   } finally {
@@ -709,7 +715,7 @@ async function chronicleApply() {
     const data = await res.json();
     if (!data.success) { showChronicleError(data.message); return; }
     closeChronicleModal();
-    document.getElementById('chronicle-docs-reminder').style.display = 'flex';
+    if (data.gitTag) showStatus(`Applied + tagged ${data.gitTag}`, 'success');
   } catch (e) {
     showChronicleError(`Error: ${e.message}`);
   } finally {

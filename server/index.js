@@ -572,6 +572,13 @@ function readLastVersionFromReadme(content) {
   return match[match.length - 1].match(/[\d.]+/)?.[0] || null;
 }
 
+function readLastVersionFromConfluence(content) {
+  const re = /<td[^>]*>\s*([\d]+\.[\d]+\.[\d]+)\s*<\/td>/g;
+  let match, last = null;
+  while ((match = re.exec(content)) !== null) last = match[1];
+  return last;
+}
+
 function bumpManifestVersion(content, newVersion) {
   const obj = JSON.parse(content);
   if (obj?.['sap.app']?.applicationVersion) {
@@ -588,14 +595,15 @@ function bumpPackageVersion(content, newVersion) {
 
 function insertReadmeRow(content, newVersion, changelogRow, date) {
   const newRow = `| ${newVersion} | ${date} | ${changelogRow} |`;
-  const tableHeader = '| Version | Date | Changes |';
-  const tableSep = '|---------|------|---------|';
 
-  if (content.includes('## Version History')) {
-    // Table exists — append row after last table row
-    const lines = content.split('\n');
+  const lines = content.split('\n');
+  // Find the Versions section (supports both "## Versions" and "## Version History")
+  const headingIdx = lines.findIndex(l => /^##\s+(Versions|Version History)\s*$/.test(l.trim()));
+
+  if (headingIdx >= 0) {
     let lastTableLine = -1;
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = headingIdx + 1; i < lines.length; i++) {
+      if (lines[i].trim().startsWith('##')) break; // stop at next section
       if (lines[i].trim().startsWith('|')) lastTableLine = i;
     }
     if (lastTableLine >= 0) {
@@ -603,9 +611,25 @@ function insertReadmeRow(content, newVersion, changelogRow, date) {
       return lines.join('\n');
     }
   }
-  // No table — append section at end
-  const section = `\n## Version History\n\n${tableHeader}\n${tableSep}\n${newRow}\n`;
+  // No table found — append a new section at end
+  const tableHeader = '| Version | Date | Changes |';
+  const tableSep = '|---------|------|---------|';
+  const section = `\n## Versions\n\n${tableHeader}\n${tableSep}\n${newRow}\n`;
   return content.trimEnd() + section;
+}
+
+function insertWikiHtmlRow(content, newVersion, changelogRow, date) {
+  const s = 'style="text-align: left;vertical-align: top;"';
+  const newRow = `<tr><td ${s}>${newVersion}</td><td ${s}>${date}</td><td ${s}>${changelogRow}</td></tr>`;
+  // Find Version History table and insert new row before </tbody>
+  const historyIdx = content.indexOf('Version History');
+  if (historyIdx >= 0) {
+    const tbodyEnd = content.indexOf('</tbody>', historyIdx);
+    if (tbodyEnd >= 0) {
+      return content.slice(0, tbodyEnd) + newRow + content.slice(tbodyEnd);
+    }
+  }
+  return content;
 }
 
 app.get('/api/chronicle/info', async (req, res) => {
@@ -632,6 +656,11 @@ app.get('/api/chronicle/info', async (req, res) => {
     const rm = await readFile(path.join(cardPath, 'README.md'), 'utf8');
     versions.readme = readLastVersionFromReadme(rm);
   } catch { versions.readme = null; }
+
+  try {
+    const cf = await readFile(path.join(cardPath, 'wiki.html'), 'utf8');
+    versions.confluence = readLastVersionFromConfluence(cf);
+  } catch { versions.confluence = null; }
 
   // Git info: last card-scoped tag + commits since tag
   let lastTag = null, commits = [];
@@ -748,15 +777,29 @@ app.post('/api/chronicle/apply', async (req, res) => {
     return res.status(500).json({ success: false, message: `README update failed: ${e.message}` });
   }
 
-  // confluence.md
+  // wiki.html — insert new <tr> into Version History table
   try {
-    const cfPath = path.join(cardPath, 'confluence.md');
-    const existing = existsSync(cfPath) ? await readFile(cfPath, 'utf8') : '';
-    await writeFile(cfPath, existing.trimEnd() + '\n\n' + (confluenceSection || ''), 'utf8');
-    applied.push('confluence.md');
+    const wikiPath = path.join(cardPath, 'wiki.html');
+    if (existsSync(wikiPath)) {
+      const existing = await readFile(wikiPath, 'utf8');
+      await writeFile(wikiPath, insertWikiHtmlRow(existing, newVersion, changelogRow, date), 'utf8');
+      applied.push('wiki.html');
+    }
   } catch { /* optional */ }
 
-  res.json({ success: true, applied });
+  // git commit + tag
+  let gitTag = null;
+  if (existsSync(path.join(cardPath, '.git')) && applied.length > 0) {
+    try {
+      const files = applied.join(' ');
+      await execAsync(`git add -- ${files}`, { cwd: cardPath });
+      await execAsync(`git commit -m "chore: release ${newVersion}"`, { cwd: cardPath });
+      gitTag = `${slug}@${newVersion}`;
+      await execAsync(`git tag "${gitTag}"`, { cwd: cardPath });
+    } catch { /* non-fatal — files are written */ }
+  }
+
+  res.json({ success: true, applied, gitTag });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
