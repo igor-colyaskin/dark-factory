@@ -505,6 +505,306 @@ sap.ui.define(
 \t}
 );`;
 
+// ── Static generation helpers ──────────────────────────────────────────────────
+
+function generateConfluencePage(spec, slug, slugDot) {
+  const namespace = 'com.sap.partner.wz.' + slugDot;
+  const destination = spec.destinationName || '??????';
+  const protocolLabel = { rest: 'REST', odata2: 'OData v2', odata4: 'OData v4' }[spec.protocol] || '??????';
+  const title = spec.cardTitle || slug;
+  const purpose = spec.cardSubtitle || '??????';
+  const today = new Date().toISOString().slice(0, 10);
+
+  const TD = ' style="text-align: left;vertical-align: top;"';
+  const row = (k, v) => '<tr><td' + TD + '>' + k + '</td><td' + TD + '>' + v + '</td></tr>';
+  const h3 = (t) => '<h3 style="text-align: left;"><strong>' + t + '</strong></h3>';
+  const table = (rows) => '<table class="wrapped"><colgroup><col /><col /></colgroup><tbody>' + rows.join('') + '</tbody></table>';
+  const table3 = (rows) => '<table class="wrapped"><colgroup><col /><col /><col /></colgroup><tbody>' + rows.join('') + '</tbody></table>';
+  const row3 = (a, b, c) => '<tr><td' + TD + '>' + a + '</td><td' + TD + '>' + b + '</td><td' + TD + '>' + c + '</td></tr>';
+  const p = (t) => '<p>' + t + '</p>';
+  const ul = (items) => '<ul>' + items.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+
+  const fieldRows = (spec.fields || []).map(f => row(f.beField, f.label));
+
+  const parts = [
+    h3('Card Information'),
+    table([
+      row('Name of Card', title + ' (id: ' + namespace + ')'),
+      row('Business responsible', '??????'),
+      row('Purpose and end-user benefit', purpose),
+      row('Taxonomie', 'Content'),
+      row('End user documentation', '&lt;link to the documentation located in SAP Work Zone Help Center&gt;'),
+      row('Audience', 'all employees'),
+      row('Visibility', 'Internal'),
+      row('Estimated number of audience', '??????'),
+      row('Data classification', 'internal'),
+      row('Support channel for the Card', 'SAP Build Work Zone Help Center'),
+      row('Support channel for the Source System', '??????'),
+      row('Feedback service', 'Feedback service'),
+      row('Go Live date', '??????'),
+      row('End of Live date', '??????'),
+      row('Link to JIRA', '??????'),
+    ]),
+
+    h3('Technical Requirements'),
+    table([
+      row('Technical responsible', '??????'),
+      row('Technical documentation', '??????'),
+      row('Type of Connection to Work Zone (read/write)', 'READ'),
+      row('Name(s) of destination(s) in BTP', destination),
+      row('Description of the connection', protocolLabel + ' (GET /??????)'),
+      row('Connected System', '??????'),
+      row('If any extra App is needed (e.g. Proxy) describe here', '&mdash;'),
+      row('User type', '??????'),
+      row('Authentication type', 'OAuth2SAMLBearerAssertion'),
+      row('Programming Languages', 'JavaScript, UI5'),
+      row('Code is checked', 'Checkmarx, GitHub Scanner'),
+      row('Code is scanned by Dependency Scanner', 'Dependabot'),
+      row('Link to source code located in SAP GitHub', '??????'),
+      row('Tested by QA', '??????'),
+      row('Test results', '??????'),
+    ]),
+
+    h3('BE Response Fields'),
+    table(fieldRows),
+
+    h3('Compliance Requirements'),
+    table([
+      row('Connected systems must have a valid security concept', '11411'),
+      row('Connected systems must have a Works Council approval if required', '??????'),
+      row('Connected systems must have a PET entry', '17121'),
+      row('Description of processed data and purpose of stored data', '??????'),
+    ]),
+    ul([
+      'all cards must fulfill SAP compliance, data privacy and security requirements',
+      'all cards must have a link to support channel maintained in the card',
+      'all cards must fulfill accessibility standards (WCAG)',
+      'All tiles for a connected system are subject to IT co-determination (according to IT RBV)',
+    ]),
+
+    h3('Governance and Lifecycle'),
+    p('All cards have a life cycle for one year. After one year all card owners will be informed about end of life and if card needs to be extended.'),
+    p('If a card has no valid owner or responsible person anymore the card will be deactivated/deleted.'),
+    p('If a card breaches against any SAP policies the card will be deactivated/deleted.'),
+    p('SWZ admins will drop a public note in case we need to deactivate a card.'),
+    p('Enduser documentation is located in SAP Work Zone Help Center.'),
+    p('Technical documentation is located in TBD (extra App, Wiki, protected Excel sheet).'),
+
+    h3('Development and Deployment'),
+    p('Cards will be developed first in SWZ Dev. Cards need to be tested and approved by QA and PO in SWZ QA. Cards will be deployed once all above requirements are fulfilled and tested properly.'),
+    p('Any card must have secure libraries. Only SAP internal libraries are allowed. Connections to any outside SAP network (libraries, services) are not allowed.'),
+    p('Code needs to be checked via CheckMarx and GitHub Scanner for security vulnerabilities. Code needs to be scanned by Dependency Scanner: Whitesource, Blackduck.'),
+    ul([
+      'Connections via BTP Destinations only',
+      'API calls from SWZ or Source System are ok',
+      'New OAuth clients need to be requested via ticket and final approval by PO',
+      'All authorization goes through Workzone',
+      'Languages allowed: JavaScript',
+      'Source code must be located in SAP GitHub',
+    ]),
+
+    h3('Version History'),
+    table3([
+      row3('<strong>Version</strong>', '<strong>Date</strong>', '<strong>Changes</strong>'),
+      row3('1.0.0', today, 'Initial release'),
+    ]),
+  ];
+
+  return parts.join('\n');
+}
+
+
+function generateManifest(slug, slugDot, destinationName) {
+  const manifest = {
+    "_version": "1.15.0",
+    "sap.app": {
+      "id": `com.sap.partner.wz.${slugDot}`,
+      "type": "card",
+      "i18n": "i18n/i18n.properties",
+      "title": "{{TITLE}}",
+      "subTitle": "{{SUBTITLE}}",
+      "applicationVersion": { "version": "1.0.0" },
+      "tags": { "keywords": ["Component", "PartnerBench", slug] }
+    },
+    "sap.ui": {
+      "technology": "UI5",
+      "deviceTypes": { "desktop": true, "phone": true, "tablet": true },
+      "icons": { "icon": "sap-icon://technical-object" }
+    },
+    "sap.ui5": {
+      "rootView": { "viewName": `com.sap.partner.wz.${slugDot}.View`, "type": "XML", "async": true, "id": "app" },
+      "dependencies": {
+        "minUI5Version": "1.38",
+        "libs": { "sap.m": {}, "com.sap.fiorireuselibrary.ui5cardssdk": {} }
+      },
+      "resourceRoots": {
+        "com.sap.fiorireuselibrary.ui5cardssdk": "./resources/com/sap/fiorireuselibrary/ui5cardssdk"
+      },
+      "models": {
+        "i18n": {
+          "type": "sap.ui.model.resource.ResourceModel",
+          "settings": { "bundleName": `com.sap.partner.wz.${slugDot}.i18n.i18n` }
+        }
+      },
+      "resources": { "css": [{ "uri": "css/style.css", "id": "" }] }
+    },
+    "sap.card": {
+      "type": "Component",
+      "designtime": "dt/configuration",
+      "requiredHeight": "13rem",
+      "configuration": {
+        "destinations": { [destinationName]: { "name": destinationName } },
+        "parameters": {
+          "buildWorkZoneUrl": { "value": "dummy" },
+          "target": { "value": "_self" },
+          "showRetryButton": { "value": true },
+          "showNavigateBackButton": { "value": true },
+          "showDownloadLogsButton": { "value": true },
+          "showMaintenanceMode": { "value": false }
+        }
+      }
+    },
+    "sap.platform.mobilecards": { "compatible": true }
+  };
+  return JSON.stringify(manifest, null, 2);
+}
+
+function generateI18nProperties(spec) {
+  const fieldLines = (spec.fields || []).map(f => `${f.i18nKey}=${f.label}`).join('\n');
+  const filterGoLine = (spec.filterFields?.length > 0) ? 'FILTER_GO=Filter\n\n' : '';
+  return [
+    '# Card',
+    `CARD_TITLE=${spec.cardTitle || ''}`,
+    `CARD_SUBTITLE=${spec.cardSubtitle || ''}`,
+    '',
+    '# Form',
+    `FORM_TITLE=${spec.formTitle || spec.cardTitle || ''}`,
+    '',
+    '# Toolbar',
+    'MENU_BUTTON_TOOLTIP=Additional Options',
+    '',
+    '# Overflow menu items',
+    'MENU_ABOUT_CARD=What is this card about',
+    'MENU_REQUIRED_AUTH=Required Authorization',
+    '',
+    '# About dialog',
+    'ABOUT_DIALOG_TITLE=About This Card',
+    'ABOUT_DIALOG_TEXT=This card displays entity information.',
+    'ABOUT_DIALOG_CLOSE=Close',
+    '',
+    '# Required Authorization dialog',
+    'REQUIRED_AUTHORIZATION_TITLE=Required Authorizations',
+    'REQUIRED_AUTH_ROLE=To access this card, the following authorization role is required:<br/><b>User</b>',
+    'CLOSE=Close',
+    'GO_TO_SERVICE=Go to Service',
+    '',
+    filterGoLine + '# Field Labels',
+    fieldLines,
+    '',
+  ].join('\n');
+}
+
+function buildMainController(slug, spec) {
+  const ns = slug.replace(/-/g, '.');
+  const filterFields = spec.filterFields || [];
+  const fields = spec.fields || [];
+
+  let filterMethod = '';
+  let setDataCall = 'this.getView().getModel().setData(oData);';
+
+  if (filterFields.length > 0) {
+    const checks = filterFields.map(beField => {
+      const field = fields.find(f => f.beField === beField);
+      const vk = field ? field.viewKey : (beField.charAt(0).toLowerCase() + beField.slice(1));
+      return `\t\t\t\t\tvar s${beField} = (this.byId("filter${beField}") || { getValue: function(){ return ""; } }).getValue();\n\t\t\t\t\tif (s${beField}) { bMatch = bMatch && String(oItem.${vk} || "").toLowerCase().includes(s${beField}.toLowerCase()); }`;
+    }).join('\n');
+
+    filterMethod = `
+
+\t\t\tonFilterGo: function () {
+\t\t\t\tvar aAll = this.getView().getModel().getProperty("/allItems") || [];
+\t\t\t\tvar aFiltered = aAll.filter(function (oItem) {
+\t\t\t\t\tvar bMatch = true;
+${checks}
+\t\t\t\t\treturn bMatch;
+\t\t\t\t}.bind(this));
+\t\t\t\tthis.getView().getModel().setProperty("/items", aFiltered);
+\t\t\t},`;
+
+    setDataCall = 'var aItems = oData.items || [];\n\t\t\t\t\t\tthis.getView().getModel().setData({ allItems: aItems, items: aItems });';
+  }
+
+  return `sap.ui.define(
+\t[
+\t\t"com/sap/fiorireuselibrary/ui5cardssdk/Base.controller",
+\t\t"com/sap/fiorireuselibrary/ui5cardssdk/AuthorizationDialog.controller",
+\t\t"sap/base/Log",
+\t\t"sap/ui/core/Fragment",
+\t\t"sap/ui/model/json/JSONModel",
+\t\t"./helpers/DataHelper",
+\t\t"./model/formatter"
+\t],
+\tfunction (BaseController, AuthorizationDialog, Log, Fragment, JSONModel, DataHelper, formatter) {
+\t\t"use strict";
+
+\t\treturn BaseController.extend("com.sap.partner.wz.${ns}.Main", {
+\t\t\tformatter: formatter,
+
+\t\t\tonInit: function () {
+\t\t\t\tthis.getView().setModel(new JSONModel({}));
+\t\t\t},
+
+\t\t\tonCardReady: function () {
+\t\t\t\tthis._loadData();
+\t\t\t},
+
+\t\t\tonStatusPress: function (oEvent) {},${filterMethod}
+
+\t\t\tonMenuPress: function (oEvent) {
+\t\t\t\tconst oView = this.getView();
+\t\t\t\tconst oButton = oEvent.getSource();
+\t\t\t\tif (this._pMenu) {
+\t\t\t\t\tthis._pMenu.then(function (oMenu) { oMenu.openBy(oButton); });
+\t\t\t\t\treturn;
+\t\t\t\t}
+\t\t\t\tthis._pMenu = Fragment.load({
+\t\t\t\t\tid: oView.getId(),
+\t\t\t\t\tname: "com.sap.partner.wz.${ns}.fragments.Menu",
+\t\t\t\t\tcontroller: this
+\t\t\t\t}).then(function (oMenu) {
+\t\t\t\t\toView.addDependent(oMenu);
+\t\t\t\t\toMenu.openBy(oButton);
+\t\t\t\t\treturn oMenu;
+\t\t\t\t});
+\t\t\t},
+
+\t\t\t_loadData: function () {
+\t\t\t\tconst oForm = this.byId("employeeForm");
+\t\t\t\tif (oForm) { oForm.setBusy(true); }
+\t\t\t\tconst oCard = this.getOwnerComponent().getCard();
+\t\t\t\tconst oErrorHandler = this.getOwnerComponent().getErrorHandler();
+\t\t\t\tDataHelper.loadData(oCard)
+\t\t\t\t\t.then(function (oData) {
+\t\t\t\t\t\t${setDataCall}
+\t\t\t\t\t}.bind(this))
+\t\t\t\t\t.catch(function (oError) {
+\t\t\t\t\t\tif (oError && typeof oError.getParameters === "function") {
+\t\t\t\t\t\t\toErrorHandler.handleCustomErrorEvent(oError);
+\t\t\t\t\t\t} else {
+\t\t\t\t\t\t\tLog.error("${slug}: data loading error", oError);
+\t\t\t\t\t\t}
+\t\t\t\t\t})
+\t\t\t\t\t.finally(function () {
+\t\t\t\t\t\tif (oForm) { oForm.setBusy(false); }
+\t\t\t\t\t});
+\t\t\t}
+\t\t});
+\t}
+);`;
+}
+
+// ── Static files ───────────────────────────────────────────────────────────────
+
 export function generateStaticFiles(cardSlug, spec = {}) {
   const slug = cardSlug || 'card';
   // Namespace uses dots; slug may contain hyphens (e.g. "employee-details-card" → "employee.details.card")
@@ -518,14 +818,17 @@ export function generateStaticFiles(cardSlug, spec = {}) {
   const isTable = (spec.viewControls || []).some(c => /table/i.test(c));
 
   const files = [
-    { path: 'src/Component.js',               content: sub(T_COMPONENT),       action: 'create' },
-    { path: 'src/Main.controller.js',          content: sub(T_MAIN_CONTROLLER), action: 'create' },
-    { path: 'src/model/formatter.js',          content: T_FORMATTER,            action: 'create' },
-    { path: 'src/css/style.css',               content: '',                     action: 'create' },
-    { path: 'src/test/mockserver.js',          content: T_MOCKSERVER,           action: 'create' },
-    { path: 'package.json',                    content: pkgJson,                action: 'create' },
-    { path: 'ui5-local.yaml',                  content: sub(T_UI5_LOCAL_YAML),  action: 'create' },
-    { path: 'ui5.yaml',                        content: sub(T_UI5_YAML),        action: 'create' },
+    { path: 'src/Component.js',               content: sub(T_COMPONENT),              action: 'create' },
+    { path: 'src/Main.controller.js',          content: buildMainController(slug, spec), action: 'create' },
+    { path: 'src/model/formatter.js',          content: T_FORMATTER,                    action: 'create' },
+    { path: 'src/css/style.css',               content: '',                             action: 'create' },
+    { path: 'src/test/mockserver.js',          content: T_MOCKSERVER,                   action: 'create' },
+    { path: 'package.json',                    content: pkgJson,                        action: 'create' },
+    { path: 'ui5-local.yaml',                  content: sub(T_UI5_LOCAL_YAML),          action: 'create' },
+    { path: 'ui5.yaml',                        content: sub(T_UI5_YAML),               action: 'create' },
+    // manifest and i18n — fully deterministic from spec, no LLM needed
+    { path: 'src/manifest.json',               content: generateManifest(slug, slugDot, spec.destinationName || ''), action: 'create' },
+    { path: 'src/i18n/i18n.properties',        content: generateI18nProperties(spec),  action: 'create' },
     // SDK stubs — always needed: ui5 serve uses them via ui5-middleware-servestatic
     { path: `${SDK_BASE_PATH}/CustomError.js`,       content: T_STUB_CUSTOM_ERROR,       action: 'create' },
     { path: `${SDK_BASE_PATH}/Base.controller.js`,   content: T_STUB_BASE_CONTROLLER,    action: 'create' },
@@ -551,21 +854,50 @@ export function generateStaticFiles(cardSlug, spec = {}) {
     files.push({ path: 'src/test/utils/DataEngine.js', content: T_DATA_ENGINE, action: 'create' });
   }
 
-  // README — always
-  const fieldRows = (spec.fields || []).map(f => `| ${f.beField} | ${f.label} |`).join('\n');
-  files.push({
-    path: 'README.md',
-    content: `# ${spec.cardTitle || slug}\n\n> ${spec.cardSubtitle || ''}\n\n## Fields\n\n| Field | Label |\n|-------|-------|\n${fieldRows}\n`,
-    action: 'create'
-  });
+  // README + confluence.html — always
+  const fieldRows = (spec.fields || []).map(f => `| ${f.beField} | ${f.label} |`).join('\n') || '| — | — |';
+  const today = new Date().toISOString().slice(0, 10);
+  const namespace = `com.sap.partner.wz.${slugDot}`;
+  const destination = spec.destinationName || '—';
+  const protocolLabel = { rest: 'REST', odata2: 'OData v2', odata4: 'OData v4' }[spec.protocol] || '—';
 
-  if (spec.generateDocs) {
-    files.push({
-      path: 'confluence.md',
-      content: `# ${spec.cardTitle || slug}\n\n| | |\n|---|---|\n| | |\n| | |\n`,
-      action: 'create'
-    });
-  }
+  const docSections = [
+    `# ${spec.cardTitle || slug}`,
+    '',
+    `> ${spec.cardSubtitle || ''}`,
+    '',
+    '## Technical Details',
+    '',
+    '| Parameter   | Value |',
+    '|-------------|-------|',
+    `| Destination | ${destination} |`,
+    `| Namespace   | ${namespace} |`,
+    '| Card Type   | Component (SAP Work Zone IC) |',
+    '',
+    '## Data Sources',
+    '',
+    '### Endpoint 1',
+    '',
+    '| Parameter | Value |',
+    '|-----------|-------|',
+    `| Type      | ${protocolLabel} |`,
+    '| Method    | GET |',
+    '| URL       | — |',
+    '',
+    '| BE Field | Label |',
+    '|----------|-------|',
+    fieldRows,
+    '',
+    '## Version History',
+    '',
+    '| Version | Date | Changes |',
+    '|---------|------|---------|',
+    `| 1.0.0   | ${today} | Initial release |`,
+    '',
+  ].join('\n');
+
+  files.push({ path: 'README.md',     content: docSections, action: 'create' });
+  files.push({ path: 'confluence.html', content: generateConfluencePage(spec, slug, slugDot), action: 'create' });
 
   if (spec.generateTests) {
     files.push(
@@ -583,14 +915,15 @@ export function generateStaticFiles(cardSlug, spec = {}) {
 
 export const systemPrompt = `You are a Developer agent in Dark Factory that generates SAP Work Zone Integration Cards.
 
+## Language Rule
+
+ALL generated content MUST be in English — mock data values, labels, status values, comments, error messages, summary text. No exceptions regardless of the language of the order.
+
 ## Your Role
 
-Given a card spec from the Architect, you produce 4 of the 5 extension-point source files.
-(View.view.xml is generated in a separate focused call — do NOT include it here.)
+Given a card spec from the Architect, you produce 2 of the 5 extension-point source files.
+(View.view.xml is generated in a separate focused call. manifest.json, i18n.properties, and static files are handled by templates — do NOT include them.)
 The card uses the templateSF pattern — a SAP UI5 AMD-style Component card.
-The UI controls are determined by spec.viewControls (array of UI5 class names) — see per-file instructions below.
-Static files (Component.js, Main.controller.js, formatter.js, mockserver.js, package.json)
-are handled separately — do NOT include them in your response.
 
 ## Required Output Format
 
@@ -598,9 +931,7 @@ are handled separately — do NOT include them in your response.
 {
   "thinking": "Your plan: which fields map to which controls, any formatters used, etc.",
   "files": [
-    { "path": "src/manifest.json", "content": "COMPLETE file content", "action": "create" },
     { "path": "src/helpers/DataHelper.js", "content": "COMPLETE file content", "action": "create" },
-    { "path": "src/i18n/i18n.properties", "content": "COMPLETE file content", "action": "create" },
     { "path": "src/test/utils/MockDataGenerator.js", "content": "COMPLETE file content", "action": "create" }
   ],
   "questions": [],
@@ -609,99 +940,9 @@ are handled separately — do NOT include them in your response.
 }
 \`\`\`
 
-## Namespace Substitution Rule
-
-Use **spec.cardNamespace** (pre-computed, dots only) for all namespace and path contexts.
-Do NOT use spec.cardSlug directly in namespace or path strings — it may contain hyphens.
-
-- **Namespace** (JS extend, XML controllerName, manifest sap.app.id, i18n bundleName):
-  \`com.sap.partner.wz.\${spec.cardNamespace}\` — e.g. \`com.sap.partner.wz.pp.points.card\`
-- **Module paths** (sap.ui.define, require, resource-roots):
-  replace dots with slashes — e.g. \`com/sap/partner/wz/pp/points/card\`
-- **Package name** (package.json "name"):
-  \`com-sap-partner-wz-\${spec.cardSlug}\` — hyphens preserved, e.g. \`com-sap-partner-wz-pp-points-card\`
-
 ## Files to Generate
 
-### 1. src/manifest.json — EXTENSION POINT
-
-Template:
-\`\`\`json
-{
-  "_version": "1.15.0",
-  "sap.app": {
-    "id": "com.sap.partner.wz.SLUG",
-    "type": "card",
-    "i18n": "i18n/i18n.properties",
-    "title": "{{TITLE}}",
-    "subTitle": "{{SUBTITLE}}",
-    "applicationVersion": { "version": "1.0.0" },
-    "tags": {
-      "keywords": ["Component", "PartnerBench", "SLUG"]
-    }
-  },
-  "sap.ui": {
-    "technology": "UI5",
-    "deviceTypes": { "desktop": true, "phone": true, "tablet": true },
-    "icons": { "icon": "sap-icon://technical-object" }
-  },
-  "sap.ui5": {
-    "rootView": {
-      "viewName": "com.sap.partner.wz.SLUG.View",
-      "type": "XML",
-      "async": true,
-      "id": "app"
-    },
-    "dependencies": {
-      "minUI5Version": "1.38",
-      "libs": {
-        "sap.m": {},
-        "com.sap.fiorireuselibrary.ui5cardssdk": {}
-      }
-    },
-    "resourceRoots": {
-      "com.sap.fiorireuselibrary.ui5cardssdk": "./resources/com/sap/fiorireuselibrary/ui5cardssdk"
-    },
-    "models": {
-      "i18n": {
-        "type": "sap.ui.model.resource.ResourceModel",
-        "settings": { "bundleName": "com.sap.partner.wz.SLUG.i18n.i18n" }
-      }
-    },
-    "resources": { "css": [{ "uri": "css/style.css", "id": "" }] }
-  },
-  "sap.card": {
-    "type": "Component",
-    "designtime": "dt/configuration",
-    "requiredHeight": "13rem",
-    "configuration": {
-      "destinations": {
-        "mydestination": { "name": "DEST_NAME" }
-      },
-      "parameters": {
-        "buildWorkZoneUrl": { "value": "dummy" },
-        "target": { "value": "_self" },
-        "showRetryButton": { "value": true },
-        "showNavigateBackButton": { "value": true },
-        "showDownloadLogsButton": { "value": true },
-        "showMaintenanceMode": { "value": false }
-      }
-    }
-  },
-  "sap.platform.mobilecards": { "compatible": true }
-}
-\`\`\`
-
-Substitutions to make:
-- All \`SLUG\` → spec.cardSlug
-- \`DEST_NAME\` → spec.destinationName
-- \`keywords\` array: replace "SLUG" entry with spec.cardSlug
-
-Note: \`{{TITLE}}\` and \`{{SUBTITLE}}\` are SAP card i18n bindings — keep them exactly as shown.
-
----
-
-### 2. src/helpers/DataHelper.js — EXTENSION POINT
+### 1. src/helpers/DataHelper.js — EXTENSION POINT
 
 Template (keep loadData() EXACTLY as shown, only modify _processData):
 \`\`\`javascript
@@ -739,7 +980,7 @@ sap.ui.define(["sap/base/Log", "com/sap/fiorireuselibrary/ui5cardssdk/CustomErro
 });
 \`\`\`
 
-**If spec.viewControls contains a Table control** (sap.m.Table, sap.ui.table.Table, etc.) — collection, _processData returns { items: [...] }:
+**If spec.viewControls contains a Table control** — collection, _processData returns { items: [...] }:
 \`\`\`javascript
 _processData: function (oRawData) {
 \tconst aRaw = Array.isArray(oRawData) ? oRawData : (oRawData.value || oRawData.results || []);
@@ -753,7 +994,7 @@ _processData: function (oRawData) {
 }
 \`\`\`
 
-**If spec.viewControls does NOT contain a Table control** (form / details view) — single entity, _processData returns a flat object:
+**If spec.viewControls does NOT contain a Table control** — single entity, _processData returns a flat object:
 \`\`\`javascript
 _processData: function (oRawData) {
 \tconst oMapped = {
@@ -763,119 +1004,57 @@ _processData: function (oRawData) {
 }
 \`\`\`
 
-**Multiple controls in spec.viewControls** — reason from the controls list and spec.fields to decide data shape and mapping.
-
-**Protocol note for loadData():**
-The loadData() template above uses a generic oCard.request() — keep it as-is for REST.
-For OData (spec.protocol === "odata2" or "odata4"), adjust the request URL to include OData query params
-and unwrap the response accordingly (e.g. oResponse.d for OData2, oResponse.value for OData4).
-Do NOT change the function signature or the catch block.
+**Protocol note:** For OData (spec.protocol === "odata2" or "odata4"), adjust the request URL to include OData query params and unwrap the response accordingly. Do NOT change the function signature or the catch block.
 
 ---
 
----
+### 2. src/test/utils/MockDataGenerator.js — EXTENSION POINT
 
-### 3. src/i18n/i18n.properties — EXTENSION POINT
+**CRITICAL: MockDataGenerator keys must match beField exactly (same notation as in the real BE response).**
+The mock server wraps the array as { aRawData }, and DataHelper._processData() reads oItem[beField].
+Using viewKey (camelCase) instead of beField produces empty rows.
 
-Replace CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, and field label keys with spec values.
-Keep all other keys EXACTLY as in the template below:
-
-\`\`\`properties
-# Card
-CARD_TITLE=CARD_TITLE_VALUE
-CARD_SUBTITLE=CARD_SUBTITLE_VALUE
-
-# Form
-FORM_TITLE=FORM_TITLE_VALUE
-
-# Toolbar
-MENU_BUTTON_TOOLTIP=Additional Options
-
-# Overflow menu items
-MENU_ABOUT_CARD=What is this card about
-MENU_REQUIRED_AUTH=Required Authorization
-
-# About dialog
-ABOUT_DIALOG_TITLE=About This Card
-ABOUT_DIALOG_TEXT=This card displays entity information.
-ABOUT_DIALOG_CLOSE=Close
-
-# Required Authorization dialog
-REQUIRED_AUTHORIZATION_TITLE=Required Authorizations
-REQUIRED_AUTH_ROLE=To access this card, the following authorization role is required:<br/><b>User</b>
-CLOSE=Close
-GO_TO_SERVICE=Go to Service
-
-# Field Labels
-I18N_KEY_1=Label 1
-I18N_KEY_2=Label 2
-\`\`\`
-
-Substitutions:
-- \`CARD_TITLE_VALUE\` → spec.cardTitle
-- \`CARD_SUBTITLE_VALUE\` → spec.cardSubtitle
-- \`FORM_TITLE_VALUE\` → spec.formTitle
-- Field labels: one line per field using spec.fields[].i18nKey and spec.fields[].label
-
----
-
-### 4. src/test/utils/MockDataGenerator.js — EXTENSION POINT
-
-**If spec.viewControls does NOT contain a Table control** — getData() returns a single object with spec.mockData values:
+**If spec.viewControls does NOT contain a Table control** — getData() returns a single object with beField keys:
 \`\`\`javascript
 sap.ui.define([], function () {
 \t"use strict";
-
-\tconst datasf = {
-\t\t// One line per mockData entry: beField: "value"
-\t};
-
-\treturn {
-\t\tgetData: function () {
-\t\t\treturn datasf;
-\t\t}
-\t};
+\tconst datasf = { /* keys = beField (PascalCase), values from spec.mockData */ };
+\treturn { getData: function () { return datasf; } };
 });
 \`\`\`
 
-**If spec.viewControls contains a Table control** — getData() returns an array of at least 3 objects.
-Use spec.mockData as the template for each object; vary values realistically across rows:
+**If spec.viewControls contains a Table control** — getData() returns an array with beField keys. Use spec.mockData as the template for row 1; vary values realistically across all rows. Generate the number of rows requested in the order (default: 5).
 \`\`\`javascript
 sap.ui.define([], function () {
 \t"use strict";
-
 \tconst aData = [
-\t\t{ /* row 1: values from spec.mockData */ },
-\t\t{ /* row 2: realistic variation */ },
-\t\t{ /* row 3: realistic variation */ }
+\t\t{ /* row 1: keys = beField (same as BE response), values from spec.mockData */ },
+\t\t{ /* row 2: realistic variation, same beField keys */ },
+\t\t// ...
 \t];
-
-\treturn {
-\t\tgetData: function () {
-\t\t\treturn aData;
-\t\t}
-\t};
+\treturn { getData: function () { return aData; } };
 });
 \`\`\`
-
-**Multiple controls in spec.viewControls** — match the data shape expected by your DataHelper._processData implementation.
 
 ---
 
 ## Critical Rules
 
-1. Always exactly 4 files — no more, no less (View.view.xml is separate)
+1. Always exactly 2 files — no more, no less
 2. COMPLETE content only — no truncation, no "// ... rest of file"
 3. SAPUI5 AMD style ONLY — use sap.ui.define(), NOT import/export
 4. loadData() in DataHelper.js must NOT be modified — only _processData()
 5. Do not add extra fields or logic not present in the spec
 6. Validate: every spec.fields[].viewKey must appear in DataHelper._processData()
-7. Validate: every spec.fields[].i18nKey must appear in i18n.properties
-8. Validate: every spec.mockData key must appear in MockDataGenerator.getData()`;
+7. Validate: every spec.mockData key must appear in MockDataGenerator.getData()`;
 
 // ── View generator (separate call to stay within Hyperspace token limit) ─────
 
 export const viewGeneratorSystemPrompt = `You are a Developer agent generating a single SAP UI5 View file for a Work Zone Integration Card.
+
+## Language Rule
+
+ALL generated content MUST be in English — placeholder text, no-data messages, button labels, comments. No exceptions regardless of the language of the order.
 
 ## Your Role
 
@@ -996,6 +1175,22 @@ Reason from spec.viewControls list and spec.fields to compose the View.
 Render controls in the order they appear in spec.viewControls.
 Wrap in VBox with standard sapUiSmallMargin.
 
+### Filter bar (Table views only)
+
+Only add filter controls when spec.filterFields is a non-empty array.
+Use ONLY the beField names listed in spec.filterFields — never add filters for other fields.
+Place filter inputs in a HBox above the OverflowToolbar.
+Each Input uses the matching spec.fields[].i18nKey as placeholder and id="filter{BeField}" (e.g. id="filterTier").
+Add one "Filter" button with i18n key FILTER_GO, press=".onFilterGo" at the end of the HBox.
+The FILTER_GO key MUST also appear in src/i18n/i18n.properties as: FILTER_GO=Filter
+
+The controller MUST include an onFilterGo handler that:
+1. Reads each filter input value by id (sap.ui.getCore().byId("filter{BeField}").getValue())
+2. Builds a params object: { BeField: value, ... } — skip empty values
+3. Calls this._oDataHelper.getData(params) and updates the model with the result
+
+If spec.filterFields is absent or empty → do NOT add any filter controls.
+
 ## Critical Rules
 
 1. Exactly 1 file: src/View.view.xml
@@ -1042,8 +1237,7 @@ export function generateUserPrompt(orderDescription, spec, retryCount = 0, error
   const specForLLM = { ...spec, cardNamespace: slug.replace(/-/g, '.') };
   const specText = JSON.stringify(specForLLM, null, 2);
 
-  const cardNamespace = (spec.cardSlug || 'card').replace(/-/g, '.');
-  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 4 extension-point source files for this Integration Card. (View.view.xml is generated separately.)\n\n**Checklist before responding:**\n- [ ] src/manifest.json: sap.app.id = com.sap.partner.wz.${cardNamespace}, destination = ${spec.destinationName || 'DEST'}\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, viewControls = ${JSON.stringify(spec.viewControls || [])}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/i18n/i18n.properties: CARD_TITLE, CARD_SUBTITLE, FORM_TITLE, all field labels\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for viewControls = ${JSON.stringify(spec.viewControls || [])}\n\nRespond with valid JSON following the required format.`;
+  let prompt = `# Original Order\n\n${orderDescription}\n\n# Integration Card Spec\n\n\`\`\`json\n${specText}\n\`\`\`\n\n# Your Task\n\nGenerate the 2 extension-point source files for this Integration Card. (manifest.json, i18n.properties, Main.controller.js, and View.view.xml are generated separately.)\n\n**Checklist before responding:**\n- [ ] src/helpers/DataHelper.js: _processData() maps all ${spec.fields ? spec.fields.length : '?'} fields, viewControls = ${JSON.stringify(spec.viewControls || [])}, protocol = ${spec.protocol || 'rest'}\n- [ ] src/test/utils/MockDataGenerator.js: getData() returns correct data shape for viewControls = ${JSON.stringify(spec.viewControls || [])}, generate ${spec.mockRowCount || 5} rows\n\nRespond with valid JSON following the required format.`;
 
   if (retryCount > 0 && errorFeedback) {
     prompt += `\n\n# ⚠️ RETRY ${retryCount}\n\nPrevious attempt had issues:\n\n${errorFeedback}\n\nFix these issues in your response.`;
