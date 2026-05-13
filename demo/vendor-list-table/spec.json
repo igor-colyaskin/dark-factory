@@ -1,0 +1,95 @@
+{
+  "cardSlug": "vendor-list-table",
+  "cardTitle": "Vendor List",
+  "cardSubtitle": "Vendor Directory",
+  "formTitle": "Vendor List",
+  "destinationName": "VENDOR_API",
+  "protocol": "rest",
+  "viewControls": [
+    "sap.m.FilterBar",
+    "sap.m.Table"
+  ],
+  "filterFields": [
+    "Tier",
+    "Status"
+  ],
+  "generateTests": false,
+  "generateDocs": true,
+  "fields": [
+    {
+      "beField": "vendorId",
+      "viewKey": "vendorId",
+      "i18nKey": "VENDOR_ID",
+      "label": "Vendor ID",
+      "control": "Text"
+    },
+    {
+      "beField": "name",
+      "viewKey": "name",
+      "i18nKey": "NAME",
+      "label": "Name",
+      "control": "Text"
+    },
+    {
+      "beField": "Tier",
+      "viewKey": "tier",
+      "i18nKey": "TIER",
+      "label": "Tier",
+      "control": "Text"
+    },
+    {
+      "beField": "Status",
+      "viewKey": "status",
+      "i18nKey": "STATUS",
+      "label": "Status",
+      "control": "ObjectStatus"
+    },
+    {
+      "beField": "Country",
+      "viewKey": "country",
+      "i18nKey": "COUNTRY",
+      "label": "Country",
+      "control": "Text"
+    },
+    {
+      "beField": "ContactName",
+      "viewKey": "contactName",
+      "i18nKey": "CONTACT_NAME",
+      "label": "Contact Name",
+      "control": "Text"
+    },
+    {
+      "beField": "ContactEmail",
+      "viewKey": "contactEmail",
+      "i18nKey": "CONTACT_EMAIL",
+      "label": "Contact Email",
+      "control": "Link"
+    },
+    {
+      "beField": "CertificationLevel",
+      "viewKey": "certificationLevel",
+      "i18nKey": "CERTIFICATION_LEVEL",
+      "label": "Certification Level",
+      "control": "Text"
+    },
+    {
+      "beField": "LastAuditDate",
+      "viewKey": "lastAuditDate",
+      "i18nKey": "LAST_AUDIT_DATE",
+      "label": "Last Audit Date",
+      "control": "Text",
+      "formatter": "formatDate"
+    }
+  ],
+  "mockData": {
+    "vendorId": "V-00123",
+    "name": "Acme Solutions GmbH",
+    "Tier": "Gold",
+    "Status": "Active",
+    "Country": "DE",
+    "ContactName": "Maria Schmidt",
+    "ContactEmail": "m.schmidt@acme.de",
+    "CertificationLevel": "Advanced",
+    "LastAuditDate": "2024-11-15"
+  }
+}

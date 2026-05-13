@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mvc:View
+	controllerName="com.sap.partner.wz.vendor.list.table.Main"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+>
+	<VBox class="sapUiSmallMargin">
+		<HBox class="sapUiSmallMarginBottom" alignItems="Center">
+			<Input
+				id="filterTier"
+				placeholder="{i18n>TIER}"
+				class="sapUiSmallMarginEnd"
+				width="12rem"
+			/>
+			<Input
+				id="filterStatus"
+				placeholder="{i18n>STATUS}"
+				class="sapUiSmallMarginEnd"
+				width="12rem"
+			/>
+			<Button
+				text="{i18n>FILTER_GO}"
+				type="Emphasized"
+				press=".onFilterGo"
+			/>
+		</HBox>
+		<OverflowToolbar design="Transparent">
+			<Title text="{i18n>FORM_TITLE}" level="H4" />
+			<ToolbarSpacer />
+			<Button
+				id="menuButton"
+				icon="sap-icon://overflow"
+				type="Transparent"
+				tooltip="{i18n>MENU_BUTTON_TOOLTIP}"
+				press=".onMenuPress"
+			/>
+		</OverflowToolbar>
+		<Table
+			id="mainTable"
+			items="{/items}"
+			growing="true"
+			growingThreshold="20"
+		>
+			<columns>
+				<Column>
+					<Text text="{i18n>VENDOR_ID}" />
+				</Column>
+				<Column>
+					<Text text="{i18n>NAME}" />
+				</Column>
+				<Column>
+					<Text text="{i18n>TIER}" />
+				</Column>
+				<Column>
+					<Text text="{i18n>STATUS}" />
+				</Column>
+				<Column>
+					<Text text="{i18n>COUNTRY}" />
+				</Column>
+				<Column>
+					<Text text="{i18n>CONTACT_NAME}" />
+				</Column>
+				<Column>
+					<Text text="{i18n>CONTACT_EMAIL}" />
+				</Column>
+				<Column>
+					<Text text="{i18n>CERTIFICATION_LEVEL}" />
+				</Column>
+				<Column>
+					<Text text="{i18n>LAST_AUDIT_DATE}" />
+				</Column>
+			</columns>
+			<items>
+				<ColumnListItem>
+					<cells>
+						<Text text="{vendorId}" />
+						<Text text="{name}" />
+						<Text text="{tier}" />
+						<ObjectStatus text="{status}" />
+						<Text text="{country}" />
+						<Text text="{contactName}" />
+						<Link text="{contactEmail}" press=".onStatusPress" />
+						<Text text="{certificationLevel}" />
+						<Text text="{ path: 'lastAuditDate', formatter: '.formatter.formatDate' }" />
+					</cells>
+				</ColumnListItem>
+			</items>
+		</Table>
+	</VBox>
+</mvc:View>

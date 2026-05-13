@@ -1,0 +1,35 @@
+specVersion: "4.0"
+metadata:
+  name: com-sap-partner-wz-vendor-list-table
+  copyright: |-
+    * (c) Copyright 2009-${currentYear}
+type: application
+framework:
+  name: SAPUI5
+  version: 1.136.8
+  libraries:
+    - name: sap.m
+    - name: sap.ui.core
+    - name: sap.ui.table
+    - name: sap.ushell
+    - name: themelib_sap_horizon
+server:
+  customMiddleware:
+    - name: ui5-middleware-livereload
+      beforeMiddleware: serveResources
+      configuration:
+        watchPath: "./src"
+    - name: ui5-middleware-servestatic
+      beforeMiddleware: serveResources
+      configuration:
+        rootPath: "./src/test/unit/sdk-stubs"
+        mountPath: "/resources"
+resources:
+  configuration:
+    paths:
+      webapp: src
+builder:
+  resources:
+    excludes:
+      - "test/**"
+      - ".card/**"

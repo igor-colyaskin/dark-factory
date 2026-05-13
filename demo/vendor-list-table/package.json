@@ -1,0 +1,17 @@
+{
+  "name": "com-sap-partner-wz-vendor-list-table",
+  "version": "1.0.0",
+  "description": "SAP Work Zone Integration Card",
+  "scripts": {
+    "start": "ui5 serve --config ui5-local.yaml -o test/manual/index.html",
+    "sandbox": "ui5 serve --config ui5-local.yaml"
+  },
+  "ui5": {
+    "dependencies": ["ui5-middleware-livereload", "ui5-middleware-servestatic"]
+  },
+  "devDependencies": {
+    "@ui5/cli": "^4.0.12",
+    "ui5-middleware-livereload": "^3.3.0",
+    "ui5-middleware-servestatic": "^3.4.1"
+  }
+}
