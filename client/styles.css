@@ -114,6 +114,15 @@ body {
   height: 22px;
 }
 
+.workspace-footer {
+  margin-top: auto;
+  padding: 16px 0;
+  font-size: 12px;
+  color: var(--vscode-text-secondary);
+  text-align: center;
+  opacity: 0.7;
+}
+
 /* Tooltips */
 [data-tooltip] {
   position: relative;
@@ -150,12 +159,15 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Page */
 .page {
   max-width: 960px;
   margin: 0 auto;
+  width: 100%;
 }
 
 /* Blocks */
