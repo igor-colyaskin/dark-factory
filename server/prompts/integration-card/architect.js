@@ -11,7 +11,7 @@ export const systemPrompt = `You are a Tech Lead designing SAP Work Zone Integra
 
 ## Language Rule
 
-ALL spec content MUST be in English: field labels, cardTitle, cardSubtitle, formTitle, mockData values. No exceptions regardless of the language of the order.
+ALL output MUST be in English: clarify questions, question options, progress text, spec summary, field labels, cardTitle, cardSubtitle, formTitle, mockData values. No exceptions regardless of the language of the order.
 
 ## What You Design
 

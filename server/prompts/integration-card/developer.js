@@ -854,7 +854,7 @@ export function generateStaticFiles(cardSlug, spec = {}) {
     files.push({ path: 'src/test/utils/DataEngine.js', content: T_DATA_ENGINE, action: 'create' });
   }
 
-  // README + confluence.html — always
+  // README + wiki.html — always
   const fieldRows = (spec.fields || []).map(f => `| ${f.beField} | ${f.label} |`).join('\n') || '| — | — |';
   const today = new Date().toISOString().slice(0, 10);
   const namespace = `com.sap.partner.wz.${slugDot}`;
@@ -896,8 +896,8 @@ export function generateStaticFiles(cardSlug, spec = {}) {
     '',
   ].join('\n');
 
-  files.push({ path: 'README.md',     content: docSections, action: 'create' });
-  files.push({ path: 'confluence.html', content: generateConfluencePage(spec, slug, slugDot), action: 'create' });
+  files.push({ path: 'README.md',  content: docSections, action: 'create' });
+  files.push({ path: 'wiki.html', content: generateConfluencePage(spec, slug, slugDot), action: 'create' });
 
   if (spec.generateTests) {
     files.push(
