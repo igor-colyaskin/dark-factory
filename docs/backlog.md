@@ -271,6 +271,42 @@ git cherry-pick demo/fix-description demo/ux-search demo/feat-phone
 
 ---
 
+## Integration
+
+### [INT-001] Интеграция DF-IC в partner-work-zone проект
+**Источник:** демо тимлиду 2026-05-14, сессия #17
+**Суть:** DF-IC как папка `df-ic/` в корне partner-work-zone. Каждый разработчик на своём VDI, персональный ключ Hyperspace в `.env`.
+
+**Что доработать в DF-IC:**
+1. **Выбор категории** при генерации — dropdown: Common, CompetencyEngine, Compliance, ExceptionManagement, Leveling, NotificationService, p13ntable, PRM
+2. **Output path** → `../content/<Category>/<cardSlug>/` вместо `cards/`
+3. **Запись в корневой `content.json`** после генерации:
+   ```json
+   "partner-<cardSlug>": {
+     "type": "card",
+     "src": { "from": "./content/<Category>/<cardSlug>", "path": "./", "build": "", "package": "com-sap-partner-wz-<cardSlug>.zip", "manifest": "manifest.json" }
+   }
+   ```
+4. **Запись в `test/webapp/model/content.json`** — опционально, checkbox "добавить в sandbox":
+   ```json
+   "partner-<cardSlug>": {
+     "type": "card",
+     "src": { "from": "cards/<Category>/<cardSlug>", "path": "src", "build": "", "package": "", "manifest": "manifest.json" }
+   }
+   ```
+**Онбординг коллеги:** скопировать `df-ic/` (без node_modules/cards/.git) → `npm i` → вставить API Key из Hyperspace в `.env`
+**Приоритет:** высокий — следующий после дейлика
+
+---
+
+### [INT-002] Multi-card sandbox preview
+**Источник:** запрос тимлида на демо 2026-05-14
+**Суть:** В sandbox выбрать несколько карточек → открыть вместе как на реальной Work Zone странице.
+Механизм: `test/webapp/model/content.json` уже поддерживает несколько карточек — нужен UI для выбора.
+**Приоритет:** низкий — после INT-001 и UAT
+
+---
+
 ## Infrastructure
 
 ### [INF-003] Edit mode — полноценная реализация

@@ -2,7 +2,7 @@
 
 Детали задач — [`docs/backlog.md`](docs/backlog.md). Протокол — [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
-**Сессий с последнего WARM-ревью: 4** (порог: 5)
+**Сессий с последнего WARM-ревью: 5** (порог: 5)
 
 ## Быстрый старт
 
@@ -12,32 +12,30 @@
 
 ## Текущий статус
 
-**v0.13 — технически готова к демо.** Цель: питч тимлиду. Детали демо — [`docs/DEMO.md`](docs/DEMO.md).
+**v0.13 — демо прошло успешно (2026-05-14).** Тимлид одобрил, согласен использовать в проекте.
+Питч и разговор зафиксированы — [`docs/DEMO.md`](docs/DEMO.md).
 
-Все задачи до демо закрыты:
-- DEMO-001 Fixture-карточка ✅
-- DEMO-002 3 именованных тега на demo/chronicle-source ✅
-- DEMO-004 Сценарий Block 1 (Generate) ✅ — Eintopf + BE response таблица, прогнан
-- DEMO-005 Сценарий Block 2 (Clone) ✅ — import + clone работает, fixture в demo/vendor-list-table
-- DOC-001 Chronicle ✅
-- DOC-002 README + wiki.html при генерации ✅
-- DOC-003 Chronicle → reminder перед Apply (locked until Done/Skip) ✅
-- UX-012/013/014/015 ✅
+Ключевые договорённости с тимлидом:
+- DF-IC как папка `df-ic/` в корне partner-work-zone
+- Каждый разработчик на своём VDI, свой Hyperspace ключ в `.env`
+- Edit — v1 намеренно scaffold-only, v2 после UAT
+- Запрос: multi-card sandbox preview → [INT-002]
 
 ---
 
-## Находки последней сессии (2026-05-13 #16)
+## Находки сессии (2026-05-14 #17)
 
-- Chronicle: reminder теперь перед Apply, кнопка заблокирована до Done/Skip
-- Chronicle: читает версию из wiki.html (Version History table), пишет новый `<tr>` туда же
-- Chronicle: при Apply автоматически делает git commit + тег `slug@version`
-- Chronicle: insertReadmeRow теперь находит `## Versions` и `## Version History` правильно
-- import-folder: slug берётся из имени папки источника (был баг — брал последний сегмент appId)
-- demo/vendor-list-table: fixture-карточка для демо импорта, закоммичена
-- Сброс для повторного прогона Chronicle: `git reset --hard "employee-directory@0.0.1"` + удалить тег новой версии перед `git gc`
+- confluence.html → переименован в wiki.html (при генерации и в DEMO.md)
+- Архитектор: language rule расширен на clarify-вопросы и summary (только English)
+- Footer "Powered by Anthropic Claude · SAP-enabled" добавлен в workspace
+- Стратегия proto-F: area-52/proto-f-vision.md — DF-C (Columnist) первый, DF-T стапель для демо
+- Edit mode: архитектурное решение — v1 scaffold-only, Edit = agentic task (другой движок)
+- Интеграция в partner-work-zone: план готов → [INT-001]
 
 ---
 
 ## Следующая сессия
 
-- [ ] Прогнать все три блока 2-3 раза в разных комбинациях — финальная репетиция перед питчем
+- [ ] Демо на дейлике
+- [ ] Начать INT-001 (интеграция в проект)
+- **WARM-ревью (счётчик достиг 5)**
